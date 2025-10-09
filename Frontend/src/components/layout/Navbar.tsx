@@ -13,7 +13,9 @@ export default function Navbar() {
       </div>
       <div className="nav-links">
         <Link to="/">Home</Link>
-        <Link to="/customizer">Customizer</Link>
+        <Link to="/tech-for-sale">Tech</Link>
+        <Link to="/customize">Customizer</Link>
+        <Link to="/catalogue">Catalogue</Link>
         {user ? (
           <>
             <button className="logout-btn" onClick={logout}>

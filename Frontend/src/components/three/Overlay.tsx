@@ -2,14 +2,14 @@ import logo from '../../assets/logo.png'
 import { AiOutlineHighlight, AiOutlineShopping } from 'react-icons/ai'
 import '../../styles/overlay.css'
 
-const Overlay = () => {
-  return <Customizer />
-}
-export default Overlay
+import { snapshot, useSnapshot } from 'valtio'
+import {state} from '../../state/Store'
 
-const Intro = () => {
+const Overlay = () => {
+  const snap = useSnapshot(state);
+
   return (
-    <div className="overlay-container">
+     <div className="overlay-container">
       <header className="overlay-header">
        
         <img
@@ -24,6 +24,14 @@ const Intro = () => {
         </div>
       </header>
 
+      {snap.intro ? <Intro /> : <Customizer/>}
+      </div>
+  )
+}
+export default Overlay
+
+const Intro = () => {
+  return (
       <section className="overlay-main">
         <div className="overlay-text">
           <h1>LET'S DO IT.</h1>
@@ -33,12 +41,13 @@ const Intro = () => {
             define your own style.
           </p>
 
-          <button className="overlay-btn">
+          <button className="overlay-btn"
+          onClick={()=> {state.intro = false}}>
             CUSTOMIZE IT <AiOutlineHighlight size="1.3em" />
           </button>
         </div>
       </section>
-    </div>
+    
   )
 }
 
@@ -64,26 +73,35 @@ const decals = ["react", "three2", "style_mint"];
 
 export const Customizer: FC = () => {
   return (
-    <> <button className="exit-btn">
+    <> <button className="exit-btn"
+    onClick={()=> {state.intro = true;
+      console.log("nback")
+    }}>
             GO BACK
             <AiOutlineArrowLeft size="1.3em" />
           </button>
     <section key="custom" className="customizer-section">
       <div className="customizer">
         {/* Color palette */}
-        <div className="color-options">
+        <div className="customizer-options">
+          <div className='color-options' >
           {colors.map((color) => (
             <div
               key={color}
               className="circle"
               style={{ background: color }}
               title={color}
+              onClick={() => {
+                state.selectedColor = color
+               
+              }}
             ></div>
           ))}
-        </div>
+               </div>
+    
 
         {/* Decal selection */}
-        <div className="decals">
+      
           <div className="decals--container">
             {decals.map((decal) => (
               <div key={decal} className="decal">
@@ -92,6 +110,7 @@ export const Customizer: FC = () => {
             ))}
           </div>
         </div>
+   
 
         {/* Buttons */}
         <div className="customizer-buttons">

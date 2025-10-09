@@ -5,6 +5,8 @@ import '../../styles/tshirt.css';
 import { Center, useGLTF, Environment, AccumulativeShadows, RandomizedLight } from '@react-three/drei';
 import * as THREE from 'three';
 import type { ReactNode } from 'react';
+import { useSnapshot } from 'valtio';
+import {state} from '../../state/Store'
 
 
 type ThreeCanvasProps = {
@@ -34,8 +36,15 @@ export const ThreeCanvas = ({position=[-1, 0, 2.5], fov=25}: ThreeCanvasProps) =
 function Shirt(props: any) {
   const { nodes, materials } = useGLTF('/models/shirt_baked.glb') as unknown as {
     nodes: { [key: string]: THREE.Mesh };
-    materials: { [key: string]: THREE.Material };
-  };
+    materials: { [key: string]: THREE.MeshStandardMaterial };
+  }
+
+  const snap = useSnapshot(state)
+
+  useFrame((_, delta) => {
+    easing.dampC(materials.lambert1.color, snap.selectedColor, 0.25, delta)
+  })
+
   return (
     <group {...props} dispose={null}>
       <mesh
@@ -47,14 +56,26 @@ function Shirt(props: any) {
         rotation={[Math.PI / 2, 0, 0]}
       />
     </group>
-  );
+  )
 }
 
+
 function Backdrop(){
+
+ const shadows = useRef<any>(null!)
+  const snap = useSnapshot(state) // ✅ from valtio store
+
+  useFrame((_, delta) => {
+    if (!shadows.current) return
+
+    const material = shadows.current.getMesh().material as THREE.MeshStandardMaterial
+    easing.dampC(material.color, snap.selectedColor, 0.25, delta)
+  })
   
     return (
    <AccumulativeShadows
       temporal
+      ref={shadows}
       frames={60}
       alphaTest={0.85}
       scale={10}
@@ -84,8 +105,8 @@ function CameraRig({ children }: { children: ReactNode }){
   useFrame((state, delta) => {
     easing.dampE(
       group.current.rotation,
-      [-state.pointer.y /5, state.pointer.x /5, 0],
-      0.75,
+       [state.pointer.y / 10, -state.pointer.x / 5, 0],
+      0.25,
       delta
     )
   })

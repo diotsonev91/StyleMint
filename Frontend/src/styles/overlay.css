@@ -13,10 +13,11 @@
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0.2) 0%,
-    rgba(0, 0, 0, 0.05) 100%
+    rgba(211, 211, 211, 0.795) 0%,
+    rgba(29, 29, 29, 0.822) 50%,
+    rgb(255, 255, 255) 100%,
   );
-  backdrop-filter: blur(2px);
+  margin: 1.5rem
 }
 
 /* -------- Header -------- */
@@ -26,6 +27,7 @@
   align-items: center;
   padding: 2rem 3rem;
   pointer-events: auto;
+  margin-top:3em;
 }
 
 .logo {

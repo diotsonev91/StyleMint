@@ -15,7 +15,7 @@
 // export default App
 
 
-// For later integrationuncomment the bellow and make the pages for canvas three js and then add in routes 
+//For later integrationuncomment the bellow and make the pages for canvas three js and then add in routes 
 
 import React from "react";
 import { BrowserRouter as Router } from "react-router-dom";
