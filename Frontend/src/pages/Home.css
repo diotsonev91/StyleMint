@@ -1,0 +1,224 @@
+.home {
+  font-family: "Poppins", sans-serif;
+  color: #222;
+  overflow-x: hidden;
+}
+
+/* ================= HERO ================= */
+.hero {
+  position: relative;
+  background: linear-gradient(135deg, #00c6ff, #1e1f26);
+  color: white;
+  text-align: center;
+  padding: 140px 20px;
+  overflow: hidden;
+}
+
+.hero::before,
+.hero::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.35;
+  animation: hero-float 12s ease-in-out infinite alternate;
+}
+.hero::before {
+  width: 450px;
+  height: 450px;
+  background: #ff6ec7;
+  top: -120px;
+  left: -80px;
+}
+.hero::after {
+  width: 400px;
+  height: 400px;
+  background: #00c6ff;
+  bottom: -100px;
+  right: -60px;
+}
+
+@keyframes hero-float {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(40px, -30px); }
+}
+
+.hero h1 {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  z-index: 1;
+  position: relative;
+  background: linear-gradient(90deg, #fff, #c4f5ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero p {
+  font-size: 1.2rem;
+  max-width: 650px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.6;
+  color: #f2f2f2;
+}
+.btn-primary {
+  background: linear-gradient(90deg, #00c6ff, #ff6ec7);
+  border: none;
+  color: white;
+  padding: 14px 36px;
+  border-radius: 30px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.btn-primary:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.3);
+}
+
+/* ================= CATEGORIES ================= */
+.categories {
+  padding: 100px 40px;
+  text-align: center;
+  background: linear-gradient(180deg, #fafafa, #f1f7ff);
+}
+
+.categories h2 {
+  font-size: 2rem;
+  margin-bottom: 30px;
+  color: #222;
+  position: relative;
+}
+.categories h2::after {
+  content: "";
+  display: block;
+  width: 80px;
+  height: 3px;
+  background: #00c6ff;
+  margin: 12px auto 0;
+  border-radius: 2px;
+}
+
+.category-grid {
+  display: grid;
+  gap: 35px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  margin-top: 60px;
+}
+
+.category-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+.category-card:hover {
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.25);
+}
+
+.category-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.category-card:hover img {
+  transform: scale(1.08);
+}
+
+.category-card h3 {
+  background: #fff;
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* ================= NFT SECTION ================= */
+.nft-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 80px;
+  padding: 120px 60px;
+  flex-wrap: wrap;
+  background: linear-gradient(180deg, #f9f9f9, #fdfdff);
+  position: relative;
+}
+
+.nft-section::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 80%;
+  height: 100%;
+  background: radial-gradient(
+    circle at center,
+    rgba(0, 198, 255, 0.1),
+    transparent 70%
+  );
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.nft-content {
+  max-width: 520px;
+  z-index: 1;
+}
+.nft-content h2 {
+  font-size: 2.3rem;
+  margin-bottom: 1.2rem;
+  color: #222;
+}
+.nft-content p {
+  font-size: 1.05rem;
+  color: #444;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+.btn-secondary {
+  background: #222;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 30px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.btn-secondary:hover {
+  background: #00c6ff;
+  box-shadow: 0 0 12px rgba(0, 198, 255, 0.3);
+}
+
+.nft-image {
+  width: 420px;
+  border-radius: 24px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+  transform: perspective(1000px) rotateY(-8deg);
+  transition: transform 0.4s ease;
+}
+.nft-image:hover {
+  transform: perspective(1000px) rotateY(0deg) scale(1.03);
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 900px) {
+  .hero h1 {
+    font-size: 2.6rem;
+  }
+  .nft-section {
+    flex-direction: column;
+    gap: 40px;
+    padding: 80px 30px;
+  }
+  .nft-image {
+    width: 90%;
+  }
+}

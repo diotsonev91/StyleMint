@@ -1,0 +1,135 @@
+/* === Position the customizer at the bottom center === */
+.customizer-section {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  pointer-events: auto;
+}
+
+.customizer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  background: rgba(10, 10, 10, 0.4);
+  border: 1px solid rgba(0, 255, 170, 0.4);
+  backdrop-filter: blur(10px);
+  padding: 1.5rem 2rem;
+  border-radius: 1.2rem;
+  box-shadow: 0 0 20px rgba(0, 255, 170, 0.15);
+}
+
+/* === Color palette === */
+.color-options {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #fff2;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.circle:hover {
+  transform: scale(1.15);
+  border-color: #00ffaa;
+}
+
+/* === Decals === */
+.decals {
+  display: flex;
+  justify-content: center;
+}
+.decals--container {
+  display: flex;
+  gap: 1rem;
+}
+.decal img {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px;
+}
+.decal img:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(0, 255, 170, 0.5);
+}
+
+/* === Buttons row === */
+.customizer-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+button {
+  border: none;
+  border-radius: 25px;
+  padding: 0.7rem 1.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Download */
+.share-btn {
+  background: linear-gradient(90deg, #00ffaa, #09fbd3);
+  color: #111;
+  box-shadow: 0 0 15px rgba(0, 255, 170, 0.4);
+}
+.share-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px rgba(0, 255, 170, 0.8);
+}
+
+/* Save Style */
+.save-btn {
+  background: linear-gradient(90deg, #ffffff, #b6ffea);
+  color: #111;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+}
+.save-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
+}
+
+/* Exit */
+.exit-btn {
+position: absolute;
+top:0;
+left:0;
+margin:2em;
+  background: #222;
+  color: #fff;
+  border: 1px solid #00ffaa55;
+}
+.exit-btn:hover {
+  background: #000;
+  transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .customizer {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  .customizer-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+}

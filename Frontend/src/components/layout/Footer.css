@@ -1,0 +1,45 @@
+.footer {
+     position: sticky;
+      bottom: 0;
+  padding: 1.2rem 2rem;
+  text-align: center;
+  background-color: var(--footer-bg);
+  color: var(--footer-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1000px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.theme-btn {
+  background: none;
+  border: 1px solid var(--footer-text);
+  color: var(--footer-text);
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.theme-btn:hover {
+  background-color: var(--footer-text);
+  color: var(--footer-bg);
+}
+
+/* light / dark variables */
+:root[data-theme="light"] {
+  --footer-bg: #f5f5f5;
+  --footer-text: #222;
+}
+
+:root[data-theme="dark"] {
+  --footer-bg: #111;
+  --footer-text: #f5f5f5;
+}

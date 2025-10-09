@@ -1,0 +1,12 @@
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  
+}
+
+.main-content {
+  flex: 1; /* allow footer to sit below */
+  display: flex;
+  flex-direction: column;
+}

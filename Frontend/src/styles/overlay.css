@@ -1,0 +1,129 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700;900&display=swap");
+
+/* -------- Base -------- */
+.overlay-container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #f4f4f4;
+  font-family: "Poppins", sans-serif;
+  z-index: 3; /* above canvas */
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.2) 0%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
+  backdrop-filter: blur(2px);
+}
+
+/* -------- Header -------- */
+.overlay-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem 3rem;
+  pointer-events: auto;
+}
+
+.logo {
+  filter: drop-shadow(0 0 6px rgba(0, 255, 170, 0.6));
+  transition: transform 0.4s ease;
+}
+.logo:hover {
+  transform: scale(1.05) rotate(-2deg);
+}
+
+.overlay-icons {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.icon-btn {
+  cursor: pointer;
+  color: #00ffaa;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+.icon-btn:hover {
+  color: #fff;
+  transform: scale(1.2);
+}
+
+/* -------- Main Text -------- */
+.overlay-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.overlay-text {
+  text-align: center;
+  max-width: 600px;
+  padding: 2rem;
+  pointer-events: auto;
+}
+
+.overlay-text h1 {
+  font-size: clamp(2.5rem, 8vw, 6rem);
+  font-weight: 900;
+  letter-spacing: -1px;
+  background: linear-gradient(90deg, #00ffaa 0%, #09fbd3 50%, #ffffff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(0, 255, 170, 0.2);
+  margin-bottom: 1.2rem;
+  transition: transform 0.3s ease;
+}
+.overlay-text h1:hover {
+  transform: scale(1.03);
+}
+
+.overlay-text p {
+  color: #ddd;
+  line-height: 1.6;
+  font-weight: 300;
+  margin-bottom: 2rem;
+}
+
+/* -------- Button -------- */
+.overlay-btn {
+  background: linear-gradient(90deg, #00ffaa, #09fbd3);
+  color: #111;
+  border: none;
+  border-radius: 40px;
+  padding: 0.9rem 2.4rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.35s ease;
+  box-shadow: 0 0 15px rgba(0, 255, 170, 0.4);
+}
+
+.overlay-btn:hover {
+  transform: scale(1.08) translateY(-3px);
+  box-shadow: 0 0 25px rgba(0, 255, 170, 0.8);
+  background: linear-gradient(90deg, #09fbd3, #00ffaa);
+}
+
+/* -------- Responsive -------- */
+@media (max-width: 700px) {
+  .overlay-header {
+    padding: 1.5rem;
+  }
+  .overlay-text {
+    padding: 1rem;
+  }
+  .overlay-text h1 {
+    font-size: clamp(2rem, 10vw, 4rem);
+  }
+  .overlay-btn {
+    padding: 0.8rem 1.8rem;
+  }
+}
