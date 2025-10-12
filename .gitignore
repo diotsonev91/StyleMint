@@ -137,3 +137,51 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+
+# =====================================================
+#  Spring Boot backend (inside Backend/stylemint-backend)
+# =====================================================
+
+# Maven target directory
+Backend/stylemint-backend/target/
+Backend/stylemint-backend/.mvn/wrapper/maven-wrapper.jar
+
+# IDE specific files (Eclipse, IntelliJ, VSCode)
+Backend/stylemint-backend/.idea/
+Backend/stylemint-backend/.classpath
+Backend/stylemint-backend/.project
+Backend/stylemint-backend/.settings/
+Backend/stylemint-backend/.apt_generated
+Backend/stylemint-backend/.factorypath
+Backend/stylemint-backend/.sts4-cache
+Backend/stylemint-backend/nbproject/
+Backend/stylemint-backend/nbbuild/
+Backend/stylemint-backend/dist/
+Backend/stylemint-backend/build/
+
+# VSCode
+.vscode/
+
+# =====================================================
+#  General patterns for any future submodules
+# =====================================================
+**/target/
+**/build/
+**/.idea/
+**/.classpath
+**/.project
+**/.settings/
+**/.apt_generated
+**/.factorypath
+**/.sts4-cache
+
+# Keep src directories even if they contain build artifacts
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Ignore OS-level files
+.DS_Store
+Thumbs.db
