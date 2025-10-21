@@ -3,6 +3,8 @@
 /* -------- Base -------- */
 .overlay-container {
   position: absolute;
+  background: none;
+  backdrop-filter: none;
   inset: 0;
   display: flex;
   flex-direction: column;
@@ -11,13 +13,8 @@
   font-family: "Poppins", sans-serif;
   z-index: 3; /* above canvas */
   pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgba(211, 211, 211, 0.795) 0%,
-    rgba(29, 29, 29, 0.822) 50%,
-    rgb(255, 255, 255) 100%,
-  );
-  margin: 1.5rem
+
+  margin: 1.5rem;
 }
 
 /* -------- Header -------- */
@@ -27,7 +24,7 @@
   align-items: center;
   padding: 2rem 3rem;
   pointer-events: auto;
-  margin-top:3em;
+  margin-top: 3em;
 }
 
 .logo {
@@ -37,20 +34,54 @@
 .logo:hover {
   transform: scale(1.05) rotate(-2deg);
 }
-
+/* Container stays flex column instead of row */
 .overlay-icons {
   display: flex;
-  gap: 1.5rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
 }
 
-.icon-btn {
-  cursor: pointer;
-  color: #00ffaa;
-  transition: color 0.3s ease, transform 0.2s ease;
+/* Top row: back + selected label */
+.overlay-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.icon-btn:hover {
+
+.current-label {
+  font-size: 1.4rem;
   color: #fff;
-  transform: scale(1.2);
+}
+
+/* Vertical list */
+.type-options-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Icon styles */
+.type-icon {
+  font-size: 1.6rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.15s;
+  color: white;
+}
+
+.type-icon:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.type-icon.active {
+  background: rgba(255, 255, 255, 0.25);
+  outline: 2px solid white;
+}
+
+.icon-emoji {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
 }
 
 /* -------- Main Text -------- */
