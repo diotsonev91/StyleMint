@@ -13,7 +13,7 @@ export default function Navbar() {
       </div>
       <div className="nav-links">
         <Link to="/">Home</Link>
-        <Link to="/tech-for-sale">Tech</Link>
+        <Link to="/sounds">Sounds</Link>
         <Link to="/customize">Customizer</Link>
         <Link to="/catalogue">Catalogue</Link>
         {user ? (

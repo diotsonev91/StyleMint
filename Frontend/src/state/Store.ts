@@ -1,3 +1,4 @@
+import { any } from "three/tsl";
 import { proxy } from "valtio";
 
 const state = proxy({
@@ -18,6 +19,7 @@ const state = proxy({
   selected_type: "t_shirt_sport",
   decalPosition: null as [number, number, number] | null,
   rotationY: 0 as number,
+   ripples: [] as { id: number; pos: [number, number, number] }[],
 });
 
 

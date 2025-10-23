@@ -1,0 +1,99 @@
+// src/components/SamplesList.tsx
+import React, { useState } from 'react';
+import { Sample } from '../types';
+import SampleItem from './SampleItem';
+import './SamplesList.css';
+
+interface SamplesListProps {
+  samples: Sample[];
+  onLoadMore?: () => void;
+}
+
+const SamplesList: React.FC<SamplesListProps> = ({ samples, onLoadMore }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<number | null>(null);
+
+  const filteredSamples = samples.filter(sample =>
+    sample.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    sample.genre.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleTogglePlay = (sampleId: number) => {
+    if (currentlyPlaying === sampleId) {
+      setCurrentlyPlaying(null);
+    } else {
+      setCurrentlyPlaying(sampleId);
+    }
+  };
+
+  const handleDownload = (sampleId: number) => {
+    console.log('Download sample:', sampleId);
+    // Implement download logic
+  };
+
+  const handleLike = (sampleId: number) => {
+    console.log('Like sample:', sampleId);
+    // Implement like logic
+  };
+
+  return (
+    <div className="samples-list">
+      {/* Search Bar */}
+      <div className="search-container">
+        <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search samples..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="search-input"
+        />
+        {searchQuery && (
+          <button 
+            className="clear-search"
+            onClick={() => setSearchQuery('')}
+            aria-label="Clear search"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {/* Samples */}
+      <div className="samples-container">
+        {filteredSamples.length > 0 ? (
+          filteredSamples.map((sample) => (
+            <SampleItem
+              key={sample.id}
+              sample={sample}
+              isPlaying={currentlyPlaying === sample.id}
+              onTogglePlay={() => handleTogglePlay(sample.id)}
+              onDownload={() => handleDownload(sample.id)}
+              onLike={() => handleLike(sample.id)}
+            />
+          ))
+        ) : (
+          <div className="no-results">
+            <svg className="no-results-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p>No samples found matching your search</p>
+          </div>
+        )}
+      </div>
+
+      {/* Load More Button */}
+      {onLoadMore && filteredSamples.length > 0 && (
+        <button className="btn btn-secondary load-more-btn" onClick={onLoadMore}>
+          Load More Samples
+        </button>
+      )}
+    </div>
+  );
+};
+
+export default SamplesList;

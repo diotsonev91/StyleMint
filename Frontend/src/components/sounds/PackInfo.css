@@ -1,0 +1,193 @@
+/* src/components/PackInfo.css */
+
+.pack-info {
+  position: sticky;
+  top: 96px;
+}
+
+.pack-cover-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+}
+
+.pack-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pack-cover-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.pack-cover-wrapper:hover .pack-cover-overlay {
+  opacity: 1;
+}
+
+.pack-details {
+  margin-top: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.pack-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.pack-title {
+  color: var(--text-primary);
+  font-size: 1.875rem;
+  margin: 0;
+}
+
+.pack-artist {
+  color: var(--primary-color);
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.pack-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.stat-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.pack-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.genre-tag {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: rgba(147, 51, 234, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(147, 51, 234, 0.3);
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.pack-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding-top: var(--spacing-md);
+}
+
+.price-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pack-price {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.like-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.like-btn svg {
+  width: 24px;
+  height: 24px;
+  color: var(--text-primary);
+  transition: color var(--transition-fast);
+}
+
+.like-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.like-btn.liked svg {
+  color: #ef4444;
+}
+
+.action-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.pack-tags-section {
+  padding-top: var(--spacing-md);
+}
+
+.tags-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: var(--spacing-sm);
+}
+
+.pack-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.tag {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tag:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .pack-info {
+    position: static;
+  }
+}

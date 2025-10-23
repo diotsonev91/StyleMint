@@ -1,5 +1,5 @@
 // import { ThreeCanvas } from './components/three/ThreeCanvas'
-// import './App.css'
+import './App.css'
 // import Overlay from './components/three/Overlay'
 
 // function App() {

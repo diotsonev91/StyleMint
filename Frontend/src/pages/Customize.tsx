@@ -13,7 +13,7 @@ function Customize() {
       {snap.page === "basic" && <ThreeCanvas />}
       {snap.page === "advanced" && <ThreeCanvasAdvanced />}
       
-      <Overlay />
+       <Overlay />
     </div>
   );
 }

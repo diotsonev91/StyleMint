@@ -3,9 +3,11 @@
 /* -------- Base -------- */
 .overlay-container {
   position: absolute;
+  inset:0;
+  transform: translateY(2rem);
   background: none;
   backdrop-filter: none;
-  inset: 0;
+  
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -19,12 +21,15 @@
 
 /* -------- Header -------- */
 .overlay-header {
+  
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 2rem 3rem;
+  padding: 0rem 1rem;
   pointer-events: auto;
-  margin-top: 0em;
+  margin-top: 0.2em;
+  flex-wrap: nowrap;
+  padding-right:3em;
 }
 
 .logo {
@@ -37,9 +42,12 @@
 /* Container stays flex column instead of row */
 .overlay-icons {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: flex-start;
   gap: 12px;
+  white-space: normal;
+  width: 300px;
 }
 
 /* Top row: back + selected label */
@@ -57,7 +65,7 @@
 /* Vertical list */
 .type-options-col {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
 }
 
@@ -122,6 +130,14 @@
   margin-bottom: 2rem;
 }
 
+.overlay-text p:first-child {
+  margin-bottom: 2rem;
+}
+
+.overlay-text p:nth-child(4) {
+  margin-bottom: 0;
+}
+
 /* -------- Button -------- */
 .overlay-btn {
   background: linear-gradient(90deg, #00ffaa, #09fbd3);
@@ -137,6 +153,7 @@
   gap: 10px;
   transition: all 0.35s ease;
   box-shadow: 0 0 15px rgba(0, 255, 170, 0.4);
+  margin:0.5em;
 }
 
 .overlay-btn:hover {
@@ -156,7 +173,5 @@
   .overlay-text h1 {
     font-size: clamp(2rem, 10vw, 4rem);
   }
-  .overlay-btn {
-    padding: 0.8rem 1.8rem;
-  }
+
 }

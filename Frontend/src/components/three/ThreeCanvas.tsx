@@ -45,7 +45,7 @@ export const ThreeCanvas = ({
           {snap.selected_type === "t_shirt_classic" && (
             <Shirt variant="classic" />
           )}
-
+          {snap.selected_type === "shoe" && <Shoe />}
           <Backdrop />
         </Center>
       </CameraRig>
@@ -279,6 +279,51 @@ function CameraRig({ children }: { children: ReactNode }) {
   return <group ref={group}>{children}</group>;
 }
 
+export function Shoe(props: any) {
+  const { nodes, materials } = useGLTF("/models/shoe.glb") as unknown as {
+    nodes: any;
+    materials: any;
+  };
+
+  const snap = useSnapshot(state);
+
+  const texture = useTexture(`/images/${snap.selectedDecal}_thumb.png`);
+  texture.anisotropy = 16;
+  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.encoding = THREE.sRGBEncoding;
+
+  // Вземи материала на mesh-а с decal-а
+  const baseMat = materials["Material.003"]; // или "Main Body Material" - в зависимост кой искаш да сменя цвета
+
+  useFrame((_, delta) => {
+    easing.dampC(baseMat.color, snap.selectedColor, 0.25, delta);
+  });
+
+  return (
+    <group {...props} dispose={null} scale={1.2}>
+      {/* Render each mesh part */}
+      <mesh geometry={nodes.Plane040.geometry} material={materials["Sole Material"]} castShadow />
+      <mesh geometry={nodes.Plane040_1.geometry} material={materials["Main Body Material"]} castShadow />
+      
+      {/* Mesh-ът с decal-а - сега използва baseMat, който се анимира */}
+      <mesh geometry={nodes.Plane040_2.geometry} material={baseMat} castShadow>
+         <Decal
+          position={[0, 0, 0.1]}
+          rotation={[0, 0, 0]}
+          scale={0.3}
+          map={texture}
+        />
+      </mesh>
+      
+      <mesh geometry={nodes.Plane040_3.geometry} material={materials["Insole Material right"]} castShadow />
+      <mesh geometry={nodes.Laces005.geometry} material={materials["Flap Material.002"]} castShadow />
+      <mesh geometry={nodes.Shoe_Flap008.geometry} material={materials["Tag materialright.001"]} castShadow />
+      <mesh geometry={nodes.Shoe_Flap009.geometry} material={materials["Main Shoe Inside"]} castShadow />
+    </group>
+  );
+}
+
+useGLTF.preload("/models/shoe.glb");
 useGLTF.preload("/models/hoodie_test.glb");
 useGLTF.preload("/models/shirt_classic.glb");
 useGLTF.preload("/models/shirt_baked.glb");

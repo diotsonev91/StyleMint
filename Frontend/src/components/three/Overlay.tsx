@@ -8,6 +8,8 @@ import {
 } from "react-icons/ai";
 import { GiShorts, GiBilledCap, GiHoodie } from "react-icons/gi";
 import { FaTshirt } from "react-icons/fa";
+import { GiConverseShoe, GiRunningShoe } from "react-icons/gi";
+import { RiNftFill } from "react-icons/ri";
 
 import "../../styles/overlay.css";
 
@@ -16,12 +18,13 @@ import { state } from "../../state/Store";
 
 const Overlay = () => {
   const snap = useSnapshot(state);
-  const TYPE_OPTIONS = [
-    { value: "t_shirt_sport", label: "Sport", icon: <FaTshirt /> },
-    { value: "t_shirt_classic", label: "Classic", icon: <FaTshirt /> },
-    { value: "cap", label: "Cap", icon: <GiBilledCap /> },
-    { value: "hoodie", label: "Hoodie", icon: <GiHoodie /> },
-  ];
+const TYPE_OPTIONS = [
+  { value: "t_shirt_sport", label: "Sport", icon: <FaTshirt /> },
+  { value: "t_shirt_classic", label: "Classic", icon: <FaTshirt /> },
+  { value: "cap", label: "Cap", icon: <GiBilledCap /> },
+  { value: "hoodie", label: "Hoodie", icon: <GiHoodie /> },
+  { value: "shoe", label: "Shoe", icon: <GiRunningShoe /> }, 
+];
 
   return (
     <div className="overlay-container">
@@ -91,7 +94,7 @@ const Intro = () => {
         >
           CUSTOMIZE IT easy <AiOutlineHighlight size="1.3em" />
         </button>
-        or
+        <p>or </p>
         <button
           className="overlay-btn"
           onClick={() => {
@@ -192,6 +195,11 @@ export const Customizer: FC = () => {
             <button className="save-btn">
               SAVE YOUR STYLE
               <AiOutlineSave size="1.3em" />
+            </button>
+
+              <button className="share-btn">
+              Add Nft 
+             <RiNftFill />
             </button>
           </div>
         </div>
