@@ -40,7 +40,7 @@ const Overlay = () => {
               size="1.5em"
               className="icon-btn"
               onClick={() => {
-                state.intro = true;
+                state.page = "intro";
               }}
             />
             <p className="current-label">
@@ -66,7 +66,7 @@ const Overlay = () => {
         </div>
       </header>
 
-      {snap.intro ? <Intro /> : <Customizer />}
+      {snap.page == 'intro' ? <Intro /> : <Customizer />}
     </div>
   );
 };
@@ -86,10 +86,19 @@ const Intro = () => {
         <button
           className="overlay-btn"
           onClick={() => {
-            state.intro = false;
+            state.page= "basic";
           }}
         >
-          CUSTOMIZE IT <AiOutlineHighlight size="1.3em" />
+          CUSTOMIZE IT easy <AiOutlineHighlight size="1.3em" />
+        </button>
+        or
+        <button
+          className="overlay-btn"
+          onClick={() => {
+            state.page= "advanced";
+          }}
+        >
+          CUSTOMIZE IT like artist <AiOutlineHighlight size="1.3em" />
         </button>
       </div>
     </section>
@@ -124,7 +133,7 @@ export const Customizer: FC = () => {
       <button
         className="exit-btn"
         onClick={() => {
-          state.intro = true;
+          state.page = "intro";
           console.log("nback");
         }}
       >
@@ -150,7 +159,16 @@ export const Customizer: FC = () => {
             </div>
 
             {/* Decal selection */}
-
+ { snap.page === "advanced" && (
+            <div className="adv-overlay">
+              <div className="adv-block">
+                <label>Rotate Y: {snap.rotationY}°</label>
+                <input type="range" min={0} max={360}
+                       value={snap.rotationY}
+                       onChange={(e)=> state.rotationY = +e.target.value}/>
+              </div>
+            </div>
+          )}
             <div className="decals--container">
               {snap.decals.map((decal) => (
                 <div

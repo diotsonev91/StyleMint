@@ -53,54 +53,6 @@ export const ThreeCanvas = ({
   );
 };
 
-// function Shirt(props: any) {
-//   const { nodes, materials } = useGLTF(
-//     "/models/shirt_classic.glb"
-//   ) as unknown as {
-//     nodes: { [key: string]: THREE.Mesh };
-//     materials: { [key: string]: THREE.MeshStandardMaterial };
-//   };
-
-//   for (const [key, val] of Object.entries(nodes)) {
-//     console.log(key, val.type, val.geometry);
-//   }
-//   const snap = useSnapshot(state);
-
-//   // Load texture and set anisotropy properly
-//   const texture = useTexture(`/images/${snap.selectedDecal}_thumb.png`);
-//   texture.anisotropy = 16;
-//   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
-//   texture.encoding = THREE.sRGBEncoding;
-
-//   useFrame((_, delta) => {
-//     easing.dampC(materials.lambert1.color, snap.selectedColor, 0.25, delta);
-//   });
-
-//   return (
-//     <group {...props} dispose={null}>
-//       <mesh
-//         castShadow
-//         receiveShadow
-//         geometry={nodes.T_Shirt_male.geometry}
-//         material={materials.lambert1}
-//         position={[0.419, 0, 0]}
-//         rotation={[Math.PI / 2, 0, 0.175]}
-//       >
-//         <Decal
-//           debug
-//           position={[-0.435, 0.1, -0.3]} // ✅ push toward shirt surface
-//           rotation={[-Math.PI / 2, 0, 0]} // still good for orientation
-//           scale={0.12}
-//           map={texture}
-//           depthTest
-//           depthWrite={false}
-//           polygonOffset
-//           polygonOffsetFactor={-0.1}
-//         />
-//       </mesh>
-//     </group>
-//   );
-// }
 
 function Shirt({ variant, ...props }: { variant: "sport" | "classic" }) {
   const path =
@@ -327,7 +279,7 @@ function CameraRig({ children }: { children: ReactNode }) {
   return <group ref={group}>{children}</group>;
 }
 
-useGLTF.preload("/models/hoodie.glb");
+useGLTF.preload("/models/hoodie_test.glb");
 useGLTF.preload("/models/shirt_classic.glb");
 useGLTF.preload("/models/shirt_baked.glb");
 useGLTF.preload("/models/shirt_cap.glb");

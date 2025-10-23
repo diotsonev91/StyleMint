@@ -1,7 +1,7 @@
 import { proxy } from "valtio";
 
 const state = proxy({
-  intro: true,
+  page: "intro" as "intro" | "basic" | "advanced",
   colors: ["#ccc", "#EFBD4E", "#80C670", "#726DE8", "#EF674E", "#353934"],
   decals: [
     "react",
@@ -16,6 +16,9 @@ const state = proxy({
   selectedDecal: "style_mint",
   types: ["t_shirt_sport", "t_shirt_classic", "cap", "hoodie"],
   selected_type: "t_shirt_sport",
+  decalPosition: null as [number, number, number] | null,
+  rotationY: 0 as number,
 });
+
 
 export { state };
