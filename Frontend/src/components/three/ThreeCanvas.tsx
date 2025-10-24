@@ -293,7 +293,7 @@ export function Shoe(props: any) {
   texture.encoding = THREE.sRGBEncoding;
 
   // Вземи материала на mesh-а с decal-а
-  const baseMat = materials["Material.003"]; // или "Main Body Material" - в зависимост кой искаш да сменя цвета
+  const baseMat = materials["Main Body Material"]; // или "Main Body Material" - в зависимост кой искаш да сменя цвета
 
   useFrame((_, delta) => {
     easing.dampC(baseMat.color, snap.selectedColor, 0.25, delta);
@@ -316,9 +316,7 @@ export function Shoe(props: any) {
       </mesh>
       
       <mesh geometry={nodes.Plane040_3.geometry} material={materials["Insole Material right"]} castShadow />
-      <mesh geometry={nodes.Laces005.geometry} material={materials["Flap Material.002"]} castShadow />
-      <mesh geometry={nodes.Shoe_Flap008.geometry} material={materials["Tag materialright.001"]} castShadow />
-      <mesh geometry={nodes.Shoe_Flap009.geometry} material={materials["Main Shoe Inside"]} castShadow />
+    
     </group>
   );
 }

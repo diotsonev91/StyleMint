@@ -16,6 +16,8 @@ export default function Navbar() {
         <Link to="/sounds">Sounds</Link>
         <Link to="/customize">Customizer</Link>
         <Link to="/catalogue">Catalogue</Link>
+        <Link to="/game">GameMint</Link>
+        <Link to="/profile">Profile</Link>
         {user ? (
           <>
             <button className="logout-btn" onClick={logout}>

@@ -23,7 +23,7 @@ export function Shoe({ advanced, ...props }: ShoeProps) {
   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.encoding = THREE.sRGBEncoding;
 
-  const baseMat = materials["Material.003"];
+  const baseMat = materials["Main Body Material"];
 
   useFrame((_, delta) => {
     easing.dampC(baseMat.color, snap.selectedColor, 0.25, delta);
@@ -37,10 +37,11 @@ export function Shoe({ advanced, ...props }: ShoeProps) {
     <group {...props} dispose={null} scale={1.2}
     
      rotation={[
-        Math.PI / 2,                // X
+        0,                // X
          // Y от slider
-        0  ,                         // Z
-        (snap.rotationY * Math.PI) / 180
+         (snap.rotationY * Math.PI) / 180,
+        0                         // Z
+        
       ]}
     >
       <mesh
@@ -73,21 +74,6 @@ export function Shoe({ advanced, ...props }: ShoeProps) {
         material={materials["Insole Material right"]}
         castShadow
       />
-      <mesh
-        geometry={nodes.Laces005.geometry}
-        material={materials["Flap Material.002"]}
-        castShadow
-      />
-      <mesh
-        geometry={nodes.Shoe_Flap008.geometry}
-        material={materials["Tag materialright.001"]}
-        castShadow
-      />
-      <mesh
-        geometry={nodes.Shoe_Flap009.geometry}
-        material={materials["Main Shoe Inside"]}
-        castShadow
-      />
-    </group>
+     </group>
   );
 }
