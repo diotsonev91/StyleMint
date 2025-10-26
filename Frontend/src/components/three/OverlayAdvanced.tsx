@@ -1,15 +1,36 @@
 // src/components/three/OverlayAdvanced.tsx
+// UPDATED: Import from centralized state file
 import { useSnapshot } from "valtio";
-import { state } from "../../state/Store";
+import { state } from "../../state";
 import {
   AiOutlineArrowLeft,
   AiOutlineSave,
   AiOutlineShopping,
 } from "react-icons/ai";
 import "../../styles/overlay-advanced.css";
+import { addToCart } from "../../services/CartService";
 
 export default function OverlayAdvanced() {
   const snap = useSnapshot(state);
+
+  // Handler for adding item to cart
+  const handlePurchase = async () => {
+    console.log("🛒 Purchase button clicked in OverlayAdvanced");
+    console.log("🛒 Current state:", {
+      selectedColor: state.selectedColor,
+      selectedDecal: state.selectedDecal,
+      selected_type: state.selected_type,
+      rotationY: state.rotationY,
+    });
+    
+    try {
+      await addToCart();
+      alert("Item added to cart successfully! 🎉");
+    } catch (error) {
+      console.error("Failed to add to cart:", error);
+      alert("Failed to add item to cart. Please try again.");
+    }
+  };
 
   return (
     <div className="adv-overlay">
@@ -33,8 +54,8 @@ export default function OverlayAdvanced() {
         <AiOutlineSave /> SAVE
       </button>
 
-      <button className="adv-btn" onClick={() => console.log("PURCHASE")}>
-        <AiOutlineShopping /> PURCHASE
+      <button className="adv-btn" onClick={handlePurchase}>
+        <AiOutlineShopping /> ADD TO CART
       </button>
     </div>
   );

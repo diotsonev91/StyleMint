@@ -13,11 +13,15 @@ import { RiNftFill } from "react-icons/ri";
 
 import "../../styles/overlay.css";
 
+// UPDATED: Import from centralized state file
 import { snapshot, useSnapshot } from "valtio";
-import { state } from "../../state/Store";
+import { state } from "../../state";
+import { addToCart } from "../../services/CartService";
 
 const Overlay = () => {
   const snap = useSnapshot(state);
+  console.log("👀 Overlay rendered");
+
 const TYPE_OPTIONS = [
   { value: "t_shirt_sport", label: "Sport", icon: <FaTshirt /> },
   { value: "t_shirt_classic", label: "Classic", icon: <FaTshirt /> },
@@ -37,7 +41,7 @@ const TYPE_OPTIONS = [
           className="logo"
         />
         <div className="overlay-icons">
-          {/* ред с back стрелката и избрания надпис */}
+          {/* ред с back стрелката и избраният надпис */}
           <div className="overlay-current">
             <AiOutlineLeftCircle
               size="1.5em"
@@ -130,6 +134,25 @@ const decals = ["react", "three2", "style_mint", "linux"];
 
 export const Customizer: FC = () => {
   const snap = useSnapshot(state);
+  
+  // Handler for adding item to cart
+  const handlePurchase = async () => {
+    console.log("🛒 Purchase button clicked in Overlay");
+    console.log("🛒 Current state:", {
+      selectedColor: state.selectedColor,
+      selectedDecal: state.selectedDecal,
+      selected_type: state.selected_type,
+    });
+    
+    try {
+      await addToCart();
+      alert("Item added to cart successfully! 🎉");
+    } catch (error) {
+      console.error("Failed to add to cart:", error);
+      alert("Failed to add item to cart. Please try again.");
+    }
+  };
+
   return (
     <>
       {" "}
@@ -187,8 +210,8 @@ export const Customizer: FC = () => {
 
           {/* Buttons */}
           <div className="customizer-buttons">
-            <button className="share-btn">
-              PURCHASE
+            <button className="share-btn" onClick={handlePurchase}>
+              ADD TO CART
               <AiOutlineShopping size="1.3em" />
             </button>
 
@@ -197,7 +220,7 @@ export const Customizer: FC = () => {
               <AiOutlineSave size="1.3em" />
             </button>
 
-              <button className="share-btn">
+            <button className="share-btn">
               Add Nft 
              <RiNftFill />
             </button>

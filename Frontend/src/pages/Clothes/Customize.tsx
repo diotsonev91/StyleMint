@@ -1,7 +1,7 @@
 import { ThreeCanvas } from "../../components/three/ThreeCanvas";
 import { ThreeCanvasAdvanced } from "../../components/three/ThreeCanvasAdvanced";
 import Overlay from "../../components/three/Overlay";
-import { state } from "../../state/Store";
+import { state } from "../../state";
 import { useSnapshot } from "valtio";
 
 function Customize() {

@@ -1,0 +1,567 @@
+/* CheckoutPages.css - Styles for Success and Cancel pages */
+
+/* ============================================
+   SHARED CHECKOUT PAGE STYLES
+   ============================================ */
+
+.checkout-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  padding: 1rem;
+}
+
+.checkout-container {
+  max-width: 42rem;
+  width: 100%;
+  padding: 2rem;
+  background: rgba(31, 41, 55, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+  text-align: center;
+}
+
+/* ============================================
+   SUCCESS PAGE ANIMATIONS
+   ============================================ */
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) translateY(-50px);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes checkmark {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.success-icon-container {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 2rem;
+}
+
+.success-icon {
+  width: 6rem;
+  height: 6rem;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  box-shadow: 0 10px 40px rgba(16, 185, 129, 0.4);
+  position: relative;
+}
+
+.success-icon::before,
+.success-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid #10b981;
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+.success-icon::after {
+  animation-delay: 0.5s;
+}
+
+.success-checkmark {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: checkmark 0.6s ease-out 0.3s forwards;
+}
+
+.success-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1rem;
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.success-subtitle {
+  font-size: 1.25rem;
+  color: #d1d5db;
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+/* ============================================
+   CANCEL PAGE ANIMATIONS
+   ============================================ */
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-10px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(10px);
+  }
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.cancel-icon-container {
+  margin-bottom: 2rem;
+}
+
+.cancel-icon {
+  font-size: 6rem;
+  display: inline-block;
+  animation: shake 0.8s ease-out, fadeInScale 0.5s ease-out;
+}
+
+.cancel-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1rem;
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.cancel-subtitle {
+  font-size: 1.125rem;
+  color: #9ca3af;
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+/* ============================================
+   ORDER DETAILS BOX
+   ============================================ */
+
+.order-details {
+  background: rgba(17, 24, 39, 0.6);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+  animation: fadeInUp 0.8s ease-out 0.6s both;
+  border: 1px solid rgba(75, 85, 99, 0.5);
+}
+
+.order-details-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.order-detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.order-detail-row:not(:last-child) {
+  border-bottom: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+.order-detail-label {
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.order-detail-value {
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+.order-detail-value.order-id {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  color: #60a5fa;
+}
+
+.order-detail-row.total {
+  font-size: 1.125rem;
+  padding-top: 1rem;
+  border-top: 2px solid rgba(75, 85, 99, 0.5);
+  margin-top: 0.5rem;
+}
+
+.order-detail-row.total .order-detail-value {
+  color: #10b981;
+  font-size: 1.25rem;
+}
+
+/* ============================================
+   INFO MESSAGES
+   ============================================ */
+
+.info-messages {
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.8s ease-out 0.8s both;
+}
+
+.info-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #9ca3af;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.info-message:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   LOADING STATE
+   ============================================ */
+
+.loading-container {
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 4rem;
+  height: 4rem;
+  border: 4px solid rgba(59, 130, 246, 0.3);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+.loading-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.loading-subtitle {
+  color: #9ca3af;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   ERROR STATE
+   ============================================ */
+
+.error-icon {
+  font-size: 6rem;
+  margin-bottom: 1.5rem;
+  animation: shake 0.8s ease-out;
+}
+
+.error-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.error-subtitle {
+  color: #9ca3af;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+.checkout-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+  animation: fadeInUp 1s ease-out 1s both;
+}
+
+.checkout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  font-size: 1rem;
+}
+
+.checkout-btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.checkout-btn-primary:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+}
+
+.checkout-btn-secondary {
+  background: rgba(75, 85, 99, 0.8);
+  color: white;
+  border: 1px solid rgba(107, 114, 128, 0.5);
+}
+
+.checkout-btn-secondary:hover {
+  background: rgba(55, 65, 81, 0.9);
+  transform: translateY(-2px);
+}
+
+.checkout-btn-block {
+  width: 100%;
+  display: block;
+}
+
+.checkout-btn:active {
+  transform: translateY(0);
+}
+
+/* ============================================
+   FADE IN ANIMATION
+   ============================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 640px) {
+  .checkout-container {
+    padding: 1.5rem;
+  }
+
+  .success-title,
+  .cancel-title,
+  .error-title {
+    font-size: 1.75rem;
+  }
+
+  .success-subtitle,
+  .cancel-subtitle {
+    font-size: 1rem;
+  }
+
+  .success-icon,
+  .cancel-icon {
+    font-size: 4rem;
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .checkout-buttons {
+    flex-direction: column;
+  }
+
+  .checkout-btn {
+    width: 100%;
+  }
+
+  .order-details {
+    padding: 1rem;
+  }
+}
+
+/* ============================================
+   CONFETTI EFFECT (Optional Enhancement)
+   ============================================ */
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.confetti {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  background: #f0f;
+  animation: confetti-fall 3s linear infinite;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ============================================
+   DARK MODE ADJUSTMENTS
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  .checkout-container {
+    background: rgba(31, 41, 55, 0.95);
+  }
+
+  .order-details {
+    background: rgba(17, 24, 39, 0.8);
+  }
+}
+
+/* ============================================
+   PRINT STYLES (For Order Confirmation)
+   ============================================ */
+
+@media print {
+  .checkout-buttons,
+  .loading-spinner {
+    display: none;
+  }
+
+  .checkout-page {
+    background: white;
+  }
+
+  .checkout-container {
+    border: 1px solid #ddd;
+    box-shadow: none;
+  }
+
+  .success-icon::before,
+  .success-icon::after {
+    display: none;
+  }
+}
+
+/* Additional CSS for CheckoutSuccess - Add to CheckoutPages.css */
+
+/* Payment Status Box */
+.payment-status-box {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  margin: 1.5rem 0;
+  border: 2px solid;
+}
+
+.payment-status-box.paid {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: #10b981;
+}
+
+.payment-status-box.pending {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: #fbbf24;
+}
+
+.status-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.payment-status-box.paid .status-icon {
+  background: #10b981;
+  color: white;
+}
+
+.payment-status-box.pending .status-icon {
+  background: #fbbf24;
+  color: #78350f;
+}
+
+.status-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #f3f4f6;
+  margin-bottom: 0.25rem;
+}
+
+.payment-status-box.paid .status-title {
+  color: #10b981;
+}
+
+.payment-status-box.pending .status-title {
+  color: #fbbf24;
+}
+
+.status-desc {
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+/* Order detail row adjustments for longer text */
+.order-detail-row .order-detail-value {
+  text-align: right;
+  max-width: 60%;
+  word-break: break-word;
+}

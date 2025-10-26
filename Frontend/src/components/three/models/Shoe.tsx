@@ -1,7 +1,7 @@
 // src/components/three/models/Shoe.tsx
 import { useFrame } from "@react-three/fiber";
 import { useSnapshot } from "valtio";
-import { state } from "../../../state/Store";
+import { state } from "../../../state";
 import { Decal, useGLTF, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { easing } from "maath";

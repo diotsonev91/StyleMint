@@ -18,6 +18,7 @@ export default function Navbar() {
         <Link to="/catalogue">Catalogue</Link>
         <Link to="/game">GameMint</Link>
         <Link to="/profile">Profile</Link>
+        <Link to="/cart">cart</Link>
         {user ? (
           <>
             <button className="logout-btn" onClick={logout}>

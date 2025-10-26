@@ -1,6 +1,6 @@
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { state } from "../../state/Store";
+import { state } from "../../state";
 import { useCallback } from "react";
 
 const raycaster = new THREE.Raycaster();

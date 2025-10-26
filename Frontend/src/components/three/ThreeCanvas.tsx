@@ -1,7 +1,6 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import { easing } from "maath";
-import "../../styles/tshirt.css";
 import {
   Center,
   useGLTF,
@@ -14,18 +13,28 @@ import {
 import * as THREE from "three";
 import type { ReactNode } from "react";
 import { useSnapshot } from "valtio";
-import { state } from "../../state/Store";
+import { state } from "../../state";
+import type { CartItemState } from "../../state";
 
 type ThreeCanvasProps = {
   position?: [number, number, number];
   fov?: number;
+  isInsideCart?: boolean;
+  cartItem?: CartItemState;
+  tempRotationY?: number;
 };
 
 export const ThreeCanvas = ({
   position = [-1, 0, 2.5],
   fov = 25,
+  isInsideCart = false,
+  cartItem,
+  tempRotationY,
 }: ThreeCanvasProps) => {
   const snap = useSnapshot(state);
+
+  // Decide source of selected_type
+  const type = isInsideCart ? cartItem?.selected_type : snap.selected_type;
 
   return (
     <Canvas
@@ -37,62 +46,80 @@ export const ThreeCanvas = ({
       <ambientLight intensity={0.5} />
       <Environment preset="city" />
 
-      <CameraRig>
+      <CameraRig disabled={isInsideCart} tempRotationY={tempRotationY}>
         <Center>
-          {snap.selected_type === "hoodie" && <Hoodie />}
-          {snap.selected_type === "cap" && <Cap />}
-          {snap.selected_type === "t_shirt_sport" && <Shirt variant="sport" />}
-          {snap.selected_type === "t_shirt_classic" && (
-            <Shirt variant="classic" />
+          {type === "hoodie" && (
+            <Hoodie isInsideCart={isInsideCart} cartItem={cartItem} />
           )}
-          {snap.selected_type === "shoe" && <Shoe />}
-          <Backdrop />
+          {type === "cap" && (
+            <Cap isInsideCart={isInsideCart} cartItem={cartItem} />
+          )}
+          {type === "t_shirt_sport" && (
+            <Shirt variant="sport" isInsideCart={isInsideCart} cartItem={cartItem} />
+          )}
+          {type === "t_shirt_classic" && (
+            <Shirt variant="classic" isInsideCart={isInsideCart} cartItem={cartItem} />
+          )}
+          {type === "shoe" && (
+            <Shoe isInsideCart={isInsideCart} cartItem={cartItem} />
+          )}
+          <Backdrop isInsideCart={isInsideCart} cartItem={cartItem} />
         </Center>
       </CameraRig>
     </Canvas>
   );
 };
 
+// =====================================================
+// SHIRT COMPONENT
+// =====================================================
 
-function Shirt({ variant, ...props }: { variant: "sport" | "classic" }) {
+type ShirtProps = {
+  variant: "sport" | "classic";
+  isInsideCart?: boolean;
+  cartItem?: CartItemState;
+};
+
+function Shirt({ variant, isInsideCart = false, cartItem, ...props }: ShirtProps) {
   const path =
-    "sport" == variant
+    variant === "sport"
       ? "/models/shirt_baked.glb"
       : "/models/shirt_classic.glb";
   const { nodes, materials } = useGLTF(path) as any;
 
   const snap = useSnapshot(state);
 
+  // Use cart item data if in cart, otherwise use global state
+  const selectedColor = isInsideCart ? cartItem?.selectedColor : snap.selectedColor;
+  const selectedDecal = isInsideCart ? cartItem?.selectedDecal : snap.selectedDecal;
+
   const isClassic = variant === "classic";
 
-  const texture = useTexture(`/images/${snap.selectedDecal}_thumb.png`);
+  const texture = useTexture(`/images/${selectedDecal}_thumb.png`);
   texture.anisotropy = 16;
   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.encoding = THREE.sRGBEncoding;
 
   const baseMat =
-    materials.lambert1 ?? // ако го има
-    materials["Material238904.005"] ?? // ако това е името
-    Object.values(materials)[0]; // иначе вземи първия
+    materials.lambert1 ??
+    materials["Material238904.005"] ??
+    Object.values(materials)[0];
 
   useFrame((_, delta) => {
-    easing.dampC(baseMat.color, snap.selectedColor, 0.25, delta);
+    easing.dampC(baseMat.color, selectedColor, 0.25, delta);
   });
 
-  // -------- CONFIGS -------- //
   const geometry = isClassic
-    ? nodes.Cloth.geometry // новата classic geometry
-    : nodes.T_Shirt_male.geometry; // старият "baked" модел
+    ? nodes.Cloth.geometry
+    : nodes.T_Shirt_male.geometry;
 
   const rotation = isClassic
     ? [Math.PI / 2, 0, 0.175]
     : [Math.PI / 2, 0, 0.175];
 
   const decalPos = isClassic ? [-0.46, 0.1, -0.2] : [-0.435, 0.1, -0.3];
-
   const decalScale = isClassic ? 0.09 : 0.12;
 
-  // ---------- RENDER ---------- //
   return (
     <group {...props} dispose={null}>
       <mesh
@@ -101,12 +128,12 @@ function Shirt({ variant, ...props }: { variant: "sport" | "classic" }) {
         geometry={geometry}
         material={baseMat}
         position={[0.419, 0, 0]}
-        rotation={rotation}
+        rotation={rotation as [number, number, number]}
       >
         <Decal
           debug
-          position={decalPos} // ✅ push toward shirt surface
-          rotation={[-Math.PI / 2, 0, 0]} // still good for orientation
+          position={decalPos as [number, number, number]}
+          rotation={[-Math.PI / 2, 0, 0]}
           scale={decalScale}
           map={texture}
           depthTest
@@ -119,41 +146,46 @@ function Shirt({ variant, ...props }: { variant: "sport" | "classic" }) {
   );
 }
 
-function Hoodie(props: any) {
+// =====================================================
+// HOODIE COMPONENT
+// =====================================================
+
+type HoodieProps = {
+  isInsideCart?: boolean;
+  cartItem?: CartItemState;
+};
+
+function Hoodie({ isInsideCart = false, cartItem, ...props }: HoodieProps) {
   const { nodes, materials } = useGLTF("/models/hoodie.glb") as unknown as {
     nodes: { [key: string]: THREE.Mesh };
     materials: { [key: string]: THREE.MeshStandardMaterial };
   };
 
-  for (const [key, val] of Object.entries(nodes)) {
-    console.log(key, val.type, val.geometry);
-  }
   const snap = useSnapshot(state);
 
-  // Load texture and set anisotropy properly
-  const texture = useTexture(`/images/${snap.selectedDecal}_thumb.png`);
+  const selectedColor = isInsideCart ? cartItem?.selectedColor : snap.selectedColor;
+  const selectedDecal = isInsideCart ? cartItem?.selectedDecal : snap.selectedDecal;
+
+  const texture = useTexture(`/images/${selectedDecal}_thumb.png`);
   texture.anisotropy = 16;
   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.encoding = THREE.sRGBEncoding;
 
   useFrame((_, delta) => {
-    // easing.dampC(materials.lambert1.color, snap.selectedColor, 0.25, delta);
     easing.dampC(
       materials["Material238904.005"].color,
-      snap.selectedColor,
+      selectedColor,
       0.25,
       delta
     );
   });
-  //materia of t_shirt : easing.dampC(materials.lambert1.color, snap.selectedColor, 0.25, delta);
-  //material of hoodie : easing.dampC(materials["Material238904.005"].color, snap.selectedColor, 0.25, delta);
+
   return (
     <group {...props} dispose={null}>
       <mesh
         castShadow
         receiveShadow
         geometry={nodes.Object_2.geometry}
-        // material={materials.lambert1}
         material={materials["Material238904.005"]}
         position={[0.419, 0.09, 0.0]}
         rotation={[Math.PI / 2, 0, 0]}
@@ -175,28 +207,35 @@ function Hoodie(props: any) {
   );
 }
 
-export function Cap(props: any) {
+// =====================================================
+// CAP COMPONENT
+// =====================================================
+
+type CapProps = {
+  isInsideCart?: boolean;
+  cartItem?: CartItemState;
+};
+
+function Cap({ isInsideCart = false, cartItem, ...props }: CapProps) {
   const { nodes, materials } = useGLTF("/models/cap.glb") as unknown as {
     nodes: { [key: string]: THREE.Mesh };
     materials: { [key: string]: THREE.MeshStandardMaterial };
   };
 
-  // Виж как се казват mesh и material
-  console.log("=== NODES ===", nodes);
-  console.log("=== MATERIALS ===", materials);
-
   const snap = useSnapshot(state);
 
-  const texture = useTexture(`/images/${snap.selectedDecal}_thumb.png`);
+  const selectedColor = isInsideCart ? cartItem?.selectedColor : snap.selectedColor;
+  const selectedDecal = isInsideCart ? cartItem?.selectedDecal : snap.selectedDecal;
+
+  const texture = useTexture(`/images/${selectedDecal}_thumb.png`);
   texture.anisotropy = 16;
   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.encoding = THREE.sRGBEncoding;
 
-  // смени "SomeMaterialName" с реалното име от логовете
   const baseMat = materials["CapMaterial1"] ?? Object.values(materials)[0];
 
   useFrame((_, delta) => {
-    easing.dampC(baseMat.color, snap.selectedColor, 0.25, delta);
+    easing.dampC(baseMat.color, selectedColor, 0.25, delta);
   });
 
   return (
@@ -206,12 +245,11 @@ export function Cap(props: any) {
         receiveShadow
         geometry={nodes.Cap001.geometry}
         material={materials.CapMaterial1}
-        rotation={[-Math.PI / 2, -Math.PI * 2.2, 0]}
         rotation={[0, 0, 0]}
         scale={1.5}
       >
         <Decal
-          position={[0, 0.12, 0.12]} // временно
+          position={[0, 0.12, 0.12]}
           rotation={[0, 0, 0]}
           scale={0.09}
           map={texture}
@@ -225,16 +263,75 @@ export function Cap(props: any) {
   );
 }
 
-function Backdrop() {
+// =====================================================
+// SHOE COMPONENT
+// =====================================================
+
+type ShoeProps = {
+  isInsideCart?: boolean;
+  cartItem?: CartItemState;
+};
+
+function Shoe({ isInsideCart = false, cartItem, ...props }: ShoeProps) {
+  const { nodes, materials } = useGLTF("/models/shoe.glb") as unknown as {
+    nodes: any;
+    materials: any;
+  };
+
+  const snap = useSnapshot(state);
+
+  const selectedColor = isInsideCart ? cartItem?.selectedColor : snap.selectedColor;
+  const selectedDecal = isInsideCart ? cartItem?.selectedDecal : snap.selectedDecal;
+
+  const texture = useTexture(`/images/${selectedDecal}_thumb.png`);
+  texture.anisotropy = 16;
+  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.encoding = THREE.sRGBEncoding;
+
+  const baseMat = materials["Main Body Material"];
+
+  useFrame((_, delta) => {
+    easing.dampC(baseMat.color, selectedColor, 0.25, delta);
+  });
+
+  return (
+    <group {...props} dispose={null} scale={1.2}>
+      <mesh geometry={nodes.Plane040.geometry} material={materials["Sole Material"]} castShadow />
+      <mesh geometry={nodes.Plane040_1.geometry} material={materials["Main Body Material"]} castShadow />
+      <mesh geometry={nodes.Plane040_2.geometry} material={baseMat} castShadow>
+        <Decal
+          position={[0, 0, 0.1]}
+          rotation={[0, 0, 0]}
+          scale={0.3}
+          map={texture}
+        />
+      </mesh>
+      <mesh geometry={nodes.Plane040_3.geometry} material={materials["Insole Material right"]} castShadow />
+    </group>
+  );
+}
+
+// =====================================================
+// BACKDROP COMPONENT
+// =====================================================
+
+type BackdropProps = {
+  isInsideCart?: boolean;
+  cartItem?: CartItemState;
+};
+
+function Backdrop({ isInsideCart = false, cartItem }: BackdropProps) {
   const shadows = useRef<any>(null!);
-  const snap = useSnapshot(state); // ✅ from valtio store
+  const snap = useSnapshot(state);
+
+  const selectedColor = isInsideCart ? cartItem?.selectedColor : snap.selectedColor;
 
   useFrame((_, delta) => {
     if (!shadows.current) return;
 
     const material = shadows.current.getMesh()
       .material as THREE.MeshStandardMaterial;
-    easing.dampC(material.color, snap.selectedColor, 0.25, delta);
+    easing.dampC(material.color, selectedColor, 0.25, delta);
   });
 
   return (
@@ -265,64 +362,42 @@ function Backdrop() {
   );
 }
 
-function CameraRig({ children }: { children: ReactNode }) {
+// =====================================================
+// CAMERA RIG
+// =====================================================
+
+type CameraRigProps = {
+  children: ReactNode;
+  disabled?: boolean;
+  tempRotationY?: number;
+};
+
+function CameraRig({ children, disabled = false, tempRotationY }: CameraRigProps) {
   const group = useRef<THREE.Group>(null!);
 
   useFrame((state, delta) => {
-    easing.dampE(
-      group.current.rotation,
-      [state.pointer.y / 10, -state.pointer.x / 5, 0],
-      0.25,
-      delta
-    );
+    if (disabled) {
+      // In cart: use manual rotation from slider
+      if (tempRotationY !== undefined) {
+        group.current.rotation.y = (tempRotationY * Math.PI) / 180;
+      }
+    } else {
+      // Normal mode: follow pointer
+      easing.dampE(
+        group.current.rotation,
+        [state.pointer.y / 10, -state.pointer.x / 5, 0],
+        0.25,
+        delta
+      );
+    }
   });
+
   return <group ref={group}>{children}</group>;
 }
 
-export function Shoe(props: any) {
-  const { nodes, materials } = useGLTF("/models/shoe.glb") as unknown as {
-    nodes: any;
-    materials: any;
-  };
-
-  const snap = useSnapshot(state);
-
-  const texture = useTexture(`/images/${snap.selectedDecal}_thumb.png`);
-  texture.anisotropy = 16;
-  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.encoding = THREE.sRGBEncoding;
-
-  // Вземи материала на mesh-а с decal-а
-  const baseMat = materials["Main Body Material"]; // или "Main Body Material" - в зависимост кой искаш да сменя цвета
-
-  useFrame((_, delta) => {
-    easing.dampC(baseMat.color, snap.selectedColor, 0.25, delta);
-  });
-
-  return (
-    <group {...props} dispose={null} scale={1.2}>
-      {/* Render each mesh part */}
-      <mesh geometry={nodes.Plane040.geometry} material={materials["Sole Material"]} castShadow />
-      <mesh geometry={nodes.Plane040_1.geometry} material={materials["Main Body Material"]} castShadow />
-      
-      {/* Mesh-ът с decal-а - сега използва baseMat, който се анимира */}
-      <mesh geometry={nodes.Plane040_2.geometry} material={baseMat} castShadow>
-         <Decal
-          position={[0, 0, 0.1]}
-          rotation={[0, 0, 0]}
-          scale={0.3}
-          map={texture}
-        />
-      </mesh>
-      
-      <mesh geometry={nodes.Plane040_3.geometry} material={materials["Insole Material right"]} castShadow />
-    
-    </group>
-  );
-}
-
+// Preload models
 useGLTF.preload("/models/shoe.glb");
-useGLTF.preload("/models/hoodie_test.glb");
+useGLTF.preload("/models/hoodie.glb");
 useGLTF.preload("/models/shirt_classic.glb");
 useGLTF.preload("/models/shirt_baked.glb");
-useGLTF.preload("/models/shirt_cap.glb");
+useGLTF.preload("/models/cap.glb");
