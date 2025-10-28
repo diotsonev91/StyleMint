@@ -1,45 +1,44 @@
 package bg.softuni.stylemint.order.model;
 
-import bg.softuni.stylemint.product.fashion.model.FashionProduct;
-import bg.softuni.stylemint.product.tech.model.TechProduct;
-import bg.softuni.stylemint.customization.model.Customization;
+import bg.softuni.stylemint.order.enums.ProductType;
 import jakarta.persistence.*;
 import lombok.*;
-import java.math.BigDecimal;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "order_items")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@ToString(exclude = {"order", "fashionProduct", "techProduct"})
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor @Builder
 public class OrderItem {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false)
+    @JoinColumn(name = "order_id", nullable = false, columnDefinition = "BINARY(16)")
     private Order order;
 
-    // Either a fashion or tech product (only one non-null per row)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fashion_product_id")
-    private FashionProduct fashionProduct;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "product_type", nullable = false, length = 16)
+    private ProductType productType; // CLOTHES/SAMPLE/PACK
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tech_product_id")
-    private TechProduct techProduct;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customization_id")
-    private Customization customization; // optional link for customized shirts
+    @Column(name = "product_id", columnDefinition = "BINARY(16)", nullable = false)
+    private UUID productId; // ClothDesign.id / AudioSample.id / SamplePack.id
 
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(nullable = false)
-    private BigDecimal price;
+    @Column(name = "price_per_unit", nullable = false)
+    private Double pricePerUnit; // freeze at time of purchase
+
+    @Lob
+    @Column(name = "customization_json", columnDefinition = "json")
+    private String customizationJson; // only for CLOTHES, null otherwise
+
+    @CreationTimestamp
+    private OffsetDateTime createdAt;
 }

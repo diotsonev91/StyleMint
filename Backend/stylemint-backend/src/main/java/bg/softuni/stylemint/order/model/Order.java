@@ -1,38 +1,34 @@
 package bg.softuni.stylemint.order.model;
 
-import bg.softuni.stylemint.user.model.User;
+import bg.softuni.stylemint.order.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "orders")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@ToString(exclude = {"items", "user"})
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor @Builder
 public class Order {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(name = "user_id", columnDefinition = "BINARY(16)", nullable = false)
+    private UUID userId;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> items;
-
-    @Column(nullable = false)
-    private BigDecimal totalPrice;
+    @Lob
+    @Column(name = "details_json", columnDefinition = "json", nullable = false)
+    private String detailsJson;  // OrderDetails from frontend
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private OrderStatus status = OrderStatus.PENDING;
+    @Column(nullable = false, length = 32)
+    private OrderStatus status;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @CreationTimestamp
+    private OffsetDateTime createdAt;
 }
