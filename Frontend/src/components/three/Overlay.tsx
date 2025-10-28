@@ -1,7 +1,5 @@
 import logo from "../../assets/logo.png";
 import {
-  AiOutlineAlipayCircle,
-  AiOutlineBars,
   AiOutlineHighlight,
   AiOutlineLeftCircle,
   AiOutlineShopping,
@@ -16,7 +14,7 @@ import "../../styles/overlay.css";
 // UPDATED: Import from centralized state file
 import { snapshot, useSnapshot } from "valtio";
 import { state } from "../../state";
-import { addToCart } from "../../services/CartService";
+import { addClothToCart } from "../../services/CartService";
 
 const Overlay = () => {
   const snap = useSnapshot(state);
@@ -145,7 +143,7 @@ export const Customizer: FC = () => {
     });
     
     try {
-      await addToCart();
+      await addClothToCart();
       alert("Item added to cart successfully! 🎉");
     } catch (error) {
       console.error("Failed to add to cart:", error);

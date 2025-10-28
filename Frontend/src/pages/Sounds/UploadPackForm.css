@@ -758,3 +758,200 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Add these styles to your UploadPackForm.css */
+
+/* ============================================
+   SAMPLE PLAY BUTTON
+   ============================================ */
+
+.sample-item-edit {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.sample-item-edit:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.sample-play-button {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.sample-play-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sample-play-button:hover::before {
+  opacity: 1;
+}
+
+.sample-play-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+}
+
+.sample-play-button:active {
+  transform: scale(0.95);
+}
+
+.sample-play-button.playing {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  animation: pulse 2s infinite;
+}
+
+.sample-play-button.playing::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(239, 68, 68, 0.5);
+  animation: ripple 1.5s infinite;
+}
+
+.sample-play-button svg {
+  width: 20px;
+  height: 20px;
+  color: white;
+  position: relative;
+  z-index: 1;
+}
+
+.sample-play-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Play button animations */
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Adjust sample grid to accommodate play button */
+.sample-edit-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+/* Sample number badge */
+.sample-number {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.2);
+  border: 2px solid rgba(139, 92, 246, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: #8b5cf6;
+}
+
+/* Remove sample button */
+.remove-sample {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.remove-sample:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: scale(1.05);
+}
+
+.remove-sample svg {
+  width: 20px;
+  height: 20px;
+  color: #ef4444;
+}
+
+.remove-sample:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .sample-edit-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .sample-item-edit {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sample-play-button {
+    align-self: center;
+  }
+
+  .sample-edit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sample-number {
+    align-self: center;
+  }
+
+  .remove-sample {
+    align-self: center;
+  }
+}

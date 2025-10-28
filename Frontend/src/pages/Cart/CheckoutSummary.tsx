@@ -1,10 +1,39 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSnapshot } from "valtio";
-import { cartState } from "../../state";
+import { cartState, type CartItemState, type ClothesCartItem, type SampleCartItem, type PackCartItem } from "../../state";
 import { ThreeCanvasAdvanced } from "../../components/three/ThreeCanvasAdvanced";
 import type { OrderDetails } from "./CheckoutDetails";
 import "./CheckoutSummary.css";
+
+// Type helper to handle readonly types from useSnapshot
+type DeepReadonly<T> = T extends (infer R)[]
+  ? ReadonlyArray<DeepReadonly<R>>
+  : T extends object
+  ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
+  : T;
+
+type ReadonlyCartItem = DeepReadonly<CartItemState>;
+
+// Helper function to get item price
+const getItemPrice = (item: ReadonlyCartItem): number => {
+  switch (item.type) {
+    case 'clothes':
+      return 29.99;
+    case 'sample':
+      return item.price;
+    case 'pack':
+      return item.price;
+    default:
+      return 0;
+  }
+};
+
+// Helper function to get item total (price * quantity)
+const getItemTotal = (item: ReadonlyCartItem): number => {
+  const quantity = item.quantity || 1;
+  return getItemPrice(item) * quantity;
+};
 
 export function CheckoutSummary() {
   const navigate = useNavigate();
@@ -12,25 +41,24 @@ export function CheckoutSummary() {
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-useEffect(() => {
-  // Load order details
-  const savedDetails = localStorage.getItem("orderDetails");
-  if (!savedDetails) {
-    navigate("/checkout/details");
-    return;
-  }
-  setOrderDetails(JSON.parse(savedDetails));
+  useEffect(() => {
+    // Load order details
+    const savedDetails = localStorage.getItem("orderDetails");
+    if (!savedDetails) {
+      navigate("/checkout/details");
+      return;
+    }
+    setOrderDetails(JSON.parse(savedDetails));
 
-  // If cart is empty, but NOT when already going to success
-  if (snap.items.length === 0 && window.location.pathname !== "/checkout/success") {
-    navigate("/cart");
-  }
-}, [navigate, snap.items.length]);
+    // If cart is empty, but NOT when already going to success
+    if (snap.items.length === 0 && window.location.pathname !== "/checkout/success") {
+      navigate("/cart");
+    }
+  }, [navigate, snap.items.length]);
 
-
+  // Calculate totals based on all item types
   const subtotal = snap.items.reduce((sum, item) => {
-    const quantity = (item as any).quantity || 1;
-    return sum + (29.99 * quantity);
+    return sum + getItemTotal(item);
   }, 0);
 
   const shipping = 9.99;
@@ -43,16 +71,46 @@ useEffect(() => {
     setIsProcessing(true);
 
     try {
-      // Prepare order data
+      // Prepare order data with different item structures
       const orderData = {
-        items: snap.items.map(item => ({
-          id: item.id,
-          type: item.selected_type,
-          color: item.selectedColor,
-          decal: item.selectedDecal,
-          quantity: (item as any).quantity || 1,
-          price: 29.99,
-        })),
+        items: snap.items.map(item => {
+          const baseItem = {
+            id: item.id,
+            type: item.type,
+            quantity: item.quantity || 1,
+            price: getItemPrice(item),
+          };
+
+          // Add type-specific fields
+          switch (item.type) {
+            case 'clothes':
+              return {
+                ...baseItem,
+                selected_type: item.selected_type,
+                selectedColor: item.selectedColor,
+                selectedDecal: item.selectedDecal,
+              };
+            case 'sample':
+              return {
+                ...baseItem,
+                name: item.name,
+                artist: item.artist,
+                genre: item.genre,
+                bpm: item.bpm,
+                key: item.key,
+              };
+            case 'pack':
+              return {
+                ...baseItem,
+                name: item.name,
+                artist: item.artist,
+                description: item.description,
+                sampleCount: item.sampleCount,
+              };
+            default:
+              return baseItem;
+          }
+        }),
         orderDetails,
         subtotal,
         shipping,
@@ -147,28 +205,85 @@ useEffect(() => {
             <h2 className="summary-section-title">Order Items</h2>
             
             {snap.items.map((item) => {
-              const quantity = (item as any).quantity || 1;
-              const itemTotal = 29.99 * quantity;
+              const quantity = item.quantity || 1;
+              const itemTotal = getItemTotal(item);
               
               return (
                 <div key={item.id} className="summary-item-card">
-                  <div className="summary-item-preview">
-                    <ThreeCanvasAdvanced 
-                      isInsideCart 
-                      cartItem={item as any} 
-                      tempRotationY={item.rotationY} 
-                    />
-                  </div>
+                  {/* Render different previews based on item type */}
+                  {item.type === 'clothes' ? (
+                    <div className="summary-item-preview">
+                      <ThreeCanvasAdvanced 
+                        isInsideCart 
+                        cartItem={item as any as ClothesCartItem} 
+                        tempRotationY={item.rotationY} 
+                      />
+                    </div>
+                  ) : item.type === 'sample' ? (
+                    <div className="summary-item-preview summary-item-audio">
+                      <div className="audio-icon">🎵</div>
+                      {item.coverImage && (
+                        <img 
+                          src={item.coverImage} 
+                          alt={item.name} 
+                          className="audio-cover"
+                        />
+                      )}
+                    </div>
+                  ) : item.type === 'pack' ? (
+                    <div className="summary-item-preview summary-item-pack">
+                      <div className="pack-icon">📦</div>
+                      {item.coverImage && (
+                        <img 
+                          src={item.coverImage} 
+                          alt={item.name} 
+                          className="pack-cover"
+                        />
+                      )}
+                      {item.sampleCount && (
+                        <div className="pack-badge">{item.sampleCount} samples</div>
+                      )}
+                    </div>
+                  ) : null}
                   
                   <div className="summary-item-info">
-                    <h3 className="summary-item-name">
-                      {item.selected_type.replace(/_/g, ' ').toUpperCase()}
-                    </h3>
-                    <div className="summary-item-details">
-                      <span>Color: {item.selectedColor}</span>
-                      <span>Decal: {item.selectedDecal}</span>
-                      <span>Quantity: {quantity}</span>
-                    </div>
+                    {/* Render different info based on item type */}
+                    {item.type === 'clothes' ? (
+                      <>
+                        <h3 className="summary-item-name">
+                          {item.selected_type.replace(/_/g, ' ').toUpperCase()}
+                        </h3>
+                        <div className="summary-item-details">
+                          <span>Color: {item.selectedColor}</span>
+                          <span>Decal: {item.selectedDecal}</span>
+                          <span>Quantity: {quantity}</span>
+                        </div>
+                      </>
+                    ) : item.type === 'sample' ? (
+                      <>
+                        <h3 className="summary-item-name">{item.name}</h3>
+                        <div className="summary-item-details">
+                          {item.artist && <span>Artist: {item.artist}</span>}
+                          {item.genre && <span>Genre: {item.genre}</span>}
+                          {item.bpm && <span>BPM: {item.bpm}</span>}
+                          {item.key && <span>Key: {item.key}</span>}
+                          <span>Quantity: {quantity}</span>
+                        </div>
+                      </>
+                    ) : item.type === 'pack' ? (
+                      <>
+                        <h3 className="summary-item-name">{item.name}</h3>
+                        <div className="summary-item-details">
+                          {item.artist && <span>Artist: {item.artist}</span>}
+                          {item.sampleCount && <span>{item.sampleCount} samples included</span>}
+                          {item.genres && item.genres.length > 0 && (
+                            <span>Genres: {item.genres.join(', ')}</span>
+                          )}
+                          <span>Quantity: {quantity}</span>
+                        </div>
+                      </>
+                    ) : null}
+                    
                     <div className="summary-item-price">
                       ${itemTotal.toFixed(2)}
                     </div>

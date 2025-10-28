@@ -1,5 +1,6 @@
 // src/components/UploadSampleForm.tsx
 import React, { useState } from 'react';
+import { uploadService } from '../../services/audioService';
 import './UploadSampleForm.css';
 
 const UploadSampleForm: React.FC = () => {
@@ -12,6 +13,9 @@ const UploadSampleForm: React.FC = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const availableGenres = [
     "Afro House",
@@ -36,6 +40,7 @@ const UploadSampleForm: React.FC = () => {
       // Auto-fill sample name from filename
       const nameWithoutExtension = file.name.replace(/\.[^/.]+$/, "");
       setSampleName(nameWithoutExtension);
+      setUploadError(null);
     }
   };
 
@@ -54,38 +59,51 @@ const UploadSampleForm: React.FC = () => {
     e.preventDefault();
 
     if (!sampleFile) {
-      alert('Please select an audio file');
+      setUploadError('Please select an audio file');
+      return;
+    }
+
+    if (!genre) {
+      setUploadError('Please select a genre');
       return;
     }
 
     setIsUploading(true);
-
-    const formData = new FormData();
-    formData.append('file', sampleFile);
-    formData.append('name', sampleName);
-    formData.append('price', price);
-    if (bpm) formData.append('bpm', bpm);
-    if (key) formData.append('key', key);
-    if (genre) formData.append('genre', genre);
-    formData.append('tags', JSON.stringify(tags));
+    setUploadError(null);
+    setUploadSuccess(false);
+    setUploadProgress(0);
 
     try {
-      const response = await fetch('http://localhost:8080/api/samples/upload', {
-        method: 'POST',
-        body: formData
-      });
+      // Use upload service with progress tracking
+      const response = await uploadService.uploadSampleWithProgress(
+        {
+          file: sampleFile,
+          name: sampleName,
+          price: price,
+          bpm: bpm,
+          key: key,
+          genre: genre,
+          tags: tags
+        },
+        (progress) => {
+          setUploadProgress(Math.round(progress));
+        }
+      );
 
-      if (response.ok) {
-        alert('Sample uploaded successfully!');
-        resetForm();
+      if (response.success) {
+        setUploadSuccess(true);
+        setTimeout(() => {
+          resetForm();
+        }, 2000);
       } else {
-        alert('Upload failed. Please try again.');
+        setUploadError(response.error || 'Upload failed. Please try again.');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Upload error. Please try again.');
+      setUploadError('An unexpected error occurred. Please try again.');
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -98,6 +116,9 @@ const UploadSampleForm: React.FC = () => {
     setGenre('');
     setTags([]);
     setTagInput('');
+    setUploadError(null);
+    setUploadSuccess(false);
+    setUploadProgress(0);
   };
 
   return (
@@ -124,6 +145,26 @@ const UploadSampleForm: React.FC = () => {
             Share your individual sound with producers worldwide
           </p>
         </header>
+
+        {/* Success Message */}
+        {uploadSuccess && (
+          <div className="alert alert-success">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Sample uploaded successfully!</span>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {uploadError && (
+          <div className="alert alert-error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{uploadError}</span>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="upload-form-single">
@@ -153,6 +194,7 @@ const UploadSampleForm: React.FC = () => {
                   type="button"
                   className="change-file-btn"
                   onClick={() => setSampleFile(null)}
+                  disabled={isUploading}
                 >
                   Change File
                 </button>
@@ -165,6 +207,7 @@ const UploadSampleForm: React.FC = () => {
                   onChange={handleFileChange}
                   hidden
                   required
+                  disabled={isUploading}
                 />
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -174,6 +217,19 @@ const UploadSampleForm: React.FC = () => {
               </label>
             )}
           </div>
+
+          {/* Upload Progress */}
+          {isUploading && uploadProgress > 0 && (
+            <div className="upload-progress">
+              <div className="progress-bar">
+                <div 
+                  className="progress-fill" 
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+              <span className="progress-text">{uploadProgress}% uploaded</span>
+            </div>
+          )}
 
           {/* Sample Information */}
           <div className="form-grid">
@@ -185,6 +241,7 @@ const UploadSampleForm: React.FC = () => {
                 onChange={(e) => setSampleName(e.target.value)}
                 placeholder="e.g. Deep Bass One Shot"
                 required
+                disabled={isUploading}
               />
             </div>
 
@@ -200,6 +257,7 @@ const UploadSampleForm: React.FC = () => {
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="4.99"
                   required
+                  disabled={isUploading}
                 />
               </div>
             </div>
@@ -213,12 +271,17 @@ const UploadSampleForm: React.FC = () => {
                 value={bpm}
                 onChange={(e) => setBpm(e.target.value)}
                 placeholder="120"
+                disabled={isUploading}
               />
             </div>
 
             <div className="form-group">
               <label>Key (Optional)</label>
-              <select value={key} onChange={(e) => setKey(e.target.value)}>
+              <select 
+                value={key} 
+                onChange={(e) => setKey(e.target.value)}
+                disabled={isUploading}
+              >
                 <option value="">Select key</option>
                 {availableKeys.map(k => (
                   <option key={k} value={k}>{k}</option>
@@ -232,6 +295,7 @@ const UploadSampleForm: React.FC = () => {
                 value={genre} 
                 onChange={(e) => setGenre(e.target.value)}
                 required
+                disabled={isUploading}
               >
                 <option value="">Select genre</option>
                 {availableGenres.map(g => (
@@ -251,8 +315,14 @@ const UploadSampleForm: React.FC = () => {
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                 placeholder="Add tags (e.g. Bass, Loop, One-Shot)"
+                disabled={isUploading}
               />
-              <button type="button" onClick={addTag} className="add-tag-btn">
+              <button 
+                type="button" 
+                onClick={addTag} 
+                className="add-tag-btn"
+                disabled={isUploading}
+              >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
@@ -264,7 +334,11 @@ const UploadSampleForm: React.FC = () => {
                 {tags.map(tag => (
                   <span key={tag} className="tag">
                     {tag}
-                    <button type="button" onClick={() => removeTag(tag)}>×</button>
+                    <button 
+                      type="button" 
+                      onClick={() => removeTag(tag)}
+                      disabled={isUploading}
+                    >×</button>
                   </span>
                 ))}
               </div>
@@ -280,7 +354,7 @@ const UploadSampleForm: React.FC = () => {
             {isUploading ? (
               <>
                 <div className="spinner"></div>
-                Uploading...
+                Uploading... {uploadProgress}%
               </>
             ) : (
               <>

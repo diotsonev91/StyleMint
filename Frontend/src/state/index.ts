@@ -4,3 +4,8 @@
 export { cartState } from "./CartItemState";
 export type { CartItemState } from "./CartItemState";
 export { state } from "./Store";
+export type {
+  ClothesCartItem,
+  SampleCartItem,
+  PackCartItem,
+} from "./CartItemState";

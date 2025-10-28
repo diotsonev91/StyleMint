@@ -4,11 +4,11 @@ import { state } from "../../../state";
 import { Decal, useGLTF, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { easing } from "maath";
-import type { CartItemState } from "../../../state";
+import type { ClothesCartItem } from "../../../state";
 import { useState } from "react";
 type HoodieProps = {
   advanced?: boolean;
-  cartItem?: CartItemState;
+  cartItem?: ClothesCartItem;
   rotationYOverride?: number;
 };
 

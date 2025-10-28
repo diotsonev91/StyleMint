@@ -1,18 +1,22 @@
 // src/types/index.ts
 
-export interface Sample {
-  id: number;
+export interface AudioSample {
+  id: string;
   name: string;
-  duration: string;
+  audioUrl: string;
+  duration?: number;
+  artist?: string;
   bpm?: number;
   key?: string;
-  genre: string;
-  audioUrl: string;
-  waveformUrl?: string;
+  genre?: string;
+  price?: number;
+  packId?: number;
+  instrument?: string;
+  sampleType?: string; // loop or oneshot
 }
 
 export interface SamplePack {
-  id: number;
+  id: string;
   title: string;
   artist: string;
   coverImage: string;
@@ -22,20 +26,37 @@ export interface SamplePack {
   description: string;
   genres: string[];
   tags: string[];
-  samples: Sample[];
+  samples: SamplesFromPackDTO[];
   rating?: number;
   downloads?: number;
   releaseDate?: string;
 }
 
+export type SamplesFromPackDTO = {
+  id: string;
+  name: string;
+  duration: number;
+  bpm?: number;
+  key?: string;
+  genre?: string;
+  instrument?: string;
+  sampleType: "loop" | "oneshot";
+  audioUrl: string;
+  packName?: string;
+  packId?: string;
+  artist: string;
+  price: number;
+};
+
+
 export interface CartItem {
-  packId: number;
+  packId: string;
   pack: SamplePack;
   quantity: number;
 }
 
 export interface User {
-  id: number;
+  id: string;
   username: string;
   email: string;
   avatar?: string;

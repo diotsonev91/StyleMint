@@ -5,7 +5,7 @@ import Login from "../pages/User/Login";
 import Register from "../pages/User/Register";
 import Customize from "../pages/Clothes/Customize"
 import Catalogue from "../pages/Clothes/Catalogue";
-import SamplesPage from "../pages/Sounds/SamplesPage";
+import SamplePackDetailledPage from "../pages/Sounds/SamplePackDetailledPage";
 import AllSamplesPage from "../pages/Sounds/AllSamplesPage";
 import ChooseYourSoundsPage from "../pages/Sounds/ChooseYourSoundsPage";
 import SamplePacksPage from "../pages/Sounds/SamplePacksPage";
@@ -30,7 +30,7 @@ export const AppRoutes: React.FC = () => {
       <Route path='/sounds' element={<ChooseYourSoundsPage/>} />
       <Route path="/sample-packs" element={<SamplePacksPage />} />
       <Route path="/samples" element={<AllSamplesPage />} />
-      <Route path="/pack/:id" element={<SamplesPage />} />
+      <Route path="/pack/:packId" element={<SamplePackDetailledPage />} />
       <Route path="/upload-pack" element={<UploadPackForm />} />
       <Route path="/upload-sample" element={<UploadSampleForm />} />
       <Route path="/game" element={<GodotGameEmbed />} />

@@ -1,14 +1,19 @@
-// src/components/SamplePacksPage.tsx
+// src/components/SamplePacksPage.tsx - Using mockPacks data
 import React, { useState, useEffect } from 'react';
+import { useSnapshot } from 'valtio';
+import { cartState } from '../../state/CartItemState';
 import { SamplePack } from '../../types';
 import PacksFilterSidebar from '../../components/sounds/PacksFilterSidebar';
 import PackCard from '../../components/sounds/PackCard';
 import './SamplePacksPage.css';
 import { useNavigate } from 'react-router-dom';
+import { addSamplePackToCart } from '../../services/CartService';
+import mockPacks from '../../mock/mockPacks'; // ✅ Import mock data
 
 const SamplePacksPage: React.FC = () => {
-
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const cartSnap = useSnapshot(cartState);
+  
   const [allPacks, setAllPacks] = useState<SamplePack[]>([]);
   const [selectedAuthor, setSelectedAuthor] = useState('');
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
@@ -16,119 +21,15 @@ const SamplePacksPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // Mock data - replace with API call
+  // ✅ Load from mockPacks instead of inline data
   useEffect(() => {
-    const mockPacks: SamplePack[] = [
-      {
-        id: 1,
-        title: "Essential Afro House",
-        artist: "Toolroom Records",
-        coverImage: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=800&q=80",
-        price: 29.99,
-        sampleCount: 245,
-        totalSize: "1.2 GB",
-        description: "Dive deep into the vibrant world of Afro House.",
-        genres: ["Afro House", "Deep House", "Tech House"],
-        tags: ["Percussion", "Vocals", "Bass"],
-        samples: []
-      },
-      {
-        id: 2,
-        title: "Tech House Essentials",
-        artist: "Defected Records",
-        coverImage: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800&q=80",
-        price: 34.99,
-        sampleCount: 180,
-        totalSize: "980 MB",
-        description: "Premium tech house sounds for modern producers.",
-        genres: ["Tech House", "Minimal Tech"],
-        tags: ["Drums", "Bass", "FX"],
-        samples: []
-      },
-      {
-        id: 3,
-        title: "Deep House Collection",
-        artist: "Anjunadeep",
-        coverImage: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&q=80",
-        price: 39.99,
-        sampleCount: 320,
-        totalSize: "1.5 GB",
-        description: "Atmospheric deep house samples and loops.",
-        genres: ["Deep House", "Progressive House"],
-        tags: ["Pads", "Bass", "Vocals"],
-        samples: []
-      },
-      {
-        id: 4,
-        title: "Melodic Techno Pack",
-        artist: "Toolroom Records",
-        coverImage: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80",
-        price: 44.99,
-        sampleCount: 200,
-        totalSize: "1.1 GB",
-        description: "Dark and hypnotic melodic techno elements.",
-        genres: ["Melodic Techno", "Progressive House"],
-        tags: ["Synths", "Arps", "Bass"],
-        samples: []
-      },
-      {
-        id: 5,
-        title: "Organic House Vibes",
-        artist: "Anjunadeep",
-        coverImage: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800&q=80",
-        price: 32.99,
-        sampleCount: 150,
-        totalSize: "850 MB",
-        description: "Natural and organic house music sounds.",
-        genres: ["Organic House", "Afro House"],
-        tags: ["Percussion", "Woodwinds", "Nature"],
-        samples: []
-      },
-      {
-        id: 6,
-        title: "Underground Techno",
-        artist: "Defected Records",
-        coverImage: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80",
-        price: 49.99,
-        sampleCount: 280,
-        totalSize: "1.3 GB",
-        description: "Raw underground techno for the dancefloor.",
-        genres: ["Tech House", "Minimal Tech"],
-        tags: ["Drums", "Kicks", "Industrial"],
-        samples: []
-      },
-      {
-        id: 7,
-        title: "Progressive House Bundle",
-        artist: "Anjunadeep",
-        coverImage: "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=800&q=80",
-        price: 54.99,
-        sampleCount: 400,
-        totalSize: "2.1 GB",
-        description: "Complete progressive house production toolkit.",
-        genres: ["Progressive House", "Deep House"],
-        tags: ["Complete", "Leads", "Pads"],
-        samples: []
-      },
-      {
-        id: 8,
-        title: "Minimal Tech Toolkit",
-        artist: "Toolroom Records",
-        coverImage: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800&q=80",
-        price: 27.99,
-        sampleCount: 120,
-        totalSize: "650 MB",
-        description: "Stripped-back minimal techno essentials.",
-        genres: ["Minimal Tech", "Tech House"],
-        tags: ["Minimal", "Grooves", "Percussion"],
-        samples: []
-      }
-    ];
-
     // Simulate API call
     setTimeout(() => {
       setAllPacks(mockPacks);
       setLoading(false);
+      console.log(`✅ Loaded ${mockPacks.length} sample packs with samples:`, 
+        mockPacks.map(p => `${p.title}: ${p.samples.length} samples`)
+      );
     }, 500);
   }, []);
 
@@ -170,15 +71,28 @@ const SamplePacksPage: React.FC = () => {
     setSelectedGenres([]);
   };
 
-  const handleViewDetails = (packId: number) => {
-    console.log('View pack details:', packId);
-    // Navigate to SamplesPage with pack ID
-     navigate(`/pack/${packId}`)
+  const handleViewDetails = (packId: string) => {
+    navigate(`/pack/${packId}`);
   };
 
-  const handleAddToCart = (packId: number) => {
-    console.log('Add pack to cart:', packId);
-    alert('Added to cart! (This would integrate with your Spring Boot backend)');
+  const handleAddToCart = (pack: SamplePack) => {
+    // Check if pack is already in cart
+    const alreadyInCart = cartSnap.items.some(
+      item => item.id === pack.id && item.type === 'pack'
+    );
+
+    if (alreadyInCart) {
+      console.log(`⚠️ Pack "${pack.title}" is already in cart`);
+      // Optional: Show toast notification
+      return;
+    }
+
+    // ✅ Add pack + all samples
+    console.log(`📦 Adding pack "${pack.title}" with ${pack.samples.length} samples...`);
+    addSamplePackToCart(pack);
+    
+    // Optional: Show success notification
+    console.log(`✅ Added "${pack.title}" to cart`);
   };
 
   if (loading) {

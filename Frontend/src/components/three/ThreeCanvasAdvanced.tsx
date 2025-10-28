@@ -10,11 +10,11 @@ import { Shirt } from "./models/Shirt";
 import { Cap } from "./models/Cap";
 import { Shoe } from "./models/Shoe";
 
-import type { CartItemState } from "../../state";
+import type { CartItemState, ClothesCartItem } from "../../state";
 
 type Props = {
   isInsideCart?: boolean;
-  cartItem?: CartItemState;      // ← when in cart
+  cartItem?: ClothesCartItem;      // ← when in cart
   tempRotationY?: number;        // ← cart-page slider override
 };
 

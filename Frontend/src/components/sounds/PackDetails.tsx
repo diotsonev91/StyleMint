@@ -1,6 +1,6 @@
 // src/components/PackDetails.tsx
 import React from 'react';
-import { SamplePack } from '../types';
+import { SamplePack } from '../../types';
 import './PackDetails.css';
 
 interface PackDetailsProps {

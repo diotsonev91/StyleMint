@@ -8,7 +8,7 @@ import {
   AiOutlineShopping,
 } from "react-icons/ai";
 import "../../styles/overlay-advanced.css";
-import { addToCart } from "../../services/CartService";
+import { addClothToCart } from "../../services/CartService";
 
 export default function OverlayAdvanced() {
   const snap = useSnapshot(state);
@@ -24,7 +24,7 @@ export default function OverlayAdvanced() {
     });
     
     try {
-      await addToCart();
+      await addClothToCart();
       alert("Item added to cart successfully! 🎉");
     } catch (error) {
       console.error("Failed to add to cart:", error);

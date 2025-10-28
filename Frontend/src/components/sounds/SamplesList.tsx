@@ -1,24 +1,28 @@
 // src/components/SamplesList.tsx
 import React, { useState } from 'react';
-import { Sample } from '../types';
+import {  SamplesFromPackDTO } from '../../types';
 import SampleItem from './SampleItem';
 import './SamplesList.css';
 
 interface SamplesListProps {
-  samples: Sample[];
+  samples: SamplesFromPackDTO[];
   onLoadMore?: () => void;
 }
 
 const SamplesList: React.FC<SamplesListProps> = ({ samples, onLoadMore }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentlyPlaying, setCurrentlyPlaying] = useState<number | null>(null);
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
 
-  const filteredSamples = samples.filter(sample =>
-    sample.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    sample.genre.toLowerCase().includes(searchQuery.toLowerCase())
+const filteredSamples = samples.filter(sample => {
+  const q = searchQuery.toLowerCase();
+  return (
+    sample.name.toLowerCase().includes(q) ||
+    (sample.genre ?? "").toLowerCase().includes(q)
   );
+});
 
-  const handleTogglePlay = (sampleId: number) => {
+
+  const handleTogglePlay = (sampleId: string) => {
     if (currentlyPlaying === sampleId) {
       setCurrentlyPlaying(null);
     } else {
@@ -26,12 +30,12 @@ const SamplesList: React.FC<SamplesListProps> = ({ samples, onLoadMore }) => {
     }
   };
 
-  const handleDownload = (sampleId: number) => {
+  const handleDownload = (sampleId: string) => {
     console.log('Download sample:', sampleId);
     // Implement download logic
   };
 
-  const handleLike = (sampleId: number) => {
+  const handleLike = (sampleId: string) => {
     console.log('Like sample:', sampleId);
     // Implement like logic
   };

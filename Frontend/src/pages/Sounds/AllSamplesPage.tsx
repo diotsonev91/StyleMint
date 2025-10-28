@@ -1,21 +1,13 @@
-// src/components/AllSamplesPage.tsx
+// src/components/AllSamplesPage.tsx - Load all samples from mockPacks
 import React, { useState, useEffect } from 'react';
-import { Sample } from '../../types';
-
+import { SamplesFromPackDTO } from '../../types';
+import mockPacks from '../../mock/mockPacks';
 import FilterSidebar from '../../components/sounds/FilterSidebar';
 import SamplesList from '../../components/sounds/SamplesList';
 import './AllSamplesPage.css';
 
-// Extended Sample interface with pack info
-interface SampleWithPack extends Sample {
-  packName: string;
-  packId: number;
-  artist: string;
-  price: number;
-}
-
 const AllSamplesPage: React.FC = () => {
-  const [allSamples, setAllSamples] = useState<SampleWithPack[]>([]);
+  const [allSamples, setAllSamples] = useState<SamplesFromPackDTO[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string>('');
   const [selectedKey, setSelectedKey] = useState<string>('');
   const [selectedInstrument, setSelectedInstrument] = useState<string>('');
@@ -23,194 +15,31 @@ const AllSamplesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
-  // Mock data - replace with API call
+  // ✅ Load all samples from all packs in mockPacks
   useEffect(() => {
-    const mockSamples: SampleWithPack[] = [
-      {
-        id: 1,
-        name: "Afro_Percussion_Loop_125bpm",
-        duration: "0:08",
-        bpm: 125,
-        key: "Am",
-        genre: "Afro House",
-        instrument: "Percussion",
-        sampleType: "loop",
-        audioUrl: "#",
-        packName: "Essential Afro House",
-        packId: 1,
-        artist: "Toolroom Records",
-        price: 2.99
-      },
-      {
-        id: 2,
-        name: "Deep_Bass_One_Shot",
-        duration: "0:03",
-        key: "C",
-        genre: "Deep House",
-        instrument: "Bass",
-        sampleType: "oneshot",
-        audioUrl: "#",
-        packName: "Essential Afro House",
-        packId: 1,
-        artist: "Toolroom Records",
-        price: 1.99
-      },
-      {
-        id: 3,
-        name: "Vocal_Chant_Loop_120bpm",
-        duration: "0:16",
-        bpm: 120,
-        key: "Gm",
-        genre: "Afro House",
-        instrument: "Vocals",
-        sampleType: "loop",
-        audioUrl: "#",
-        packName: "Essential Afro House",
-        packId: 1,
-        artist: "Toolroom Records",
-        price: 3.99
-      },
-      {
-        id: 4,
-        name: "Tech_Kick_Punchy",
-        duration: "0:01",
-        genre: "Tech House",
-        instrument: "Drums",
-        sampleType: "oneshot",
-        audioUrl: "#",
-        packName: "Tech House Essentials",
-        packId: 2,
-        artist: "Defected Records",
-        price: 1.49
-      },
-      {
-        id: 5,
-        name: "Shaker_Loop_125bpm",
-        duration: "0:04",
-        bpm: 125,
-        genre: "Afro House",
-        instrument: "Percussion",
-        sampleType: "loop",
-        audioUrl: "#",
-        packName: "Essential Afro House",
-        packId: 1,
-        artist: "Toolroom Records",
-        price: 1.99
-      },
-      {
-        id: 6,
-        name: "Synth_Pad_Ambient_Dm",
-        duration: "0:32",
-        bpm: 120,
-        key: "Dm",
-        genre: "Deep House",
-        instrument: "Synth",
-        sampleType: "loop",
-        audioUrl: "#",
-        packName: "Deep House Collection",
-        packId: 3,
-        artist: "Anjunadeep",
-        price: 4.99
-      },
-      {
-        id: 7,
-        name: "Hihat_Roll_Pattern_128",
-        duration: "0:02",
-        bpm: 128,
-        genre: "Tech House",
-        instrument: "Drums",
-        sampleType: "loop",
-        audioUrl: "#",
-        packName: "Tech House Essentials",
-        packId: 2,
-        artist: "Defected Records",
-        price: 1.99
-      },
-      {
-        id: 8,
-        name: "Marimba_Melody_Loop_F",
-        duration: "0:16",
-        bpm: 122,
-        key: "F",
-        genre: "Afro House",
-        instrument: "Marimba",
-        sampleType: "loop",
-        audioUrl: "#",
-        packName: "Essential Afro House",
-        packId: 1,
-        artist: "Toolroom Records",
-        price: 2.99
-      },
-      {
-        id: 9,
-        name: "Bass_Groove_Em",
-        duration: "0:08",
-        bpm: 124,
-        key: "Em",
-        genre: "Deep House",
-        instrument: "Bass",
-        sampleType: "loop",
-        audioUrl: "#",
-        packName: "Deep House Collection",
-        packId: 3,
-        artist: "Anjunadeep",
-        price: 2.49
-      },
-      {
-        id: 10,
-        name: "Clap_One_Shot_Crisp",
-        duration: "0:01",
-        genre: "Tech House",
-        instrument: "Drums",
-        sampleType: "oneshot",
-        audioUrl: "#",
-        packName: "Tech House Essentials",
-        packId: 2,
-        artist: "Defected Records",
-        price: 0.99
-      },
-      {
-        id: 11,
-        name: "Vocal_Sample_Soulful",
-        duration: "0:12",
-        bpm: 120,
-        key: "G",
-        genre: "Deep House",
-        instrument: "Vocals",
-        sampleType: "oneshot",
-        audioUrl: "#",
-        packName: "Deep House Collection",
-        packId: 3,
-        artist: "Anjunadeep",
-        price: 3.99
-      },
-      {
-        id: 12,
-        name: "Percussion_Conga_Loop",
-        duration: "0:08",
-        bpm: 126,
-        genre: "Afro House",
-        instrument: "Percussion",
-        sampleType: "loop",
-        audioUrl: "#",
-        packName: "Essential Afro House",
-        packId: 1,
-        artist: "Toolroom Records",
-        price: 2.49
-      }
-    ];
-
     // Simulate API call
     setTimeout(() => {
-      setAllSamples(mockSamples);
+      // Flatten all samples from all packs
+      const samples = mockPacks.flatMap(pack => pack.samples);
+      setAllSamples(samples);
       setLoading(false);
+      console.log(`✅ Loaded ${samples.length} samples from ${mockPacks.length} packs`);
     }, 500);
   }, []);
 
   // Get unique values for filter dropdowns
-  const availableGenres = Array.from(new Set(allSamples.map(sample => sample.genre))).sort();
-  const availableKeys = Array.from(new Set(allSamples.map(sample => sample.key).filter(Boolean) as string[])).sort();
-  const availableInstruments = Array.from(new Set(allSamples.map(sample => sample.instrument).filter(Boolean) as string[])).sort();
+  const availableGenres = [...new Set(allSamples
+    .map(s => s.genre)
+    .filter((g): g is string => Boolean(g))
+  )].sort();
+
+  const availableKeys = Array.from(
+    new Set(allSamples.map(sample => sample.key).filter(Boolean) as string[])
+  ).sort();
+
+  const availableInstruments = Array.from(
+    new Set(allSamples.map(sample => sample.instrument).filter(Boolean) as string[])
+  ).sort();
 
   // Filter samples based on all selected filters
   const filteredSamples = allSamples.filter(sample => {
@@ -247,13 +76,12 @@ const AllSamplesPage: React.FC = () => {
 
   const handleLoadMore = () => {
     console.log('Load more samples');
-    // Implement pagination
+    // Implement pagination if needed
   };
 
   if (loading) {
     return (
       <div className="all-samples-page">
-  
         <div className="loading-container">
           <div className="loading-spinner"></div>
           <p>Loading samples...</p>
@@ -264,8 +92,6 @@ const AllSamplesPage: React.FC = () => {
 
   return (
     <div className="all-samples-page">
-    
-      
       <main className="main-content">
         <div className="container">
           {/* Page Header */}
@@ -273,7 +99,7 @@ const AllSamplesPage: React.FC = () => {
             <div className="header-text">
               <h1 className="page-title">All Samples</h1>
               <p className="page-subtitle">
-                Browse our complete collection of high-quality audio samples
+                Browse our complete collection of {allSamples.length} high-quality audio samples
               </p>
             </div>
             
@@ -369,7 +195,7 @@ const AllSamplesPage: React.FC = () => {
             {/* Filter Sidebar */}
             <aside className="sidebar">
               <FilterSidebar
-                availableGenres={availableGenres}
+                availableGenres={availableGenres} 
                 availableKeys={availableKeys}
                 availableInstruments={availableInstruments}
                 selectedGenre={selectedGenre}
