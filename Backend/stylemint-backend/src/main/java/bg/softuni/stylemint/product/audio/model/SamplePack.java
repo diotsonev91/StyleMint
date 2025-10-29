@@ -20,7 +20,7 @@ public class SamplePack extends BaseProduct {
     private String title;
 
     @Column(name = "author_id", columnDefinition = "BINARY(16)", nullable = false)
-    private UUID author_Id;
+    private UUID authorId;
 
     @Column(name = "artist", nullable = false, length = 64)
     private String artist;

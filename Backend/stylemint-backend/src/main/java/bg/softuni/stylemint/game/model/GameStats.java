@@ -20,7 +20,7 @@ public class GameStats {
     private UUID id;
 
     /**
-     * Собственик на стτισиката / Участник в играта
+     *  Участник в играта
      */
     @Column(name = "user_id", columnDefinition = "BINARY(16)", nullable = false)
     private UUID userId;
