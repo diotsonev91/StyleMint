@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import Home from "../pages/Home";
 import Login from "../pages/User/Login";
 import Register from "../pages/User/Register";
-import Customize from "../pages/Clothes/Customize"
+import Customize from "../pages/Clothes/Customize";
 import Catalogue from "../pages/Clothes/Catalogue";
 import SamplePackDetailledPage from "../pages/Sounds/SamplePackDetailledPage";
 import AllSamplesPage from "../pages/Sounds/AllSamplesPage";

@@ -10,7 +10,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       <Navbar />
 
       {/* Main page area */}
-      <main className="main-content">{children}</main>
+      <main className="main-content-layout">{children}</main>
 
       {/* Footer */}
       <Footer />

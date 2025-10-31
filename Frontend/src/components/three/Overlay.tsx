@@ -14,7 +14,7 @@ import "../../styles/overlay.css";
 // UPDATED: Import from centralized state file
 import { snapshot, useSnapshot } from "valtio";
 import { state } from "../../state";
-import { addClothToCart } from "../../services/CartService";
+import { addClothToCart } from "../../services/cartService";
 
 const Overlay = () => {
   const snap = useSnapshot(state);
@@ -31,13 +31,7 @@ const TYPE_OPTIONS = [
   return (
     <div className="overlay-container">
       <header className="overlay-header">
-        <img
-          src={logo}
-          alt="StyleMint logo"
-          width={180}
-          height={180}
-          className="logo"
-        />
+       
         <div className="overlay-icons">
           {/* ред с back стрелката и избраният надпис */}
           <div className="overlay-current">

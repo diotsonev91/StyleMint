@@ -15,19 +15,19 @@ import java.util.UUID;
 public class OrderItem {
 
     @Id
-    @Column(columnDefinition = "BINARY(16)")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false, columnDefinition = "BINARY(16)")
+    @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "product_type", nullable = false, length = 16)
     private ProductType productType; // CLOTHES/SAMPLE/PACK
 
-    @Column(name = "product_id", columnDefinition = "BINARY(16)", nullable = false)
-    private UUID productId; // ClothDesign.id / AudioSample.id / SamplePack.id
+    @Column(name = "product_id",nullable = false)
+    private UUID productId;
 
     @Column(nullable = false)
     private Integer quantity;

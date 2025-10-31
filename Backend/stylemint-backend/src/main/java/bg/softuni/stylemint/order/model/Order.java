@@ -15,10 +15,10 @@ import java.util.UUID;
 public class Order {
 
     @Id
-    @Column(columnDefinition = "BINARY(16)")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "user_id", columnDefinition = "BINARY(16)", nullable = false)
+    @Column(name = "user_id",  nullable = false)
     private UUID userId;
 
     @Lob

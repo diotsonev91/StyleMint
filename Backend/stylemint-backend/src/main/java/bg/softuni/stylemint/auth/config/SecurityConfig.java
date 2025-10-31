@@ -15,6 +15,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
+
+import static bg.softuni.stylemint.config.ApiPaths.BASE;
 
 @Configuration
 @RequiredArgsConstructor
@@ -22,14 +25,27 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthFilter;
+    private final CorsConfigurationSource corsConfigurationSource;  // ← Inject CORS config
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))  // ← Enable CORS
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
+                        // Public endpoints - no authentication required
+                        .requestMatchers(
+                                BASE + "/auth/register",
+                                BASE + "/auth/login",
+                                BASE + "/auth/refresh",
+                                BASE + "/auth/logout"
+                        ).permitAll()
+
+                        // /auth/me requires authentication
+                        .requestMatchers(BASE + "/auth/me").authenticated()
+
+                        // All other requests require authentication
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authProvider())

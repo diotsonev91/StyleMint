@@ -15,7 +15,6 @@
   font-family: "Poppins", sans-serif;
   z-index: 3; /* above canvas */
   pointer-events: none;
-
   margin: 1.5rem;
 }
 
@@ -23,13 +22,15 @@
 .overlay-header {
   
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: end;
+  align-items: end;
   padding: 0rem 1rem;
   pointer-events: auto;
   margin-top: 0.2em;
   flex-wrap: nowrap;
   padding-right:3em;
+  min-height: 20vh;
+
 }
 
 .logo {

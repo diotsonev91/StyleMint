@@ -19,7 +19,7 @@ import './App.css'
 
 import React from "react";
 import { BrowserRouter as Router } from "react-router-dom";
-import { AuthProvider } from "./context/AuthProvider";
+import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./context/ThemeContext";
 import { MainLayout } from "./components/layout/MainLayout";
 import { AppRoutes } from "./routes/AppRoutes";

@@ -8,7 +8,7 @@ function Customize() {
   const snap = useSnapshot(state);
 
   return (
-    <div style={{ margin: "0.8em", height: "100%" }}>
+    <div style={{height: "80vh" }}>
       {snap.page === "intro" && <ThreeCanvas />}
       {snap.page === "basic" && <ThreeCanvas />}
       {snap.page === "advanced" && <ThreeCanvasAdvanced />}

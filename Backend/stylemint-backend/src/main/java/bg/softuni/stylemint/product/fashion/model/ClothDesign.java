@@ -17,10 +17,10 @@ import java.util.UUID;
 @NoArgsConstructor @AllArgsConstructor @Builder
 public class ClothDesign extends BaseProduct {
 
-    @Column(name = "user_id", columnDefinition = "BINARY(16)")
+    @Column(name = "user_id")
     private UUID userId;
 
-    @Enumerated(EnumType.STRING) // or ORDINAL if you prefer numeric
+    @Enumerated(EnumType.STRING)
     @Column(name = "cloth_type", nullable = false, length = 32)
     private ClothType clothType;
 

@@ -8,7 +8,7 @@ import {
   AiOutlineShopping,
 } from "react-icons/ai";
 import "../../styles/overlay-advanced.css";
-import { addClothToCart } from "../../services/CartService";
+import { addClothToCart } from "../../services/cartService";
 
 export default function OverlayAdvanced() {
   const snap = useSnapshot(state);

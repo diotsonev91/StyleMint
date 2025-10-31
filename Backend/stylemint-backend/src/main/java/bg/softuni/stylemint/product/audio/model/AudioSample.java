@@ -19,7 +19,7 @@ public class AudioSample extends BaseProduct {
     @Column(nullable = false, length = 128)
     private String name;
 
-    @Column(name = "author_id", columnDefinition = "BINARY(16)", nullable = false)
+    @Column(name = "author_id", nullable = false)
     private UUID authorId;
 
     @Column(name = "artist", nullable = false, length = 64)
@@ -59,7 +59,7 @@ public class AudioSample extends BaseProduct {
     private Double price;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pack_id", columnDefinition = "BINARY(16)")
+    @JoinColumn(name = "pack_id")
     private SamplePack pack;
 
 

@@ -17,7 +17,7 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret:MySuperSecretKey9876543210987654321}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
     @Getter
@@ -68,11 +68,11 @@ public class JwtTokenProvider {
             parseClaims(token);
             return true;
         } catch (ExpiredJwtException ex) {
-            return false; // Token expired
+            return false;
         } catch (JwtException ex) {
-            return false; // Invalid token
+            return false;
         } catch (Exception ex) {
-            return false; // Any other error
+            return false;
         }
     }
 

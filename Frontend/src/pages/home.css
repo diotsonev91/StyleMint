@@ -2,6 +2,7 @@
   font-family: "Poppins", sans-serif;
   color: #222;
   overflow-x: hidden;
+  overflow-y: hidden; 
 }
 
 /* ================= HERO ================= */
@@ -10,8 +11,9 @@
   background: linear-gradient(135deg, #00c6ff, #1e1f26);
   color: white;
   text-align: center;
-  padding: 140px 20px;
+  padding: 100px 20px;
   overflow: hidden;
+  min-height: 30vh; 
 }
 
 .hero::before,
@@ -70,6 +72,7 @@
   letter-spacing: 0.5px;
   cursor: pointer;
   transition: transform 0.3s, box-shadow 0.3s;
+  margin-top: 1rem;
 }
 .btn-primary:hover {
   transform: translateY(-4px);
@@ -207,6 +210,49 @@
 .nft-image:hover {
   transform: perspective(1000px) rotateY(0deg) scale(1.03);
 }
+
+.login-section {
+  min-height: 35vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  text-align: center;
+  padding: 2rem;
+}
+
+.login-heading {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+
+.login-btn {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border: none;
+  color: #ffffff;
+  background-color: #a78bfa;
+  font-size: 2rem;
+  font-weight: 40;
+  padding: 1.8rem 1rem;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  box-shadow: var(--shadow-purple);
+  transition: transform 0.25s var(--transition-normal), box-shadow 0.25s;
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(147, 51, 234, 0.4);
+}
+
 
 /* ================= RESPONSIVE ================= */
 @media (max-width: 900px) {

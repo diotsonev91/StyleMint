@@ -19,7 +19,7 @@ public class SamplePack extends BaseProduct {
     @Column(nullable = false, length = 128)
     private String title;
 
-    @Column(name = "author_id", columnDefinition = "BINARY(16)", nullable = false)
+    @Column(name = "author_id",  nullable = false)
     private UUID authorId;
 
     @Column(name = "artist", nullable = false, length = 64)

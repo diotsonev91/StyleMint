@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -15,8 +16,9 @@ import java.util.UUID;
 public class User {
 
     @Id
-    @Column(columnDefinition = "BINARY(16)")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
@@ -30,7 +32,7 @@ public class User {
     private String password; // BCRYPT-нат после
 
     @Column(name = "display_name", length = 64)
-    private String displayName; // използваш като "artist" видимо
+    private String displayName;
 
     @Column(name = "avatar_url")
     private String avatarUrl;

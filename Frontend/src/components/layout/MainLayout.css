@@ -5,8 +5,11 @@
   
 }
 
-.main-content {
+.main-content-layout {
   flex: 1; /* allow footer to sit below */
   display: flex;
   flex-direction: column;
+
+   /* min-height: 80vh;  */
+   
 }

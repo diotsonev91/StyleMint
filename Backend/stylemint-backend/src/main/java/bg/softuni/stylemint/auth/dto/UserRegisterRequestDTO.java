@@ -18,5 +18,6 @@ public class UserRegisterRequestDTO {
     private String password;
 
     @NotBlank
+    @Size(min = 2)
     private String displayName;
 }
