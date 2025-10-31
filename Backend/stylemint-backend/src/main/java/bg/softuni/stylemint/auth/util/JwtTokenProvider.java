@@ -1,0 +1,87 @@
+package bg.softuni.stylemint.auth.util;
+
+import bg.softuni.stylemint.auth.exception.InvalidTokenException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.util.Date;
+
+@Component
+public class JwtTokenProvider {
+
+    @Value("${jwt.secret:MySuperSecretKey9876543210987654321}")
+    private String jwtSecret;
+
+    @Getter
+    @Value("${jwt.access.expiration:900000}") // 15 min
+    private long accessExpirationMs;
+
+    @Getter
+    @Value("${jwt.refresh.expiration:604800000}") // 7 days
+    private long refreshExpirationMs;
+
+    private SecretKey getSigningKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    public String generateAccessToken(String username) {
+        return buildToken(username, accessExpirationMs);
+    }
+
+    public String generateRefreshToken(String username) {
+        return buildToken(username, refreshExpirationMs);
+    }
+
+    private String buildToken(String subject, long validityMs) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + validityMs);
+
+        return Jwts.builder()
+                .subject(subject)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public String extractUsername(String token) {
+        try {
+            return parseClaims(token).getSubject();
+        } catch (ExpiredJwtException ex) {
+            throw new InvalidTokenException("Token has expired");
+        } catch (JwtException ex) {
+            throw new InvalidTokenException("Invalid token format");
+        }
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            parseClaims(token);
+            return true;
+        } catch (ExpiredJwtException ex) {
+            return false; // Token expired
+        } catch (JwtException ex) {
+            return false; // Invalid token
+        } catch (Exception ex) {
+            return false; // Any other error
+        }
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+}
