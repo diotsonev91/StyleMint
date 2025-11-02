@@ -4,8 +4,6 @@ import bg.softuni.stylemint.auth.dto.*;
 import bg.softuni.stylemint.auth.exception.InvalidTokenException;
 import bg.softuni.stylemint.auth.util.JwtTokenProvider;
 import bg.softuni.stylemint.user.dto.UserDTO;
-import bg.softuni.stylemint.user.model.Role;
-import bg.softuni.stylemint.user.model.User;
 import bg.softuni.stylemint.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;

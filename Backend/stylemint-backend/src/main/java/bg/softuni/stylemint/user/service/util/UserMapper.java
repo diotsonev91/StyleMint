@@ -13,7 +13,7 @@ public final class UserMapper {
                 .email(user.getEmail())
                 .displayName(user.getDisplayName())
                 .avatarUrl(user.getAvatarUrl())
-                .role(user.getRole())
+                .userRole(user.getUserRole())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

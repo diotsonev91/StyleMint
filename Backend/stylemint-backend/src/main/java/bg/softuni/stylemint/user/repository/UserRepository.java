@@ -2,7 +2,7 @@ package bg.softuni.stylemint.user.repository;
 
 
 import bg.softuni.stylemint.user.model.User;
-import bg.softuni.stylemint.user.model.Role;
+import bg.softuni.stylemint.user.enums.UserRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -58,12 +58,12 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     /**
      * Find users by role
      */
-    List<User> findByRole(Role role);
+    List<User> findByRole(UserRole userRole);
 
     /**
      * Find users by role (paginated)
      */
-    Page<User> findByRole(Role role, Pageable pageable);
+    Page<User> findByRole(UserRole userRole, Pageable pageable);
 
     // ============================================
     // SEARCH

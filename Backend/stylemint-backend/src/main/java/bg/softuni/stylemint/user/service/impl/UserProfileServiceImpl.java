@@ -4,6 +4,7 @@ import bg.softuni.stylemint.common.exception.ConflictException;
 import bg.softuni.stylemint.common.exception.NotFoundException;
 import bg.softuni.stylemint.user.dto.UserProfileDTO;
 import bg.softuni.stylemint.user.dto.UserStatsDTO;
+import bg.softuni.stylemint.user.enums.UserRole;
 import bg.softuni.stylemint.user.model.User;
 import bg.softuni.stylemint.user.repository.UserRepository;
 import bg.softuni.stylemint.user.service.UserProfileService;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -35,7 +38,7 @@ public class UserProfileServiceImpl implements UserProfileService {
                 .email(user.getEmail())
                 .displayName(user.getDisplayName())
                 .avatarUrl(user.getAvatarUrl())
-                .role(user.getRole())
+                .userRole(user.getUserRole())
                 .memberSince(user.getCreatedAt())
                 .stats(stats)
                 .build();
@@ -67,4 +70,15 @@ public class UserProfileServiceImpl implements UserProfileService {
         user.setAvatarUrl(avatarUrl);
         userRepository.save(user);
     }
+
+    @Override
+    @Transactional
+    public void updateUserRoles(UUID userId, Set<UserRole> newRoles) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        user.setRoles(new HashSet<>(newRoles));
+        userRepository.save(user);
+    }
+
 }

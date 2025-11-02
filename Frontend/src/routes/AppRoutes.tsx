@@ -11,12 +11,14 @@ import ChooseYourSoundsPage from "../pages/Sounds/ChooseYourSoundsPage";
 import SamplePacksPage from "../pages/Sounds/SamplePacksPage";
 import UploadPackForm from "../pages/Sounds/UploadPackForm";
 import UploadSampleForm from "../pages/Sounds/UploadSampleForm";
-import GodotGameEmbed from "../pages/Game/GodotGameEmbed";
+import GodotGameEmbedRush from "../pages/Game/GodotGameEmbedColorRush";
+import GodotGameEmbedBpm from "../pages/Game/GodotGameEmbedBPMMatcher";
 import ProfilePage from "../pages/User/UserProfile";
 import { CartPage } from "../pages/Cart/CartPage";
 import { CheckoutDetails } from "../pages/Cart/CheckoutDetails";
 import { CheckoutSummary } from "../pages/Cart/CheckoutSummary";
 import { CheckoutSuccess } from "../pages/Cart/CheckoutPages";
+import GamesMenu from "../pages/Game/GamesMenu";
 
 // You can easily expand this later with private routes or 404 pages
 export const AppRoutes: React.FC = () => {
@@ -33,8 +35,9 @@ export const AppRoutes: React.FC = () => {
       <Route path="/pack/:packId" element={<SamplePackDetailledPage />} />
       <Route path="/upload-pack" element={<UploadPackForm />} />
       <Route path="/upload-sample" element={<UploadSampleForm />} />
-      <Route path="/game" element={<GodotGameEmbed />} />
-      
+      <Route path="/games" element={<GamesMenu />} />
+       <Route path="/game/colorRush" element={<GodotGameEmbedRush />} />
+      <Route path="/game/bpmMatcher" element={<GodotGameEmbedBpm />} />
       {/* User Profile Routes */}
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/profile/:userId" element={<ProfilePage />} />

@@ -38,7 +38,7 @@ export default function Navbar() {
         <Link to="/sounds">Sounds</Link>
         <Link to="/customize">Customizer</Link>
         <Link to="/catalogue">Catalogue</Link>
-        <Link to="/game">GameMint</Link>
+        <Link to="/games">GameMint</Link>
         <Link to="/profile">Profile</Link>
         <Link to="/cart">Cart</Link>
         {user ? (

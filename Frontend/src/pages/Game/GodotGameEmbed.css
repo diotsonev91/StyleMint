@@ -293,10 +293,10 @@
 /* Leaderboard Styles */
 .leaderboard {
   position: absolute;
-  right: 100px;
+  right: 20px;
   top: 100px;
   width: 320px;
-  height: 400px;           /* !!! ФИКСИРАНО, не max-height */
+  height: 580px;           /* !!! ФИКСИРАНО, не max-height */
   display: flex;
   flex-direction: column;
   background: rgba(15, 23, 42, 0.9);

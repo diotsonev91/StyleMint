@@ -8,7 +8,7 @@ import bg.softuni.stylemint.product.audio.service.AudioSampleService;
 import bg.softuni.stylemint.product.audio.service.SamplePackService;
 import bg.softuni.stylemint.product.fashion.service.ClothDesignService;
 import bg.softuni.stylemint.user.dto.UserDTO;
-import bg.softuni.stylemint.user.model.Role;
+import bg.softuni.stylemint.user.enums.UserRole;
 import bg.softuni.stylemint.user.model.User;
 import bg.softuni.stylemint.user.repository.UserRepository;
 import bg.softuni.stylemint.user.service.UserService;
@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -69,13 +70,14 @@ public class UserServiceImpl implements UserService {
                 .email(email)
                 .displayName(displayName)
                 .password(passwordEncoder.encode(rawPassword))
-                .role(Role.CUSTOMER)
+                .roles(Set.of(UserRole.CUSTOMER))
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
 
         return UserMapper.toDTO(userRepository.save(user));
     }
+
 
 
     @Override

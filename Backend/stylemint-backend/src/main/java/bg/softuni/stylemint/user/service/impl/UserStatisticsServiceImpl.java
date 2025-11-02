@@ -7,7 +7,7 @@ import bg.softuni.stylemint.product.audio.service.AudioSampleService;
 import bg.softuni.stylemint.product.audio.service.SamplePackService;
 import bg.softuni.stylemint.product.fashion.service.ClothDesignService;
 import bg.softuni.stylemint.user.dto.UserStatsDTO;
-import bg.softuni.stylemint.user.model.Role;
+import bg.softuni.stylemint.user.enums.UserRole;
 import bg.softuni.stylemint.user.repository.UserRepository;
 import bg.softuni.stylemint.user.service.UserStatisticsService;
 import lombok.RequiredArgsConstructor;
@@ -54,8 +54,8 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     }
 
     @Override
-    public long countUsersByRole(Role role) {
-        return userRepository.findByRole(role).size();
+    public long countUsersByRole(UserRole userRole) {
+        return userRepository.findByRole(userRole).size();
     }
 
     @Override
@@ -81,4 +81,6 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
                 .truncatedTo(ChronoUnit.DAYS);
         return userRepository.findByCreatedAtAfter(monthStart).size();
     }
+
+
 }
