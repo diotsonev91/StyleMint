@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtTokenProvider {
@@ -33,34 +34,33 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateAccessToken(String username) {
-        return buildToken(username, accessExpirationMs);
+    public String generateAccessToken(UUID userId, String email) {
+        return buildToken(userId, email, accessExpirationMs);
     }
 
-    public String generateRefreshToken(String username) {
-        return buildToken(username, refreshExpirationMs);
+    public String generateRefreshToken(UUID userId, String email) {
+        return buildToken(userId, email, refreshExpirationMs);
     }
 
-    private String buildToken(String subject, long validityMs) {
+    private String buildToken(UUID userId, String email, long validityMs) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + validityMs);
 
         return Jwts.builder()
-                .subject(subject)
+                .subject(userId.toString()) // Store ID as subject
+                .claim("email", email)      // Optional: include email as claim
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
                 .compact();
     }
 
-    public String extractUsername(String token) {
-        try {
-            return parseClaims(token).getSubject();
-        } catch (ExpiredJwtException ex) {
-            throw new InvalidTokenException("Token has expired");
-        } catch (JwtException ex) {
-            throw new InvalidTokenException("Invalid token format");
-        }
+    public UUID extractUserId(String token) {
+        return UUID.fromString(parseClaims(token).getSubject());
+    }
+
+    public String extractEmail(String token) {
+        return parseClaims(token).get("email", String.class);
     }
 
     public boolean validateToken(String token) {

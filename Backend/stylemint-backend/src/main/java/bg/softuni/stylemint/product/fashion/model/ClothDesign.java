@@ -41,4 +41,7 @@ public class ClothDesign extends BaseProduct {
     @Column(name = "isPublic")
     private Boolean isPublic;
 
+    @Column(name = "custom_decal_path")
+    private String customDecalPath;
+
 }

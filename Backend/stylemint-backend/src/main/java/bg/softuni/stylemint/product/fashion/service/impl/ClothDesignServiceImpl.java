@@ -1,9 +1,9 @@
 // ClothDesignServiceImpl.java
 package bg.softuni.stylemint.product.fashion.service.impl;
 
-import bg.softuni.stylemint.common.exception.FileProcessingException;
 import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
 import bg.softuni.stylemint.common.exception.NotFoundException;
+import bg.softuni.stylemint.common.service.FileService;
 import bg.softuni.stylemint.product.fashion.dto.*;
 import bg.softuni.stylemint.product.fashion.model.ClothDesign;
 import bg.softuni.stylemint.product.fashion.repository.ClothDesignRepository;
@@ -35,19 +35,22 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
     private final ClothLikeService clothLikeService;
 
+    private final FileService fileService;
+
 
 
     @Autowired
     public ClothDesignServiceImpl(ClothDesignRepository clothDesignRepository,
-                                  @Qualifier("fashionPriceCalculatorService") PriceCalculatorService<ClothDesign> clothPriceCalculator, ClothLikeService clothLikeService) {
+                                  @Qualifier("fashionPriceCalculatorService") PriceCalculatorService<ClothDesign> clothPriceCalculator, ClothLikeService clothLikeService, FileService fileService) {
         this.clothDesignRepository = clothDesignRepository;
         this.clothPriceCalculator = clothPriceCalculator;
         this.clothLikeService = clothLikeService;
+        this.fileService = fileService;
     }
 
     @Override
     public long countDesignsByUser(UUID userId) {
-        return 0;
+        return this.clothDesignRepository.countByUserId(userId);
     }
 
     @Override
@@ -72,7 +75,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
         design.setPrice(calculatedPrice);
 
         if (request.getCustomDecalFile() != null && !request.getCustomDecalFile().isEmpty()) {
-            processCustomDecalFile(request.getCustomDecalFile(), design);
+            processCustomDecalFile(request.getCustomDecalFile(), design,  userId);
         }
 
         ClothDesign savedDesign = clothDesignRepository.save(design);
@@ -123,23 +126,26 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
 
         if (request.getCustomDecalFile() != null && !request.getCustomDecalFile().isEmpty()) {
-            processCustomDecalFile(request.getCustomDecalFile(), design);
+            processCustomDecalFile(request.getCustomDecalFile(), design, userId);
         }
 
         ClothDesign updatedDesign = clothDesignRepository.save(design);
         return toSummaryDTO(updatedDesign);
     }
 
-    private void processCustomDecalFile(MultipartFile customDecalFile, ClothDesign design) {
-        try {
-            log.info("Processing custom decal file: {} for design: {}",
-                    customDecalFile.getOriginalFilename(), design.getId());
-            // TODO: File storage логика
-        } catch (Exception e) {
-            log.error("Failed to process custom decal file", e);
-            throw new FileProcessingException("Failed to process custom decal file");
-        }
+    private void processCustomDecalFile(MultipartFile customDecalFile, ClothDesign design, UUID userId) {
+        log.info("Processing custom decal file: {} for design: {}",
+                customDecalFile.getOriginalFilename(), design.getId());
+
+        fileService.processFile(
+                customDecalFile,
+                "decals",               // категория
+                userId,                 // user folder
+                design.getCustomDecalPath(), // текущият път (стар файл)
+                design::setCustomDecalPath   // setter за entity-то
+        );
     }
+
 
     @Override
     @Transactional
@@ -151,6 +157,10 @@ public class ClothDesignServiceImpl implements ClothDesignService {
             throw new ForbiddenOperationException("Not authorized to delete this design");
         }
 
+        // Delete custom decal via FileService if have custom decal if null will not do anything
+        fileService.deleteFile(design.getCustomDecalPath());
+
+        // Delete design from DB
         clothDesignRepository.delete(design);
     }
 

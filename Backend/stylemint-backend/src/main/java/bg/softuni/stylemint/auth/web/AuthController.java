@@ -41,7 +41,9 @@ public class AuthController {
     public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody UserLoginRequestDTO dto,
                                                  HttpServletResponse response) {
         String accessToken = authService.login(dto);
-        String refreshToken = jwtTokenProvider.generateRefreshToken(dto.getEmail());
+        UserDTO user = userService.findByEmail(dto.getEmail());
+
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail());
 
         ResponseCookie access = ResponseCookie.from("SM_ACCESS", accessToken)
                 .httpOnly(true)

@@ -4,12 +4,14 @@ import bg.softuni.stylemint.auth.dto.*;
 import bg.softuni.stylemint.auth.exception.InvalidTokenException;
 import bg.softuni.stylemint.auth.util.JwtTokenProvider;
 import bg.softuni.stylemint.user.dto.UserDTO;
+import bg.softuni.stylemint.user.model.User;
 import bg.softuni.stylemint.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +23,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public UserDTO register(UserRegisterRequestDTO req) {
-
         return userService.createUser(
                 req.getEmail(),
                 req.getDisplayName(),
@@ -31,10 +32,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String login(UserLoginRequestDTO req) {
+        // Authenticate the user
         authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword())
         );
-        return jwtTokenProvider.generateAccessToken(req.getEmail());
+
+        // Fetch the user to get their ID
+        UserDTO user = userService.findByEmail(req.getEmail());
+
+        // Generate token with user ID and email
+        return jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail());
     }
 
     @Override
@@ -43,7 +50,12 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidTokenException("Invalid refresh token");
         }
 
-        String email = jwtTokenProvider.extractUsername(refreshToken);
-        return jwtTokenProvider.generateAccessToken(email);
+        // Extract user ID and email from the refresh token
+        UUID userId = jwtTokenProvider.extractUserId(refreshToken);
+        String email = jwtTokenProvider.extractEmail(refreshToken);
+
+        // Generate new access token
+        return jwtTokenProvider.generateAccessToken(userId, email);
     }
+
 }
