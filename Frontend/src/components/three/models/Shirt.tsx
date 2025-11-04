@@ -73,8 +73,8 @@ const texturePath = usedDecal === 'custom' && snap.customDecal
 
 const texture = useTexture(texturePath);
 texture.anisotropy = 16;
-texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
-texture.encoding = THREE.sRGBEncoding;
+  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace
 
   const geometry = isClassic
     ? nodes.Cloth.geometry

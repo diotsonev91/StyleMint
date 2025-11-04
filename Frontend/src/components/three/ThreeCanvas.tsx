@@ -11,10 +11,11 @@ import {
   Decal,
 } from "@react-three/drei";
 import * as THREE from "three";
+
 import type { ReactNode } from "react";
 import { useSnapshot } from "valtio";
 import { state } from "../../state";
-import type { CartItemState } from "../../state";
+import type { CartItemState, ClothesCartItem } from "../../state";
 
 type ThreeCanvasProps = {
   position?: [number, number, number];
@@ -23,6 +24,11 @@ type ThreeCanvasProps = {
   cartItem?: CartItemState;
   tempRotationY?: number;
 };
+
+
+function isClothesCartItem(item: CartItemState | undefined): item is ClothesCartItem {
+  return !!item && 'selectedColor' in item && 'selectedDecal' in item;
+}
 
 export const ThreeCanvas = ({
   position = [-1, 0, 2.5],
@@ -34,7 +40,10 @@ export const ThreeCanvas = ({
   const snap = useSnapshot(state);
 
   // Decide source of selected_type
-  const type = isInsideCart ? cartItem?.selected_type : snap.selected_type;
+  const type = isInsideCart 
+  ? (cartItem as ClothesCartItem)?.selected_type 
+  : snap.selected_type;
+
 
   return (
     <Canvas
@@ -90,15 +99,32 @@ function Shirt({ variant, isInsideCart = false, cartItem, ...props }: ShirtProps
   const snap = useSnapshot(state);
 
   // Use cart item data if in cart, otherwise use global state
-  const selectedColor = isInsideCart ? cartItem?.selectedColor : snap.selectedColor;
-  const selectedDecal = isInsideCart ? cartItem?.selectedDecal : snap.selectedDecal;
+  let selectedColor: THREE.ColorRepresentation | [r: number, g: number, b: number];
+  let selectedDecal: string;
+
+if (isInsideCart && cartItem) {
+  if ('selectedColor' in cartItem) {
+    selectedColor = cartItem.selectedColor;
+  } else {
+    selectedColor = snap.selectedColor;
+  }
+
+  if ('selectedDecal' in cartItem) {
+    selectedDecal = cartItem.selectedDecal;
+  } else {
+    selectedDecal = snap.selectedDecal;
+  }
+} else {
+  selectedColor = snap.selectedColor;
+  selectedDecal = snap.selectedDecal;
+}
 
   const isClassic = variant === "classic";
 
   const texture = useTexture(`/images/${selectedDecal}_thumb.png`);
   texture.anisotropy = 16;
   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.encoding = THREE.sRGBEncoding;
+  texture.colorSpace = THREE.SRGBColorSpace
 
   const baseMat =
     materials.lambert1 ??
@@ -163,14 +189,18 @@ function Hoodie({ isInsideCart = false, cartItem, ...props }: HoodieProps) {
 
   const snap = useSnapshot(state);
 
-  const selectedColor = isInsideCart ? cartItem?.selectedColor : snap.selectedColor;
-  const selectedDecal = isInsideCart ? cartItem?.selectedDecal : snap.selectedDecal;
+const selectedColor = isInsideCart && isClothesCartItem(cartItem)
+  ? cartItem.selectedColor
+  : snap.selectedColor;
+
+const selectedDecal = isInsideCart && isClothesCartItem(cartItem)
+  ? cartItem.selectedDecal
+  : snap.selectedDecal;
 
   const texture = useTexture(`/images/${selectedDecal}_thumb.png`);
   texture.anisotropy = 16;
-  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.encoding = THREE.sRGBEncoding;
-
+   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace
   useFrame((_, delta) => {
     easing.dampC(
       materials["Material238904.005"].color,
@@ -224,13 +254,18 @@ function Cap({ isInsideCart = false, cartItem, ...props }: CapProps) {
 
   const snap = useSnapshot(state);
 
-  const selectedColor = isInsideCart ? cartItem?.selectedColor : snap.selectedColor;
-  const selectedDecal = isInsideCart ? cartItem?.selectedDecal : snap.selectedDecal;
+const selectedColor = isInsideCart && isClothesCartItem(cartItem)
+  ? cartItem.selectedColor
+  : snap.selectedColor;
+
+const selectedDecal = isInsideCart && isClothesCartItem(cartItem)
+  ? cartItem.selectedDecal
+  : snap.selectedDecal;
 
   const texture = useTexture(`/images/${selectedDecal}_thumb.png`);
   texture.anisotropy = 16;
-  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.encoding = THREE.sRGBEncoding;
+    texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace
 
   const baseMat = materials["CapMaterial1"] ?? Object.values(materials)[0];
 
@@ -280,13 +315,18 @@ function Shoe({ isInsideCart = false, cartItem, ...props }: ShoeProps) {
 
   const snap = useSnapshot(state);
 
-  const selectedColor = isInsideCart ? cartItem?.selectedColor : snap.selectedColor;
-  const selectedDecal = isInsideCart ? cartItem?.selectedDecal : snap.selectedDecal;
+const selectedColor = isInsideCart && isClothesCartItem(cartItem)
+  ? cartItem.selectedColor
+  : snap.selectedColor;
+
+const selectedDecal = isInsideCart && isClothesCartItem(cartItem)
+  ? cartItem.selectedDecal
+  : snap.selectedDecal;
 
   const texture = useTexture(`/images/${selectedDecal}_thumb.png`);
   texture.anisotropy = 16;
   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.encoding = THREE.sRGBEncoding;
+  texture.colorSpace = THREE.SRGBColorSpace
 
   const baseMat = materials["Main Body Material"];
 
@@ -324,7 +364,10 @@ function Backdrop({ isInsideCart = false, cartItem }: BackdropProps) {
   const shadows = useRef<any>(null!);
   const snap = useSnapshot(state);
 
-  const selectedColor = isInsideCart ? cartItem?.selectedColor : snap.selectedColor;
+const selectedColor = isInsideCart && isClothesCartItem(cartItem)
+  ? cartItem.selectedColor
+  : snap.selectedColor;
+
 
   useFrame((_, delta) => {
     if (!shadows.current) return;
