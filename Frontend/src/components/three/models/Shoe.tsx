@@ -50,10 +50,16 @@ export function Shoe({ advanced, cartItem, rotationYOverride, ...props }: ShoePr
     }
   });
 
-  const texture = useTexture(`/images/${usedDecal}_thumb.png`);
-  texture.anisotropy = 16;
-  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.encoding = THREE.sRGBEncoding;
+ // ... inside Shoe component, replace texture loading:
+
+const texturePath = usedDecal === 'custom' && snap.customDecal 
+  ? snap.customDecal.previewUrl 
+  : `/images/${usedDecal}_thumb.png`;
+
+const texture = useTexture(texturePath);
+texture.anisotropy = 16;
+texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+texture.encoding = THREE.sRGBEncoding;
 
   return (
     <group 

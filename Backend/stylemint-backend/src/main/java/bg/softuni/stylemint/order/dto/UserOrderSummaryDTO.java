@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * Обобщена информация за поръчките на потребителя.
- * Използва се в профила на user-а и админ панели.
+ *Summarized information about the user's orders.
+ *Used in the user's profile and admin panels.
  */
 @Data
 @Builder
@@ -17,18 +17,14 @@ import java.util.List;
 @AllArgsConstructor
 public class UserOrderSummaryDTO {
 
-    /**
-     * Общо направени поръчки.
-     */
+
     private Long totalOrders;
 
     /**
-     * Последни 10 поръчки (или по-малко, ако няма достатъчно).
+     * Last 10 orders (or less if there are not enough).
      */
     private List<OrderPreviewDTO> recentOrders;
 
-    /**
-     * Общо похарчена сума от user-а.
-     */
+
     private Double totalSpent;
 }

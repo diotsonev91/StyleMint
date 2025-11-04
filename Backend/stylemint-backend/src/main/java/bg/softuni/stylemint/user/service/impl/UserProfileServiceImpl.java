@@ -38,7 +38,7 @@ public class UserProfileServiceImpl implements UserProfileService {
                 .email(user.getEmail())
                 .displayName(user.getDisplayName())
                 .avatarUrl(user.getAvatarUrl())
-                .userRole(user.getUserRole())
+                .roles(user.getRoles())
                 .memberSince(user.getCreatedAt())
                 .stats(stats)
                 .build();

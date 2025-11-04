@@ -65,10 +65,16 @@ export function Shirt({
     }
   });
 
-  const texture = useTexture(`/images/${usedDecal}_thumb.png`);
-  texture.anisotropy = 16;
-  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.encoding = THREE.sRGBEncoding;
+ // ... inside Shirt component:
+
+const texturePath = usedDecal === 'custom' && snap.customDecal 
+  ? snap.customDecal.previewUrl 
+  : `/images/${usedDecal}_thumb.png`;
+
+const texture = useTexture(texturePath);
+texture.anisotropy = 16;
+texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+texture.encoding = THREE.sRGBEncoding;
 
   const geometry = isClassic
     ? nodes.Cloth.geometry

@@ -1,9 +1,11 @@
+// UserDTO.java
 package bg.softuni.stylemint.user.dto;
 
 import bg.softuni.stylemint.user.enums.UserRole;
 import lombok.*;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -15,7 +17,7 @@ public class UserDTO {
     private String email;
     private String displayName;
     private String avatarUrl;
-    private UserRole userRole;
+    private Set<UserRole> roles; // multiple roles
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }

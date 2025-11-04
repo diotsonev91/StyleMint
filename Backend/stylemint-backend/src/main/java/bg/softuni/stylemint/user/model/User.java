@@ -49,6 +49,6 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id")
     )
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", length = 32, nullable = false)
+    @Column(name = "roles", length = 32, nullable = false)
     private Set<UserRole> roles = new HashSet<>();
 }

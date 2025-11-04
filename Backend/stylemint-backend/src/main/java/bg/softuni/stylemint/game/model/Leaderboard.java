@@ -51,7 +51,7 @@ public class Leaderboard {
     /**
      * Current rank (updated periodically)
      */
-    @Column(name = "rank")
+    @Column(name = "user_rank")
     private Integer rank;
 
     /**

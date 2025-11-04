@@ -58,16 +58,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     /**
      * Find users by role
      */
-    List<User> findByRole(UserRole userRole);
+    List<User> findByRolesContaining(UserRole role, Pageable pageable);
 
-    /**
-     * Find users by role (paginated)
-     */
-    Page<User> findByRole(UserRole userRole, Pageable pageable);
 
-    // ============================================
-    // SEARCH
-    // ============================================
+    long countByRolesContaining(UserRole role);
 
     /**
      * Search users by display name (partial, case insensitive)

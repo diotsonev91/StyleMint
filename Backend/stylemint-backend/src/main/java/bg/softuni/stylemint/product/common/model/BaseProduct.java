@@ -1,16 +1,20 @@
-package bg.softuni.stylemint.product.common;
+package bg.softuni.stylemint.product.common.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-
 @MappedSuperclass
-@Getter @Setter
+@Getter
+@Setter
+@SuperBuilder
+@AllArgsConstructor
+@NoArgsConstructor
 public abstract class BaseProduct {
 
     @Id
@@ -24,5 +28,11 @@ public abstract class BaseProduct {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
-}
 
+    @Column(name = "price")
+    private Double price;
+
+    @Column(name = "sales_count", nullable = false)
+    private Long salesCount = 0L;
+
+}

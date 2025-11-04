@@ -64,7 +64,7 @@ public class UserSecurity {
         }
 
         // Admins can modify any profile
-        return currentUser.getUserRole() == UserRole.ADMIN;
+        return currentUser.getRoles().contains(UserRole.ADMIN);
     }
 
     /**
@@ -72,7 +72,7 @@ public class UserSecurity {
      */
     public boolean isAdmin() {
         User currentUser = getCurrentUser();
-        return currentUser != null && currentUser.getUserRole() == UserRole.ADMIN;
+        return currentUser != null && currentUser.getRoles().contains(UserRole.ADMIN);
     }
 
     /**
@@ -80,7 +80,7 @@ public class UserSecurity {
      */
     public boolean isCustomer() {
         User currentUser = getCurrentUser();
-        return currentUser != null && currentUser.getUserRole() == UserRole.CUSTOMER;
+        return currentUser != null && currentUser.getRoles().contains(UserRole.CUSTOMER);
     }
 
     /**
@@ -128,7 +128,7 @@ public class UserSecurity {
         }
 
         // Admin can access everything
-        if (currentUser.getUserRole() == UserRole.ADMIN) {
+        if (currentUser.getRoles().contains(UserRole.ADMIN)) {
             return true;
         }
 

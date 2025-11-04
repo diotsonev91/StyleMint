@@ -4,6 +4,7 @@ import bg.softuni.stylemint.user.enums.UserRole;
 import lombok.*;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -15,7 +16,7 @@ public class UserProfileDTO {
     private String email;
     private String displayName;
     private String avatarUrl;
-    private UserRole userRole;
+    private Set<UserRole> roles;
     private OffsetDateTime memberSince;
     private UserStatsDTO stats;
 }

@@ -1,7 +1,7 @@
 package bg.softuni.stylemint.product.audio.model;
 
 import bg.softuni.stylemint.product.audio.enums.Genre;
-import bg.softuni.stylemint.product.common.BaseProduct;
+import bg.softuni.stylemint.product.common.model.BaseProduct;
 import jakarta.persistence.*;
 import lombok.*;
 

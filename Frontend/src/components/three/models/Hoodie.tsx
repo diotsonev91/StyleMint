@@ -44,8 +44,14 @@ export function Hoodie({ advanced, cartItem, rotationYOverride }: HoodieProps) {
     }
   });
 
-  const texture = useTexture(`/images/${usedDecal}_thumb.png`);
-  texture.anisotropy = 16;
+ // ... inside Hoodie component:
+
+const texturePath = usedDecal === 'custom' && snap.customDecal 
+  ? snap.customDecal.previewUrl 
+  : `/images/${usedDecal}_thumb.png`;
+
+const texture = useTexture(texturePath);
+texture.anisotropy = 16;
 
   return(
     <group

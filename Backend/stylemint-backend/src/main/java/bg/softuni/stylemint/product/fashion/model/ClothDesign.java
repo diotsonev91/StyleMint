@@ -1,20 +1,20 @@
 package bg.softuni.stylemint.product.fashion.model;
 
-import bg.softuni.stylemint.product.common.BaseProduct;
+import bg.softuni.stylemint.product.common.model.BaseProduct;
 import bg.softuni.stylemint.product.fashion.enums.CustomizationType;
 import bg.softuni.stylemint.product.fashion.enums.ClothType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.experimental.SuperBuilder;
 
-import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "cloth_designs")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 public class ClothDesign extends BaseProduct {
 
     @Column(name = "user_id")
@@ -34,5 +34,11 @@ public class ClothDesign extends BaseProduct {
 
     @Column(name = "label")
     private String label;
+
+    @Column(name = "bonus_points")
+    private Integer bonusPoints;
+
+    @Column(name = "isPublic")
+    private Boolean isPublic;
 
 }

@@ -1,5 +1,6 @@
 package bg.softuni.stylemint.product.fashion.repository;
 
+import aj.org.objectweb.asm.commons.Remapper;
 import bg.softuni.stylemint.product.fashion.model.ClothDesign;
 import bg.softuni.stylemint.product.fashion.enums.ClothType;
 import bg.softuni.stylemint.product.fashion.enums.CustomizationType;
@@ -138,4 +139,8 @@ public interface ClothDesignRepository extends JpaRepository<ClothDesign, UUID> 
             @Param("clothType") ClothType clothType,
             Pageable pageable
     );
+
+    Page<ClothDesign> findByIsPublic(boolean isPublic, Pageable pageable);
+
+    long countByUserIdAndIsPublic(UUID userId, boolean b);
 }

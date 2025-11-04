@@ -1,7 +1,6 @@
 package bg.softuni.stylemint.order.repository;
 
 import bg.softuni.stylemint.order.model.OrderItem;
-import bg.softuni.stylemint.order.model.Order;
 import bg.softuni.stylemint.order.enums.ProductType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,41 +13,31 @@ import java.util.UUID;
 @Repository
 public interface OrderItemRepository extends JpaRepository<OrderItem, UUID> {
 
-
-    List<OrderItem> findByOrder(Order order);
-
-
+    /**
+     * Find all items for a specific order
+     */
     List<OrderItem> findByOrderId(UUID orderId);
 
-
-    List<OrderItem> findByProductType(ProductType productType);
-
-
-    List<OrderItem> findByProductTypeAndProductId(ProductType productType, UUID productId);
-
     /**
-     * Find items by order and product type
+     * Fetch all items for multiple orders at once (avoids N+1 problem)
      */
-    List<OrderItem> findByOrderAndProductType(Order order, ProductType productType);
+    @Query("SELECT oi FROM OrderItem oi WHERE oi.order.id IN :orderIds")
+    List<OrderItem> findByOrderIdIn(@Param("orderIds") List<UUID> orderIds);
 
     /**
      * Count items in an order
-     */
-    long countByOrder(Order order);
-
-    /**
-     * Count items by order ID
      */
     long countByOrderId(UUID orderId);
 
     /**
      * Check if a product exists in any order
+     * Useful for: recommendation engine, product popularity
      */
     boolean existsByProductTypeAndProductId(ProductType productType, UUID productId);
 
-
     /**
-     * Custom query: Get all purchases of a specific product
+     * Get all purchases of a specific product
+     * Useful for: analytics, popular products
      */
     @Query("SELECT oi FROM OrderItem oi WHERE oi.productType = :productType AND oi.productId = :productId")
     List<OrderItem> findProductPurchases(
@@ -57,7 +46,8 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, UUID> {
     );
 
     /**
-     * Custom query: Get user's purchased products by type
+     * Get user's purchased products by type
+     * Useful for: user profile, purchase history
      */
     @Query("SELECT oi FROM OrderItem oi " +
             "JOIN oi.order o " +
@@ -66,4 +56,10 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, UUID> {
             @Param("userId") UUID userId,
             @Param("productType") ProductType productType
     );
+
+    /**
+     * Find items by product type
+     * Useful for: filtering, reports
+     */
+    List<OrderItem> findByProductType(ProductType productType);
 }

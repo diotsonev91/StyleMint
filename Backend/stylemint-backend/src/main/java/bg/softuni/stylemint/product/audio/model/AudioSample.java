@@ -1,13 +1,10 @@
 package bg.softuni.stylemint.product.audio.model;
 
 import bg.softuni.stylemint.product.audio.enums.*;
-import bg.softuni.stylemint.product.common.BaseProduct;
+import bg.softuni.stylemint.product.common.model.BaseProduct;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity

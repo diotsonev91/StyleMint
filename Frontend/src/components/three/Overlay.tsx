@@ -8,13 +8,14 @@ import { GiShorts, GiBilledCap, GiHoodie } from "react-icons/gi";
 import { FaTshirt } from "react-icons/fa";
 import { GiConverseShoe, GiRunningShoe } from "react-icons/gi";
 import { RiNftFill } from "react-icons/ri";
-
+import { SaveDesignModal } from "../SaveDesignModal";
 import "../../styles/overlay.css";
-
+import { useAuth } from "../../hooks/useAuth";
 // UPDATED: Import from centralized state file
 import { snapshot, useSnapshot } from "valtio";
 import { state } from "../../state";
 import { addClothToCart } from "../../services/cartService";
+import { LoginRequiredModal } from "../LoginRequiredModal";
 
 const Overlay = () => {
   const snap = useSnapshot(state);
@@ -72,6 +73,17 @@ const TYPE_OPTIONS = [
 export default Overlay;
 
 const Intro = () => {
+  const { user } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const handleAdvancedClick = () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+    state.page = "advanced";
+  };
+
   return (
     <section className="overlay-main">
       <div className="overlay-text">
@@ -82,29 +94,25 @@ const Intro = () => {
           define your own style.
         </p>
 
-        <button
-          className="overlay-btn"
-          onClick={() => {
-            state.page= "basic";
-          }}
-        >
+        <button className="overlay-btn" onClick={() => (state.page = "basic")}>
           CUSTOMIZE IT easy <AiOutlineHighlight size="1.3em" />
         </button>
-        <p>or </p>
-        <button
-          className="overlay-btn"
-          onClick={() => {
-            state.page= "advanced";
-          }}
-        >
+        <p>or</p>
+        <button className="overlay-btn" onClick={handleAdvancedClick}>
           CUSTOMIZE IT like artist <AiOutlineHighlight size="1.3em" />
         </button>
       </div>
+
+      {/* Pretty popup */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
     </section>
   );
 };
 
-import type { FC } from "react";
+import { useState, type FC } from "react";
 import {
   AiFillCamera,
   AiOutlineArrowLeft,
@@ -122,11 +130,10 @@ const colors = [
   "purple",
 ];
 
-const decals = ["react", "three2", "style_mint", "linux"];
 
 export const Customizer: FC = () => {
   const snap = useSnapshot(state);
-  
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   // Handler for adding item to cart
   const handlePurchase = async () => {
     console.log("🛒 Purchase button clicked in Overlay");
@@ -144,6 +151,66 @@ export const Customizer: FC = () => {
       alert("Failed to add item to cart. Please try again.");
     }
   };
+const handleSaveSuccess = (design: any) => {
+    console.log("Design saved successfully:", design);
+    // You can update state or show a success message
+  };
+function uploadImageAsDecal() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  
+  input.onchange = (event) => {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size should be less than 5MB');
+        return;
+      }
+      
+      // Clean up previous custom decal URL to avoid memory leaks
+      if (state.customDecal) {
+        URL.revokeObjectURL(state.customDecal.previewUrl);
+      }
+      
+      const previewUrl = URL.createObjectURL(file);
+      
+      // Remove previous custom decal from decals array if it exists
+      const previousCustomDecal = state.decals.find(d => d.startsWith('custom'));
+      if (previousCustomDecal) {
+        state.decals = state.decals.filter(d => d !== previousCustomDecal);
+      }
+      
+      // Add new custom decal
+      const customDecalId = 'custom';
+      state.customDecal = {
+        file,
+        previewUrl
+      };
+      
+      // Add to decals array and select it
+      state.decals = [...state.decals, customDecalId];
+      state.selectedDecal = customDecalId;
+      
+      // Optionally add to userDesigns for history
+      state.userDesigns.push({
+        id: customDecalId,
+        file,
+        previewUrl,
+        timestamp: new Date().toISOString()
+      });
+    }
+  };
+  
+  input.click();
+}
 
   return (
     <>
@@ -187,17 +254,42 @@ export const Customizer: FC = () => {
               </div>
             </div>
           )}
-            <div className="decals--container">
-              {snap.decals.map((decal) => (
-                <div
-                  key={decal}
-                  className="decal"
-                  onClick={() => (state.selectedDecal = decal)}
-                >
-                  <img src={`/images/${decal}_thumb.png`} alt={decal} />
-                </div>
-              ))}
-            </div>
+<div className="decals--container">
+  {snap.decals.map((decal) => (
+    <div
+      key={decal}
+      className={`decal ${snap.selectedDecal === decal ? 'selected' : ''}`}
+      onClick={() => (state.selectedDecal = decal)}
+    >
+      {decal === 'custom' ? (
+        // Custom decal - използвай previewUrl
+        snap.customDecal ? (
+          <img 
+            src={snap.customDecal.previewUrl} 
+            alt="Custom decal" 
+            style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+          />
+        ) : (
+          <div style={{ 
+            width: '50px', 
+            height: '50px', 
+            background: '#f0f0f0',
+            color: '#666',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '12px'
+          }}>
+            Custom
+          </div>
+        )
+      ) : (
+        // Regular decal - зарежда от /images/
+        <img src={`/images/${decal}_thumb.png`} alt={decal} />
+      )}
+    </div>
+  ))}
+</div>
           </div>
 
           {/* Buttons */}
@@ -207,18 +299,27 @@ export const Customizer: FC = () => {
               <AiOutlineShopping size="1.3em" />
             </button>
 
-            <button className="save-btn">
+            <button className="save-btn"
+             onClick={() => setIsSaveModalOpen(true)}
+            >
               SAVE YOUR STYLE
               <AiOutlineSave size="1.3em" />
             </button>
 
-            <button className="share-btn">
-              Add Nft 
+           { snap.page === "advanced" && 
+           <button className="share-btn"  onClick={uploadImageAsDecal}>
+              Upload your decal to use it
              <RiNftFill />
-            </button>
+            </button> }
           </div>
         </div>
       </section>
+      {/* Save Design Modal */}
+      <SaveDesignModal
+        isOpen={isSaveModalOpen}
+        onClose={() => setIsSaveModalOpen(false)}
+        onSaveSuccess={handleSaveSuccess}
+      />
     </>
   );
 };

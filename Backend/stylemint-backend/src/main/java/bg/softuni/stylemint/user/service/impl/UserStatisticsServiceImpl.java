@@ -11,6 +11,8 @@ import bg.softuni.stylemint.user.enums.UserRole;
 import bg.softuni.stylemint.user.repository.UserRepository;
 import bg.softuni.stylemint.user.service.UserStatisticsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,27 +38,29 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
         if (!userRepository.existsById(userId)) {
             throw new NotFoundException("User not found with id: " + userId);
         }
-
-        long orderCount = orderService.countOrdersByUser(userId);
-        long designCount = clothDesignService.countDesignsByUser(userId);
-        long sampleCount = audioSampleService.countSamplesByAuthor(userId);
-        long packCount = samplePackService.countPacksByAuthor(userId);
-        long gameScore = gameStatsService.getUserScore(userId);
-
-        return UserStatsDTO.builder()
-                .orderCount(orderCount)
-                .designCount(designCount)
-                .sampleCount(sampleCount)
-                .packCount(packCount)
-                .gameScore(gameScore)
-                .totalContentCount(sampleCount + packCount)
-                .build();
+        //TODO : ADD here correct mapping to all stats
+//        long orderCount = orderService.countOrdersByUser(userId);
+//        long designCount = clothDesignService.countDesignsByUser(userId);
+//        long sampleCount = audioSampleService.countSamplesByAuthor(userId);
+//        long packCount = samplePackService.countPacksByAuthor(userId);
+//        long gameScore = gameStatsService.getUserScore(userId);
+//
+//        return UserStatsDTO.builder()
+//                .orderCount(orderCount)
+//                .designCount(designCount)
+//                .sampleCount(sampleCount)
+//                .packCount(packCount)
+//                .gameScore(gameScore)
+//                .totalContentCount(sampleCount + packCount)
+//                .build();
+        return null;
     }
 
     @Override
     public long countUsersByRole(UserRole userRole) {
-        return userRepository.findByRole(userRole).size();
+        return userRepository.countByRolesContaining(userRole);
     }
+
 
     @Override
     public long countUsersRegisteredToday() {

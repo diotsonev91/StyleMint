@@ -1,7 +1,10 @@
+// UserMapper.java
 package bg.softuni.stylemint.user.service.util;
 
 import bg.softuni.stylemint.user.dto.UserDTO;
 import bg.softuni.stylemint.user.model.User;
+
+import java.util.HashSet;
 
 public final class UserMapper {
 
@@ -13,7 +16,7 @@ public final class UserMapper {
                 .email(user.getEmail())
                 .displayName(user.getDisplayName())
                 .avatarUrl(user.getAvatarUrl())
-                .userRole(user.getUserRole())
+                .roles(user.getRoles() != null ? new HashSet<>(user.getRoles()) : new HashSet<>())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
