@@ -1,26 +1,15 @@
-// src/components/GodotRunnerGame.tsx
+// src/components/GodotGameEmbedColorRush.tsx
 import React, { useEffect, useState } from 'react';
+import { gameService, GameScore } from '../../services/GameService';
 import './GodotGameEmbed.css';
 
-interface GameScore {
-  score: number;
-  timestamp: number;
-  date: string;
-  game_mode: string;
-  difficulty: string;
-}
-
 interface GodotRunnerGameProps {
-  backendUrl?: string;
-  authToken?: string;
   gameTitle?: string;
   width?: string | number;
   height?: string | number;
 }
 
 const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
-  backendUrl = 'http://localhost:8080',
-  authToken = '',
   gameTitle = '3D Runner Game',
   width = '60%',
   height = '600px'
@@ -47,10 +36,9 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
     // Also setup global handler (in case Godot can reach parent)
     (window as any).onGodotGameOver = handleGameOver;
     
-    // Inject config for potential use
+    // Inject config for iframe (no auth token needed - uses cookies)
     (window as any).GAME_CONFIG = {
-      backendUrl: backendUrl,
-      authToken: authToken
+      backendUrl: gameService.getBackendUrl()
     };
 
     fetchTopScores();
@@ -60,7 +48,7 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
       delete (window as any).onGodotGameOver;
       delete (window as any).GAME_CONFIG;
     };
-  }, [backendUrl, authToken]);
+  }, []);
 
   const handleGameOver = async (data: GameScore) => {
     console.log('🎮 3D Runner Game Over:', data);
@@ -74,69 +62,35 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
     setSaveStatus('saving');
     console.log('💾 Sending score to backend...');
 
-    try {
-      const response = await fetch(`${backendUrl}/api/game/scores`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
-        },
-        body: JSON.stringify({
-          score: gameData.score,
-          timestamp: gameData.timestamp,
-          date: gameData.date,
-          gameMode: gameData.game_mode || 'endless',
-          difficulty: gameData.difficulty || 'normal',
-          gameName: '3d-runner'
-        }),
-      });
+    const result = await gameService.saveScore({
+      score: gameData.score,
+      timestamp: gameData.timestamp,
+      date: gameData.date,
+      gameMode: gameData.game_mode || 'endless',
+      difficulty: gameData.difficulty || 'normal',
+      gameName: '3d-runner'
+    });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('✅ Score saved:', result);
+    if (result.success) {
+      console.log('✅ Score saved:', result.data);
       setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-
-    } catch (err: any) {
-      console.error('❌ Error saving score:', err);
+    } else {
+      console.error('❌ Error saving score:', result.error);
       setSaveStatus('error');
-      setTimeout(() => setSaveStatus('idle'), 3000);
     }
+
+    setTimeout(() => setSaveStatus('idle'), 3000);
   };
 
   const fetchTopScores = async () => {
-    try {
-      const response = await fetch(`${backendUrl}/api/game/leaderboard/top10`, {
-        headers: {
-          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setTopScores(data);
-      } else {
-        useMockScores();
-      }
-    } catch (err) {
+    const result = await gameService.fetchTopScores();
+    
+    if (result.success && result.data) {
+      setTopScores(result.data);
+    } else {
       console.log('Using mock scores (backend not available)');
-      useMockScores();
+      setTopScores(gameService.getMockScores('runner'));
     }
-  };
-
-  const useMockScores = () => {
-    setTopScores([
-      { rank: 1, username: 'ProRunner', score: 15420 },
-      { rank: 2, username: 'SpeedDemon', score: 14850 },
-      { rank: 3, username: 'NightRacer', score: 13990 },
-      { rank: 4, username: 'CyberSprint', score: 12750 },
-      { rank: 5, username: 'PixelJumper', score: 11680 },
-      { rank: 6, username: 'CyberSprint', score: 12750 },
-      { rank: 7, username: 'PixelJumper', score: 11680 }
-    ]);
   };
 
   const handleIframeLoad = () => {
@@ -188,8 +142,6 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
         allow="autoplay; fullscreen"
       />
 
-     
-
       {/* Debug Info */}
       {process.env.NODE_ENV === 'development' && (
         <div style={{
@@ -210,7 +162,7 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
               <p><strong>Source:</strong> /game/runner.html</p>
               <p><strong>Last Score:</strong> {lastScore ?? 'None'}</p>
               <p><strong>Save Status:</strong> {saveStatus}</p>
-              <p><strong>Backend:</strong> {backendUrl}</p>
+              <p><strong>Backend:</strong> {gameService.getBackendUrl()}</p>
             </div>
           </details>
         </div>
@@ -265,10 +217,7 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
         <div 
           className='leaderboard'
           style={{
-            
-            
-           marginTop: '5px',
-          
+            marginTop: '5px',
             background: 'rgba(0,0,0,0.85)',
             borderRadius: '12px',
             padding: '15px',
@@ -276,7 +225,6 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
             minHeight: '450px',
             overflowY: 'auto',
             zIndex: 200,
-            
             backdropFilter: 'blur(10px)'
           }}
         >

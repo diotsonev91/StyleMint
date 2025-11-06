@@ -1,6 +1,103 @@
-// src/services/upload.service.ts
+// src/services/audioService.ts - EXTENDED WITH USER CONTENT CHECKS
 
+import API from '../api/config';
 import { uploadApi, UploadSampleDto, UploadPackDto, ApiResponse } from '../api/upload.api';
+
+/**
+ * Audio Service - handles all audio-related operations
+ * Uses cookie-based authentication automatically
+ */
+export const audioService = {
+  /**
+   * Check if user has uploaded samples
+   */
+  async hasUploadedSamples(): Promise<{ hasSamples: boolean; count?: number; error?: string }> {
+    try {
+      const response = await API.get('audio/samples/my-samples');
+      
+      if (response.status === 200) {
+        const data = response.data;
+        const samples = Array.isArray(data) ? data : data.samples || [];
+        return {
+          hasSamples: samples.length > 0,
+          count: samples.length
+        };
+      }
+      
+      return { hasSamples: false, count: 0 };
+    } catch (error: any) {
+      console.error('Error checking user samples:', error);
+      return {
+        hasSamples: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
+
+  /**
+   * Check if user has uploaded packs
+   */
+  async hasUploadedPacks(): Promise<{ hasPacks: boolean; count?: number; error?: string }> {
+    try {
+      const response = await API.get('/audio/packs/my-packs');
+      
+      if (response.status === 200) {
+        const data = response.data;
+        const packs = Array.isArray(data) ? data : data.packs || [];
+        return {
+          hasPacks: packs.length > 0,
+          count: packs.length
+        };
+      }
+      
+      return { hasPacks: false, count: 0 };
+    } catch (error: any) {
+      console.error('Error checking user packs:', error);
+      return {
+        hasPacks: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
+
+  /**
+   * Get user's uploaded samples
+   */
+  async getMyUploadedSamples(): Promise<ApiResponse> {
+    try {
+      const response = await API.get('/audio/samples/my-samples');
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error fetching user samples:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
+
+  /**
+   * Get user's uploaded packs
+   */
+  async getMyUploadedPacks(): Promise<ApiResponse> {
+    try {
+      const response = await API.get('/audio/packs/my-packs');
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error fetching user packs:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  }
+};
 
 /**
  * Upload Service - business logic layer for upload operations
@@ -12,25 +109,20 @@ export const uploadService = {
   async uploadSample(data: UploadSampleDto): Promise<ApiResponse> {
     try {
       const response = await uploadApi.uploadSample(data);
-      const result = await response.json();
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: result.message || result.error || 'Upload failed',
-        };
-      }
+      
+      // Axios response - data is in response.data
+      const result = response.data;
 
       return {
         success: true,
         data: result,
         message: 'Sample uploaded successfully',
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sample upload error:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Network error occurred',
+        error: error.response?.data?.message || error.response?.data?.error || error.message || 'Upload failed',
       };
     }
   },
@@ -44,25 +136,20 @@ export const uploadService = {
   ): Promise<ApiResponse> {
     try {
       const response = await uploadApi.uploadSampleWithProgress(data, onProgress);
-      const result = await response.json();
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: result.message || result.error || 'Upload failed',
-        };
-      }
+      
+      // Axios response - data is in response.data
+      const result = response.data;
 
       return {
         success: true,
         data: result,
         message: 'Sample uploaded successfully',
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sample upload error:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Network error occurred',
+        error: error.response?.data?.message || error.response?.data?.error || error.message || 'Upload failed',
       };
     }
   },
@@ -73,25 +160,20 @@ export const uploadService = {
   async uploadPack(data: UploadPackDto): Promise<ApiResponse> {
     try {
       const response = await uploadApi.uploadPack(data);
-      const result = await response.json();
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: result.message || result.error || 'Pack upload failed',
-        };
-      }
+      
+      // Axios response - data is in response.data
+      const result = response.data;
 
       return {
         success: true,
         data: result,
         message: 'Sample pack uploaded successfully',
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Pack upload error:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Network error occurred',
+        error: error.response?.data?.message || error.response?.data?.error || error.message || 'Pack upload failed',
       };
     }
   },
@@ -105,25 +187,20 @@ export const uploadService = {
   ): Promise<ApiResponse> {
     try {
       const response = await uploadApi.uploadPackWithProgress(data, onProgress);
-      const result = await response.json();
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: result.message || result.error || 'Pack upload failed',
-        };
-      }
+      
+      // Axios response - data is in response.data
+      const result = response.data;
 
       return {
         success: true,
         data: result,
         message: 'Sample pack uploaded successfully',
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Pack upload error:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Network error occurred',
+        error: error.response?.data?.message || error.response?.data?.error || error.message || 'Pack upload failed',
       };
     }
   },
@@ -246,12 +323,20 @@ export const uploadService = {
       errors.push('Sample name is required');
     }
 
+    if (!data.artist.trim()) {
+      errors.push('Artist name is required');
+    }
+
     if (!data.price || parseFloat(data.price) <= 0) {
       errors.push('Valid price is required');
     }
 
-    if (!data.genre.trim()) {
-      errors.push('Genre is required');
+    if (!data.sampleType) {
+      errors.push('Sample type is required');
+    }
+
+    if (!data.instrumentGroup) {
+      errors.push('Instrument group is required');
     }
 
     if (!data.file) {
@@ -263,7 +348,7 @@ export const uploadService = {
       }
     }
 
-    if (data.bpm && (parseInt(data.bpm) < 0 || parseInt(data.bpm) > 300)) {
+    if (data.bpm && (data.bpm < 0 || data.bpm > 300)) {
       errors.push('BPM must be between 0 and 300');
     }
 

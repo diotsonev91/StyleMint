@@ -32,18 +32,18 @@ public class UploadSampleRequest {
     @Digits(integer = 10, fraction = 2, message = "Price must have at most 2 decimal places")
     private BigDecimal price;
 
-    @NotNull(message = "BPM is required")
-    @Min(value = 1, message = "BPM must be at least 1")
+    // Make BPM optional with default value
+    @Min(value = 0, message = "BPM must be at least 0")
     @Max(value = 300, message = "BPM must not exceed 300")
-    private Integer bpm;
+    private Integer bpm = 0;
 
-    @NotNull(message = "Musical key is required")
+    // Make musical key optional
     private MusicalKey musicalKey;
 
-    @NotNull(message = "Musical scale is required")
+    // Make musical scale optional
     private MusicalScale musicalScale;
 
-    @NotNull(message = "Genre is required")
+    // Make genre optional
     private Genre genre;
 
     @NotNull(message = "Sample type is required")

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import './ChooseYourSoundsPage.css';
 import { useNavigate } from 'react-router-dom';
+import { ProducerSection } from './ProducerSection';
 
 
 
@@ -136,6 +137,8 @@ const navigate = useNavigate();
             </div>
           ))}
         </div>
+
+        <ProducerSection />
 
         {/* Footer Info */}
         <div className="choose-sounds-footer">

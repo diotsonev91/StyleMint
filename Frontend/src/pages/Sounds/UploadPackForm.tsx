@@ -1,20 +1,41 @@
-// src/components/UploadPackForm.tsx - WITH AUDIO PREVIEW
-import React, { useState, useRef } from 'react';
+// src/components/UploadPackForm.tsx - WITH AUTH PROTECTION & AUDIO PREVIEW
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { uploadService } from '../../services/audioService';
+import { checkAuth } from '../../api/auth';
+import { 
+  MusicalKey, 
+  MusicalScale, 
+  SampleType, 
+  Genre, 
+  InstrumentGroup,
+  getMusicalKeyDisplayName,
+  getMusicalScaleDisplayName,
+  getSampleTypeDisplayName,
+  getInstrumentGroupDisplayName
+} from '../../types/audioEnums';
 import './UploadPackForm.css';
 
 interface Sample {
   id: string;
   file: File;
   name: string;
+  artist: string;
   duration?: string;
   bpm?: number;
-  key?: string;
-  genre?: string;
-  audioUrl?: string; // ✅ Added for preview
+  musicalKey?: MusicalKey;
+  musicalScale?: MusicalScale;
+  genre?: Genre;
+  sampleType: SampleType;
+  instrumentGroup: InstrumentGroup;
+  audioUrl?: string;
 }
 
 const UploadPackForm: React.FC = () => {
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
   const [step, setStep] = useState<1 | 2>(1);
   
   // Pack Information
@@ -24,7 +45,7 @@ const UploadPackForm: React.FC = () => {
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string>('');
   const [description, setDescription] = useState('');
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   
@@ -35,22 +56,58 @@ const UploadPackForm: React.FC = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  // ✅ Audio playback state
+  // Audio playback state
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const availableGenres = [
-    "Afro House",
-    "Deep House",
-    "Tech House",
-    "Techno",
-    "House",
-    "Progressive House",
-    "Melodic Techno",
-    "Minimal"
-  ];
+  // Enum options for dropdowns
+  const musicalKeyOptions = Object.values(MusicalKey);
+  const musicalScaleOptions = Object.values(MusicalScale);
+  const sampleTypeOptions = Object.values(SampleType);
+  const genreOptions = Object.values(Genre);
+  const instrumentGroupOptions = Object.values(InstrumentGroup);
 
-  const availableKeys = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B", "Cm", "C#m", "Dm", "D#m", "Em", "Fm", "F#m", "Gm", "G#m", "Am", "A#m", "Bm"];
+  // Check authentication on component mount
+  useEffect(() => {
+    const verifyAuth = async () => {
+      setIsCheckingAuth(true);
+      try {
+        const authenticated = await checkAuth();
+        setIsAuthenticated(authenticated);
+        
+        if (!authenticated) {
+          sessionStorage.setItem('redirectAfterLogin', '/upload-pack');
+          setTimeout(() => {
+            navigate('/login');
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        setIsAuthenticated(false);
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    verifyAuth();
+  }, [navigate]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      samples.forEach(sample => {
+        if (sample.audioUrl) {
+          URL.revokeObjectURL(sample.audioUrl);
+        }
+      });
+    };
+  }, [samples]);
 
   // Cover image handler
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,7 +124,7 @@ const UploadPackForm: React.FC = () => {
   };
 
   // Genre handler
-  const toggleGenre = (genre: string) => {
+  const toggleGenre = (genre: Genre) => {
     if (selectedGenres.includes(genre)) {
       setSelectedGenres(selectedGenres.filter(g => g !== genre));
     } else {
@@ -87,16 +144,14 @@ const UploadPackForm: React.FC = () => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-  // ✅ Audio playback handlers
+  // Audio playback handlers
   const handlePlaySample = (sample: Sample) => {
     if (playingSampleId === sample.id) {
-      // Pause if already playing
       if (audioRef.current) {
         audioRef.current.pause();
         setPlayingSampleId(null);
       }
     } else {
-      // Play new sample
       if (audioRef.current) {
         audioRef.current.pause();
       }
@@ -127,15 +182,17 @@ const UploadPackForm: React.FC = () => {
     const files = e.target.files;
     if (files) {
       const newSamples: Sample[] = Array.from(files).map(file => {
-        // ✅ Create object URL for audio preview
         const audioUrl = URL.createObjectURL(file);
         
         return {
           id: Math.random().toString(36).substr(2, 9),
           file,
           name: file.name.replace(/\.[^/.]+$/, ""),
-          genre: selectedGenres[0] || '',
-          audioUrl, // ✅ Store URL for playback
+          artist: artist, // Use the pack artist as default
+          genre: selectedGenres[0], // Use first selected genre as default
+          sampleType: SampleType.ONESHOT, // Default to one shot
+          instrumentGroup: InstrumentGroup.DRUMS, // Default to drums
+          audioUrl,
         };
       });
       
@@ -151,13 +208,11 @@ const UploadPackForm: React.FC = () => {
   };
 
   const removeSample = (id: string) => {
-    // Stop playback if this sample is playing
     if (playingSampleId === id && audioRef.current) {
       audioRef.current.pause();
       setPlayingSampleId(null);
     }
 
-    // Find and revoke the object URL to prevent memory leaks
     const sample = samples.find(s => s.id === id);
     if (sample?.audioUrl) {
       URL.revokeObjectURL(sample.audioUrl);
@@ -183,6 +238,12 @@ const UploadPackForm: React.FC = () => {
   // Submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isAuthenticated) {
+      setUploadError('You must be logged in to upload sample packs');
+      navigate('/login');
+      return;
+    }
     
     if (!isStep2Valid()) {
       setUploadError('Please add at least 1 sample');
@@ -200,26 +261,29 @@ const UploadPackForm: React.FC = () => {
     setUploadProgress(0);
 
     try {
-      // Prepare samples data
+      // Prepare samples data with correct types
       const samplesData = samples.map(sample => ({
         file: sample.file,
         name: sample.name,
+        artist: sample.artist,
         bpm: sample.bpm,
-        key: sample.key,
+        musicalKey: sample.musicalKey,
+        musicalScale: sample.musicalScale,
         genre: sample.genre,
+        sampleType: sample.sampleType,
+        instrumentGroup: sample.instrumentGroup,
       }));
 
-      // Use upload service with progress tracking
       const response = await uploadService.uploadPackWithProgress(
         {
           title: packTitle,
           artist: artist,
           price: price,
           description: description,
-          genres: selectedGenres,
+          genres: selectedGenres, // Now using Genre[] instead of string[]
           tags: tags,
           coverImage: coverImage,
-          samples: samplesData,
+          samples: samplesData, // Now matches the correct type
         },
         (progress) => {
           setUploadProgress(Math.round(progress));
@@ -232,11 +296,26 @@ const UploadPackForm: React.FC = () => {
           resetForm();
         }, 3000);
       } else {
-        setUploadError(response.error || 'Upload failed. Please try again.');
+        if (response.error?.includes('401') || response.error?.includes('unauthorized')) {
+          setUploadError('Session expired. Please log in again.');
+          setTimeout(() => {
+            navigate('/login');
+          }, 2000);
+        } else {
+          setUploadError(response.error || 'Upload failed. Please try again.');
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
-      setUploadError('An unexpected error occurred. Please try again.');
+      
+      if (error?.response?.status === 401) {
+        setUploadError('Session expired. Please log in again.');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      } else {
+        setUploadError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -244,14 +323,12 @@ const UploadPackForm: React.FC = () => {
   };
 
   const resetForm = () => {
-    // Stop any playing audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
     }
     setPlayingSampleId(null);
 
-    // Revoke all object URLs
     samples.forEach(sample => {
       if (sample.audioUrl) {
         URL.revokeObjectURL(sample.audioUrl);
@@ -273,23 +350,50 @@ const UploadPackForm: React.FC = () => {
     setUploadProgress(0);
   };
 
-  // Cleanup on unmount
-  React.useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      samples.forEach(sample => {
-        if (sample.audioUrl) {
-          URL.revokeObjectURL(sample.audioUrl);
-        }
-      });
-    };
-  }, []);
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="upload-pack-page">
+        <div className="upload-background">
+          <div className="gradient-orb orb-1"></div>
+          <div className="gradient-orb orb-2"></div>
+          <div className="gradient-orb orb-3"></div>
+        </div>
+        <div className="upload-container">
+          <div className="auth-check-container">
+            <div className="spinner-large"></div>
+            <p>Verifying authentication...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="upload-pack-page">
+        <div className="upload-background">
+          <div className="gradient-orb orb-1"></div>
+          <div className="gradient-orb orb-2"></div>
+          <div className="gradient-orb orb-3"></div>
+        </div>
+        <div className="upload-container">
+          <div className="alert alert-warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <strong>Authentication Required</strong>
+              <p>You must be logged in to upload sample packs. Redirecting to login...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="upload-pack-page">
-      {/* Background */}
       <div className="upload-background">
         <div className="gradient-orb orb-1"></div>
         <div className="gradient-orb orb-2"></div>
@@ -297,7 +401,6 @@ const UploadPackForm: React.FC = () => {
       </div>
 
       <div className="upload-container">
-        {/* Header */}
         <header className="upload-header">
           <h1 className="upload-title">
             Upload <span className="gradient-text">Sample Pack</span>
@@ -307,7 +410,6 @@ const UploadPackForm: React.FC = () => {
           </p>
         </header>
 
-        {/* Progress Steps */}
         <div className="progress-steps">
           <div className={`step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
             <div className="step-circle">
@@ -328,7 +430,6 @@ const UploadPackForm: React.FC = () => {
           </div>
         </div>
 
-        {/* Status Messages */}
         {uploadError && (
           <div className="alert alert-error">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -347,12 +448,9 @@ const UploadPackForm: React.FC = () => {
           </div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="upload-form">
-          {/* Step 1: Pack Information */}
           {step === 1 && (
             <div className="form-step">
-              {/* Pack Title */}
               <div className="form-group">
                 <label>Pack Title *</label>
                 <input
@@ -365,7 +463,6 @@ const UploadPackForm: React.FC = () => {
                 />
               </div>
 
-              {/* Artist */}
               <div className="form-group">
                 <label>Artist Name *</label>
                 <input
@@ -378,7 +475,6 @@ const UploadPackForm: React.FC = () => {
                 />
               </div>
 
-              {/* Price */}
               <div className="form-group">
                 <label>Price (USD) *</label>
                 <input
@@ -393,7 +489,6 @@ const UploadPackForm: React.FC = () => {
                 />
               </div>
 
-              {/* Cover Image */}
               <div className="form-group">
                 <label>Cover Image *</label>
                 <div className="cover-upload-area">
@@ -421,7 +516,6 @@ const UploadPackForm: React.FC = () => {
                 </div>
               </div>
 
-              {/* Description */}
               <div className="form-group">
                 <label>Description *</label>
                 <textarea
@@ -434,11 +528,10 @@ const UploadPackForm: React.FC = () => {
                 />
               </div>
 
-              {/* Genres */}
               <div className="form-group">
                 <label>Genres * (Select at least one)</label>
                 <div className="genre-grid">
-                  {availableGenres.map(genre => (
+                  {genreOptions.map(genre => (
                     <button
                       key={genre}
                       type="button"
@@ -451,13 +544,12 @@ const UploadPackForm: React.FC = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                       )}
-                      {genre}
+                      {genre.replace('_', ' ')}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Tags */}
               <div className="form-group">
                 <label>Tags (Optional)</label>
                 <div className="tag-input-container">
@@ -494,7 +586,6 @@ const UploadPackForm: React.FC = () => {
                 )}
               </div>
 
-              {/* Navigation */}
               <div className="form-actions">
                 <button
                   type="button"
@@ -511,10 +602,8 @@ const UploadPackForm: React.FC = () => {
             </div>
           )}
 
-          {/* Step 2: Add Samples */}
           {step === 2 && (
             <div className="form-step" style={{ animation: 'slideIn 0.5s ease-out' }}>
-              {/* Upload Samples */}
               <div className="form-section">
                 <label className="section-label">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -540,7 +629,6 @@ const UploadPackForm: React.FC = () => {
                 </label>
               </div>
 
-              {/* Samples List */}
               {samples.length > 0 && (
                 <div className="samples-list">
                   <div className="samples-header">
@@ -551,7 +639,6 @@ const UploadPackForm: React.FC = () => {
                     <div key={sample.id} className="sample-item-edit">
                       <div className="sample-number">{index + 1}</div>
                       
-                      {/* ✅ Play Button */}
                       <button
                         type="button"
                         className={`sample-play-button ${playingSampleId === sample.id ? 'playing' : ''}`}
@@ -572,12 +659,25 @@ const UploadPackForm: React.FC = () => {
 
                       <div className="sample-edit-grid">
                         <div className="form-group">
-                          <label>Sample Name</label>
+                          <label>Sample Name *</label>
                           <input
                             type="text"
                             value={sample.name}
                             onChange={(e) => updateSample(sample.id, 'name', e.target.value)}
                             placeholder="Sample name"
+                            required
+                            disabled={isUploading}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Artist *</label>
+                          <input
+                            type="text"
+                            value={sample.artist}
+                            onChange={(e) => updateSample(sample.id, 'artist', e.target.value)}
+                            placeholder="Artist name"
+                            required
                             disabled={isUploading}
                           />
                         </div>
@@ -596,29 +696,83 @@ const UploadPackForm: React.FC = () => {
                         </div>
 
                         <div className="form-group">
-                          <label>Key (Optional)</label>
+                          <label>Musical Key (Optional)</label>
                           <select
-                            value={sample.key || ''}
-                            onChange={(e) => updateSample(sample.id, 'key', e.target.value)}
+                            value={sample.musicalKey || ''}
+                            onChange={(e) => updateSample(sample.id, 'musicalKey', e.target.value as MusicalKey)}
                             disabled={isUploading}
                           >
                             <option value="">Select key</option>
-                            {availableKeys.map(key => (
-                              <option key={key} value={key}>{key}</option>
+                            {musicalKeyOptions.map(key => (
+                              <option key={key} value={key}>
+                                {getMusicalKeyDisplayName(key)}
+                              </option>
                             ))}
                           </select>
                         </div>
 
                         <div className="form-group">
-                          <label>Genre</label>
+                          <label>Musical Scale (Optional)</label>
+                          <select
+                            value={sample.musicalScale || ''}
+                            onChange={(e) => updateSample(sample.id, 'musicalScale', e.target.value as MusicalScale)}
+                            disabled={isUploading}
+                          >
+                            <option value="">Select scale</option>
+                            {musicalScaleOptions.map(scale => (
+                              <option key={scale} value={scale}>
+                                {getMusicalScaleDisplayName(scale)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Genre (Optional)</label>
                           <select
                             value={sample.genre || ''}
-                            onChange={(e) => updateSample(sample.id, 'genre', e.target.value)}
+                            onChange={(e) => updateSample(sample.id, 'genre', e.target.value as Genre)}
                             disabled={isUploading}
                           >
                             <option value="">Select genre</option>
-                            {selectedGenres.map(genre => (
-                              <option key={genre} value={genre}>{genre}</option>
+                            {genreOptions.map(genre => (
+                              <option key={genre} value={genre}>
+                                {genre.replace('_', ' ')}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Sample Type *</label>
+                          <select
+                            value={sample.sampleType}
+                            onChange={(e) => updateSample(sample.id, 'sampleType', e.target.value as SampleType)}
+                            required
+                            disabled={isUploading}
+                          >
+                            <option value="">Select type</option>
+                            {sampleTypeOptions.map(type => (
+                              <option key={type} value={type}>
+                                {getSampleTypeDisplayName(type)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Instrument Group *</label>
+                          <select
+                            value={sample.instrumentGroup}
+                            onChange={(e) => updateSample(sample.id, 'instrumentGroup', e.target.value as InstrumentGroup)}
+                            required
+                            disabled={isUploading}
+                          >
+                            <option value="">Select group</option>
+                            {instrumentGroupOptions.map(group => (
+                              <option key={group} value={group}>
+                                {getInstrumentGroupDisplayName(group)}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -640,7 +794,6 @@ const UploadPackForm: React.FC = () => {
                 </div>
               )}
 
-              {/* Navigation */}
               <div className="form-actions">
                 <button
                   type="button"

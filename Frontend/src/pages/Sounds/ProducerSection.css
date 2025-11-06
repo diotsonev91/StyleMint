@@ -1,0 +1,297 @@
+/* ProducerSection.css */
+
+.producer-section {
+  width: 100%;
+  padding: 4rem 2rem;
+  background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin: 4rem 0;
+}
+
+.producer-section-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Loading State */
+.producer-section-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem 0;
+}
+
+.loading-spinner-small {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Header */
+.producer-section-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.producer-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+  border-radius: 50%;
+  border: 2px solid rgba(102, 126, 234, 0.3);
+}
+
+.producer-icon svg {
+  width: 40px;
+  height: 40px;
+  stroke: #667eea;
+  stroke-width: 2;
+}
+
+.producer-section-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.producer-section-subtitle {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Actions Grid */
+.producer-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* Action Cards */
+.producer-action-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.producer-action-card:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
+}
+
+.action-card-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.action-card-icon svg {
+  width: 32px;
+  height: 32px;
+  stroke-width: 2;
+}
+
+.sample-icon {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(0, 242, 254, 0.2));
+  border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+.sample-icon svg {
+  stroke: #4facfe;
+}
+
+.pack-icon {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.pack-icon svg {
+  stroke: #fbbf24;
+}
+
+.producer-action-card h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 0.75rem;
+}
+
+.producer-action-card p {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+/* Buttons */
+.producer-btn {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.producer-btn svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+.producer-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Upload Button */
+.producer-btn-upload {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.producer-btn-upload:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.producer-btn-upload:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* View Button */
+.producer-btn-view {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.producer-btn-view:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Auth Notice */
+.producer-auth-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 8px;
+  color: #fbbf24;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.producer-auth-notice svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  stroke: #fbbf24;
+  stroke-width: 2;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .producer-section {
+    padding: 3rem 1.5rem;
+    margin: 3rem 0;
+  }
+
+  .producer-section-title {
+    font-size: 2rem;
+  }
+
+  .producer-section-subtitle {
+    font-size: 1rem;
+  }
+
+  .producer-actions {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .producer-action-card {
+    padding: 1.5rem;
+  }
+
+  .producer-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .producer-icon svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .action-card-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .action-card-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .producer-section {
+    padding: 2rem 1rem;
+  }
+
+  .producer-section-title {
+    font-size: 1.75rem;
+  }
+
+  .producer-auth-notice {
+    flex-direction: column;
+    text-align: center;
+  }
+}

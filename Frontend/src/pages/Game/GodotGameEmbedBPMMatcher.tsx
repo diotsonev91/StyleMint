@@ -1,28 +1,16 @@
-// src/components/GodotGameEmbedBPM.tsx
-// СЪЩАТА СТРУКТУРА КАТО Color Rush - ИЗПОЛЗВА IFRAME!
+// src/components/GodotGameEmbedBPMMatcher.tsx
+// СТРУКТУРА КАТО Color Rush - ИЗПОЛЗВА IFRAME!
 
 import React, { useEffect, useState } from 'react';
-
-
-interface GameScore {
-  score: number;
-  timestamp: number;
-  date: string;
-  game_mode: string;
-  difficulty: string;
-}
+import { gameService, GameScore } from '../../services/GameService';
 
 interface GodotGameEmbedBPMProps {
-  backendUrl?: string;
-  authToken?: string;
   gameTitle?: string;
   width?: string | number;
   height?: string | number;
 }
 
 const GodotGameEmbedBPM: React.FC<GodotGameEmbedBPMProps> = ({
-  backendUrl = 'http://localhost:8080',
-  authToken = '',
   gameTitle = 'BPM Matcher',
   width = '60%',
   height = '600px'
@@ -42,7 +30,11 @@ const GodotGameEmbedBPM: React.FC<GodotGameEmbedBPMProps> = ({
 
     window.addEventListener('message', handleMessage);
     (window as any).onGodotGameOver = handleGameOver;
-    (window as any).GAME_CONFIG = { backendUrl, authToken };
+    
+    // Inject config for iframe (no auth token needed - uses cookies)
+    (window as any).GAME_CONFIG = {
+      backendUrl: gameService.getBackendUrl()
+    };
 
     fetchTopScores();
 
@@ -51,7 +43,7 @@ const GodotGameEmbedBPM: React.FC<GodotGameEmbedBPMProps> = ({
       delete (window as any).onGodotGameOver;
       delete (window as any).GAME_CONFIG;
     };
-  }, [backendUrl, authToken]);
+  }, []);
 
   const handleGameOver = async (data: GameScore) => {
     console.log('🎵 BPM Game Over:', data);
@@ -62,59 +54,36 @@ const GodotGameEmbedBPM: React.FC<GodotGameEmbedBPMProps> = ({
 
   const sendScoreToBackend = async (gameData: GameScore) => {
     setSaveStatus('saving');
-    try {
-      const response = await fetch(`${backendUrl}/api/game/scores`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
-        },
-        body: JSON.stringify({
-          score: gameData.score,
-          timestamp: gameData.timestamp,
-          date: gameData.date,
-          gameMode: gameData.game_mode || 'normal',
-          difficulty: gameData.difficulty || 'normal',
-          gameName: 'bpm-matcher'
-        }),
-      });
+    
+    const result = await gameService.saveScore({
+      score: gameData.score,
+      timestamp: gameData.timestamp,
+      date: gameData.date,
+      gameMode: gameData.game_mode || 'normal',
+      difficulty: gameData.difficulty || 'normal',
+      gameName: 'bpm-matcher'
+    });
 
-      if (response.ok) {
-        console.log('✅ Score saved');
-        setSaveStatus('success');
-      } else {
-        throw new Error('Save failed');
-      }
-    } catch (err) {
-      console.error('❌ Error:', err);
+    if (result.success) {
+      console.log('✅ Score saved');
+      setSaveStatus('success');
+    } else {
+      console.error('❌ Error:', result.error);
       setSaveStatus('error');
     }
+    
     setTimeout(() => setSaveStatus('idle'), 3000);
   };
 
   const fetchTopScores = async () => {
-    try {
-      const response = await fetch(`${backendUrl}/api/game/leaderboard/top10`);
-      if (response.ok) {
-        setTopScores(await response.json());
-      } else {
-        useMockScores();
-      }
-    } catch {
-      useMockScores();
+    const result = await gameService.fetchTopScores();
+    
+    if (result.success && result.data) {
+      setTopScores(result.data);
+    } else {
+      console.log('Using mock scores (backend not available)');
+      setTopScores(gameService.getMockScores('bpm'));
     }
-  };
-
-  const useMockScores = () => {
-    setTopScores([
-      { rank: 1, username: 'BeatMaster', score: 9850 },
-      { rank: 2, username: 'RhythmKing', score: 9420 },
-      { rank: 3, username: 'MusicPro', score: 8990 },
-      { rank: 4, username: 'TempoPro', score: 8450 },
-      { rank: 5, username: 'BassHunter', score: 7980 },
-      { rank: 6, username: 'DrumMaster', score: 7520 },
-      { rank: 7, username: 'SynthWave', score: 7100 }
-    ]);
   };
 
   return (
@@ -179,6 +148,7 @@ const GodotGameEmbedBPM: React.FC<GodotGameEmbedBPMProps> = ({
               <p><strong>Source:</strong> /bpm-game/bpm.html</p>
               <p><strong>Last Score:</strong> {lastScore ?? 'None'}</p>
               <p><strong>Status:</strong> {saveStatus}</p>
+              <p><strong>Backend:</strong> {gameService.getBackendUrl()}</p>
             </div>
           </details>
         </div>

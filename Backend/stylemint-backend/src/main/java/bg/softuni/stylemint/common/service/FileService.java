@@ -2,6 +2,7 @@ package bg.softuni.stylemint.common.service;
 
 import bg.softuni.stylemint.common.exception.FileProcessingException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,37 +18,64 @@ import java.util.function.Consumer;
 @Slf4j
 public class FileService {
 
-    private final Path storageRoot = Paths.get("storage");
+    @Value("${app.storage.base-path:uploads}")
+    private String basePath;  // Използваме настройката от properties
 
     public String storeFile(MultipartFile file, String category, String userId) {
         try {
-            Path dir = storageRoot.resolve(category).resolve(userId.toString());
+            // Път за директорията, която ще съдържа файловете на потребителя
+            Path dir = Paths.get(basePath).resolve(category).resolve(userId.toString());
+
+            // Създаване на всички липсващи директории
             Files.createDirectories(dir);
 
+            // Лог за директорията
+            log.info("Storing file in directory: {}", dir.toAbsolutePath());
+
+            // Получаваме името на файла и го чистим от невалидни символи
             String filename = StringUtils.cleanPath(file.getOriginalFilename());
+            log.info("Filename: {}", filename);
+
+            // Път към целевия файл
             Path targetPath = dir.resolve(filename);
+
+            // Прехвърляне на файла в целевата директория
             file.transferTo(targetPath.toFile());
 
+            // Лог за успешното съхранение
             log.info("Stored file: {} in {}", filename, targetPath.toAbsolutePath());
+
+            // Връщаме пълния път до файла
             return targetPath.toString();
         } catch (IOException e) {
-            log.error("Failed to store file", e);
+            // Логваме грешката и хвърляме специфичната грешка
+            log.error("Error occurred while storing file: {}", e.getMessage(), e);
             throw new FileProcessingException("Failed to store file");
         }
     }
 
 
-    private String getExtension(String filename) {
-        int idx = filename.lastIndexOf('.');
-        return idx > 0 ? filename.substring(idx) : "";
+    // Метод за обработка на файла - съхранява го, ако има нов
+    public void processFile(MultipartFile file, String category, UUID userId, String currentPath, Consumer<String> pathSetter) {
+        if (file != null && !file.isEmpty()) {
+            if (currentPath != null) {
+                // Изтриваме стария файл и го заменяме с нов
+                deleteFile(currentPath);
+            }
+
+            String newPath = storeFile(file, category, userId.toString());
+            pathSetter.accept(newPath);
+        }
     }
+
 
     public void deleteFile(String filePath) {
         if (filePath == null || filePath.isBlank()) {
-            return; // nothing to delete
+            return; // Няма какво да се изтрие
         }
 
-        Path path = Paths.get(filePath);
+        Path path = Paths.get(basePath);
+
         try {
             if (Files.exists(path)) {
                 Files.delete(path);
@@ -58,17 +86,4 @@ public class FileService {
             throw new FileProcessingException("Failed to delete file");
         }
     }
-
-    public void processFile(MultipartFile file, String category, UUID userId, String currentPath, Consumer<String> pathSetter) {
-        if (file != null && !file.isEmpty()) {
-            if (currentPath != null) {
-                deleteFile(currentPath);
-            }
-
-            String newPath = storeFile(file, category, userId.toString());
-            pathSetter.accept(newPath);
-        }
-    }
-
-
 }

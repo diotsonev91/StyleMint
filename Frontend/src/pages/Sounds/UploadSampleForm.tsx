@@ -1,43 +1,84 @@
 // src/components/UploadSampleForm.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { uploadService } from '../../services/audioService';
+import { checkAuth } from '../../api/auth';
+import { 
+  MusicalKey, 
+  MusicalScale, 
+  SampleType, 
+  Genre, 
+  InstrumentGroup,
+  getMusicalKeyDisplayName,
+  getMusicalScaleDisplayName,
+  getSampleTypeDisplayName,
+  getInstrumentGroupDisplayName
+} from '../../types/audioEnums';
 import './UploadSampleForm.css';
 
 const UploadSampleForm: React.FC = () => {
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  
+  // Form state
   const [sampleFile, setSampleFile] = useState<File | null>(null);
   const [sampleName, setSampleName] = useState('');
+  const [artist, setArtist] = useState('');
   const [price, setPrice] = useState('');
-  const [bpm, setBpm] = useState('');
-  const [key, setKey] = useState('');
-  const [genre, setGenre] = useState('');
+  const [bpm, setBpm] = useState<number | undefined>(undefined);
+  const [musicalKey, setMusicalKey] = useState<MusicalKey | undefined>(undefined);
+  const [musicalScale, setMusicalScale] = useState<MusicalScale | undefined>(undefined);
+  const [genre, setGenre] = useState<Genre | undefined>(undefined);
+  const [sampleType, setSampleType] = useState<SampleType | undefined>(undefined);
+  const [instrumentGroup, setInstrumentGroup] = useState<InstrumentGroup | undefined>(undefined);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  const availableGenres = [
-    "Afro House",
-    "Deep House",
-    "Tech House",
-    "Techno",
-    "House",
-    "Progressive House",
-    "Melodic Techno",
-    "Minimal"
-  ];
+  // Enum options for dropdowns
+  const musicalKeyOptions = Object.values(MusicalKey);
+  const musicalScaleOptions = Object.values(MusicalScale);
+  const sampleTypeOptions = Object.values(SampleType);
+  const genreOptions = Object.values(Genre);
+  const instrumentGroupOptions = Object.values(InstrumentGroup);
 
-  const availableKeys = [
-    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
-    "Cm", "C#m", "Dm", "D#m", "Em", "Fm", "F#m", "Gm", "G#m", "Am", "A#m", "Bm"
-  ];
+  // Check authentication on component mount
+  useEffect(() => {
+    const verifyAuth = async () => {
+      setIsCheckingAuth(true);
+      try {
+        const authenticated = await checkAuth();
+        setIsAuthenticated(authenticated);
+        
+        if (!authenticated) {
+          sessionStorage.setItem('redirectAfterLogin', '/upload');
+          setTimeout(() => {
+            navigate('/login');
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        setIsAuthenticated(false);
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    verifyAuth();
+  }, [navigate]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setSampleFile(file);
-      // Auto-fill sample name from filename
       const nameWithoutExtension = file.name.replace(/\.[^/.]+$/, "");
       setSampleName(nameWithoutExtension);
       setUploadError(null);
@@ -58,13 +99,20 @@ const UploadSampleForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validation
+    if (!isAuthenticated) {
+      setUploadError('You must be logged in to upload samples');
+      navigate('/login');
+      return;
+    }
+
     if (!sampleFile) {
       setUploadError('Please select an audio file');
       return;
     }
 
-    if (!genre) {
-      setUploadError('Please select a genre');
+    if (!sampleName || !artist || !price || !sampleType || !instrumentGroup) {
+      setUploadError('Please fill all required fields');
       return;
     }
 
@@ -74,15 +122,18 @@ const UploadSampleForm: React.FC = () => {
     setUploadProgress(0);
 
     try {
-      // Use upload service with progress tracking
       const response = await uploadService.uploadSampleWithProgress(
         {
           file: sampleFile,
           name: sampleName,
+          artist: artist,
           price: price,
           bpm: bpm,
-          key: key,
+          musicalKey: musicalKey,
+          musicalScale: musicalScale,
           genre: genre,
+          sampleType: sampleType,
+          instrumentGroup: instrumentGroup,
           tags: tags
         },
         (progress) => {
@@ -96,11 +147,26 @@ const UploadSampleForm: React.FC = () => {
           resetForm();
         }, 2000);
       } else {
-        setUploadError(response.error || 'Upload failed. Please try again.');
+        if (response.error?.includes('401') || response.error?.includes('unauthorized')) {
+          setUploadError('Session expired. Please log in again.');
+          setTimeout(() => {
+            navigate('/login');
+          }, 2000);
+        } else {
+          setUploadError(response.error || 'Upload failed. Please try again.');
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
-      setUploadError('An unexpected error occurred. Please try again.');
+      
+      if (error?.response?.status === 401) {
+        setUploadError('Session expired. Please log in again.');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      } else {
+        setUploadError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -110,10 +176,14 @@ const UploadSampleForm: React.FC = () => {
   const resetForm = () => {
     setSampleFile(null);
     setSampleName('');
+    setArtist('');
     setPrice('');
-    setBpm('');
-    setKey('');
-    setGenre('');
+    setBpm(undefined);
+    setMusicalKey(undefined);
+    setMusicalScale(undefined);
+    setGenre(undefined);
+    setSampleType(undefined);
+    setInstrumentGroup(undefined);
     setTags([]);
     setTagInput('');
     setUploadError(null);
@@ -121,9 +191,50 @@ const UploadSampleForm: React.FC = () => {
     setUploadProgress(0);
   };
 
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="upload-sample-page">
+        <div className="upload-background">
+          <div className="gradient-orb orb-1"></div>
+          <div className="gradient-orb orb-2"></div>
+          <div className="gradient-orb orb-3"></div>
+        </div>
+        <div className="upload-container-single">
+          <div className="auth-check-container">
+            <div className="spinner-large"></div>
+            <p>Verifying authentication...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="upload-sample-page">
+        <div className="upload-background">
+          <div className="gradient-orb orb-1"></div>
+          <div className="gradient-orb orb-2"></div>
+          <div className="gradient-orb orb-3"></div>
+        </div>
+        <div className="upload-container-single">
+          <div className="alert alert-warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <strong>Authentication Required</strong>
+              <p>You must be logged in to upload samples. Redirecting to login...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="upload-sample-page">
-      {/* Background */}
       <div className="upload-background">
         <div className="gradient-orb orb-1"></div>
         <div className="gradient-orb orb-2"></div>
@@ -131,7 +242,6 @@ const UploadSampleForm: React.FC = () => {
       </div>
 
       <div className="upload-container-single">
-        {/* Header */}
         <header className="upload-header">
           <div className="header-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -146,7 +256,6 @@ const UploadSampleForm: React.FC = () => {
           </p>
         </header>
 
-        {/* Success Message */}
         {uploadSuccess && (
           <div className="alert alert-success">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -156,7 +265,6 @@ const UploadSampleForm: React.FC = () => {
           </div>
         )}
 
-        {/* Error Message */}
         {uploadError && (
           <div className="alert alert-error">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -166,7 +274,6 @@ const UploadSampleForm: React.FC = () => {
           </div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="upload-form-single">
           {/* Audio File Upload */}
           <div className="form-section-highlight">
@@ -174,7 +281,7 @@ const UploadSampleForm: React.FC = () => {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
-              Select Audio File
+              Select Audio File *
             </label>
 
             {sampleFile ? (
@@ -218,7 +325,6 @@ const UploadSampleForm: React.FC = () => {
             )}
           </div>
 
-          {/* Upload Progress */}
           {isUploading && uploadProgress > 0 && (
             <div className="upload-progress">
               <div className="progress-bar">
@@ -240,6 +346,18 @@ const UploadSampleForm: React.FC = () => {
                 value={sampleName}
                 onChange={(e) => setSampleName(e.target.value)}
                 placeholder="e.g. Deep Bass One Shot"
+                required
+                disabled={isUploading}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Artist Name *</label>
+              <input
+                type="text"
+                value={artist}
+                onChange={(e) => setArtist(e.target.value)}
+                placeholder="Your artist name"
                 required
                 disabled={isUploading}
               />
@@ -268,38 +386,89 @@ const UploadSampleForm: React.FC = () => {
                 type="number"
                 min="0"
                 max="300"
-                value={bpm}
-                onChange={(e) => setBpm(e.target.value)}
+                value={bpm || ''}
+                onChange={(e) => setBpm(e.target.value ? parseInt(e.target.value) : undefined)}
                 placeholder="120"
                 disabled={isUploading}
               />
             </div>
 
             <div className="form-group">
-              <label>Key (Optional)</label>
+              <label>Musical Key (Optional)</label>
               <select 
-                value={key} 
-                onChange={(e) => setKey(e.target.value)}
+                value={musicalKey || ''} 
+                onChange={(e) => setMusicalKey(e.target.value as MusicalKey)}
                 disabled={isUploading}
               >
                 <option value="">Select key</option>
-                {availableKeys.map(k => (
-                  <option key={k} value={k}>{k}</option>
+                {musicalKeyOptions.map(key => (
+                  <option key={key} value={key}>
+                    {getMusicalKeyDisplayName(key)}
+                  </option>
                 ))}
               </select>
             </div>
 
-            <div className="form-group full-width">
-              <label>Genre *</label>
+            <div className="form-group">
+              <label>Musical Scale (Optional)</label>
               <select 
-                value={genre} 
-                onChange={(e) => setGenre(e.target.value)}
-                required
+                value={musicalScale || ''} 
+                onChange={(e) => setMusicalScale(e.target.value as MusicalScale)}
+                disabled={isUploading}
+              >
+                <option value="">Select scale</option>
+                {musicalScaleOptions.map(scale => (
+                  <option key={scale} value={scale}>
+                    {getMusicalScaleDisplayName(scale)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Genre (Optional)</label>
+              <select 
+                value={genre || ''} 
+                onChange={(e) => setGenre(e.target.value as Genre)}
                 disabled={isUploading}
               >
                 <option value="">Select genre</option>
-                {availableGenres.map(g => (
-                  <option key={g} value={g}>{g}</option>
+                {genreOptions.map(g => (
+                  <option key={g} value={g}>{g.replace('_', ' ')}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Sample Type *</label>
+              <select 
+                value={sampleType || ''} 
+                onChange={(e) => setSampleType(e.target.value as SampleType)}
+                required
+                disabled={isUploading}
+              >
+                <option value="">Select type</option>
+                {sampleTypeOptions.map(type => (
+                  <option key={type} value={type}>
+                    {getSampleTypeDisplayName(type)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Instrument Group *</label>
+              <select 
+                value={instrumentGroup || ''} 
+                onChange={(e) => setInstrumentGroup(e.target.value as InstrumentGroup)}
+                required
+                disabled={isUploading}
+              >
+                <option value="">Select group</option>
+                {instrumentGroupOptions.map(group => (
+                  <option key={group} value={group}>
+                    {getInstrumentGroupDisplayName(group)}
+                  </option>
                 ))}
               </select>
             </div>
@@ -345,7 +514,6 @@ const UploadSampleForm: React.FC = () => {
             )}
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             className="btn-submit-single"
@@ -366,7 +534,6 @@ const UploadSampleForm: React.FC = () => {
             )}
           </button>
 
-          {/* Info Box */}
           <div className="info-box">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -378,6 +545,7 @@ const UploadSampleForm: React.FC = () => {
                 <li>File formats: WAV preferred, MP3 acceptable</li>
                 <li>Maximum file size: 50MB</li>
                 <li>Ensure you own the rights to the sample</li>
+                <li>Required fields: File, Name, Artist, Price, Sample Type, Instrument Group</li>
               </ul>
             </div>
           </div>
