@@ -8,7 +8,7 @@ import SamplesList from '../../components/sounds/SamplesList';
 import PackDetails from '../../components/sounds/PackDetails';
 import './SamplePackDetailedPage.css';
 import mockPacks from '../../mock/mockPacks'; 
-import { addSamplePackToCart } from '../../services/CartService';
+import { addSamplePackToCart } from '../../services/cartService';
 
 const SamplePackDetailledPage: React.FC = () => {
   const { packId } = useParams<{ packId: string }>();

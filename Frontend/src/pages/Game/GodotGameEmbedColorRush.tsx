@@ -1,6 +1,6 @@
 // src/components/GodotGameEmbedColorRush.tsx
 import React, { useEffect, useState } from 'react';
-import { gameService, GameScore } from '../../services/GameService';
+import { gameService, GameScore } from '../../services/gameService';
 import './GodotGameEmbed.css';
 
 interface GodotRunnerGameProps {

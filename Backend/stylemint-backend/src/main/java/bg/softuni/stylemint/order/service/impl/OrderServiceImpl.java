@@ -3,6 +3,7 @@ package bg.softuni.stylemint.order.service.impl;
 import bg.softuni.stylemint.order.dto.OrderItemDTO;
 import bg.softuni.stylemint.order.dto.OrderPreviewDTO;
 import bg.softuni.stylemint.order.dto.UserOrderSummaryDTO;
+import bg.softuni.stylemint.order.enums.ProductType;
 import bg.softuni.stylemint.order.model.Order;
 import bg.softuni.stylemint.order.model.OrderItem;
 import bg.softuni.stylemint.order.repository.OrderRepository;
@@ -66,6 +67,16 @@ public class OrderServiceImpl implements OrderService {
                 .recentOrders(recentOrderDTOs)
                 .totalSpent(totalSpent != null ? totalSpent : 0.0)
                 .build();
+    }
+
+    @Override
+    public List<OrderItem> findByOrderId(UUID orderId) {
+        return orderItemRepository.findByOrderId(orderId);
+    }
+
+    @Override
+    public List<OrderItem> findOrderItemsByOrderId(UUID id) {
+        return orderItemRepository.findByOrderId( id );
     }
 
     private OrderPreviewDTO mapToOrderPreviewDTO(Order order, List<OrderItem> orderItems) {

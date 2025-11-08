@@ -5,6 +5,8 @@ import bg.softuni.stylemint.product.common.model.BaseProduct;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -59,7 +61,13 @@ public class AudioSample extends BaseProduct {
     @JoinColumn(name = "pack_id")
     private SamplePack pack;
 
-
+    @ElementCollection
+    @CollectionTable(
+            name = "audio_sample_tags",
+            joinColumns = @JoinColumn(name = "sample_id")
+    )
+    @Column(name = "tag")
+    private List<String> tags = new ArrayList<>();
 
 
 }

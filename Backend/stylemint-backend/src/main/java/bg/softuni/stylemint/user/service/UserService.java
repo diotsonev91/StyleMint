@@ -19,4 +19,6 @@ public interface UserService {
     void deleteUser(UUID id);
 
     List<UserDTO> searchUsers(String query);
+
+    User getUserById(UUID userId);
 }

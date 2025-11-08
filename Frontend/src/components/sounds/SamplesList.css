@@ -102,3 +102,38 @@
   width: 100%;
   margin-top: var(--spacing-md);
 }
+
+/* Add to SampleItem.css */
+.creator-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.creator-price {
+  color: #667eea;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.edit-btn {
+  color: #f39c12;
+}
+
+.edit-btn:hover {
+  color: #e67e22;
+  background-color: rgba(243, 156, 18, 0.1);
+}
+
+.delete-btn {
+  color: #e74c3c;
+}
+
+.delete-btn:hover {
+  color: #c0392b;
+  background-color: rgba(231, 76, 60, 0.1);
+}

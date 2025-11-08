@@ -131,6 +131,11 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public User getUserById(UUID userId) {
+        return userRepository.getUserById(userId);
+    }
+
     private boolean canDeleteUser(UUID userId) {
         return orderService.countOrdersByUser(userId) == 0
                 && clothDesignService.countDesignsByUser(userId) == 0

@@ -40,12 +40,14 @@ export type SamplesFromPackDTO = {
   key?: string;
   genre?: string;
   instrument?: string;
-  sampleType: "loop" | "oneshot";
+  sampleType: "LOOP" | "ONESHOT";
   audioUrl: string;
   packName?: string;
   packId?: string;
   artist: string;
   price: number;
+  authorId: string;
+  tags: string[];
 };
 
 

@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -31,4 +32,5 @@ public class AudioSampleDTO {
     private String packTitle;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    private List<String> tags;
 }

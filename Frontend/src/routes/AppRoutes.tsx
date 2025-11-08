@@ -9,8 +9,8 @@ import SamplePackDetailledPage from "../pages/Sounds/SamplePackDetailledPage";
 import AllSamplesPage from "../pages/Sounds/AllSamplesPage";
 import ChooseYourSoundsPage from "../pages/Sounds/ChooseYourSoundsPage";
 import SamplePacksPage from "../pages/Sounds/SamplePacksPage";
-import UploadPackForm from "../pages/Sounds/UploadPackForm";
-import UploadSampleForm from "../pages/Sounds/UploadSampleForm";
+import UploadPackPage from "../pages/Sounds/UploadPackPage";
+import UploadSamplePage from "../pages/Sounds/UploadSamplePage";
 import GodotGameEmbedRush from "../pages/Game/GodotGameEmbedColorRush";
 import GodotGameEmbedBpm from "../pages/Game/GodotGameEmbedBPMMatcher";
 import ProfilePage from "../pages/User/UserProfile";
@@ -20,6 +20,7 @@ import { CheckoutSummary } from "../pages/Cart/CheckoutSummary";
 import { CheckoutSuccess } from "../pages/Cart/CheckoutPages";
 import GamesMenu from "../pages/Game/GamesMenu";
 import UserSamplesPage from "../pages/Sounds/UserSamplesPage";
+import EditSamplePage from "../pages/Sounds/EditSamplePage";
 
 // You can easily expand this later with private routes or 404 pages
 export const AppRoutes: React.FC = () => {
@@ -34,8 +35,8 @@ export const AppRoutes: React.FC = () => {
       <Route path="/sample-packs" element={<SamplePacksPage />} />
       <Route path="/samples" element={<AllSamplesPage />} />
       <Route path="/pack/:packId" element={<SamplePackDetailledPage />} />
-      <Route path="/upload-pack" element={<UploadPackForm />} />
-      <Route path="/upload-sample" element={<UploadSampleForm />} />
+      <Route path="/upload-pack" element={<UploadPackPage />} />
+      <Route path="/upload-sample" element={<UploadSamplePage />} />
       <Route path="/games" element={<GamesMenu />} />
        <Route path="/game/colorRush" element={<GodotGameEmbedRush />} />
       <Route path="/game/bpmMatcher" element={<GodotGameEmbedBpm />} />
@@ -48,6 +49,8 @@ export const AppRoutes: React.FC = () => {
         <Route path="/checkout/details" element={<CheckoutDetails />} />
          <Route path="/checkout/summary" element={<CheckoutSummary />} />
        <Route path="/checkout/success" element={<CheckoutSuccess />} />  
+
+        <Route path="/edit-sample/:sampleId" element={<EditSamplePage />} />
     </Routes>
   );
 };

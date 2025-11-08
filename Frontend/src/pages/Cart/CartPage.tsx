@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cartState, CartItemState } from "../../state";
 import { clearCart,addClothToCart, addSampleToCart, updateItemQuantity, removeItem,
-    addPackToCart, getClothesItems, getSampleItems, getPackItems} from "../../services/CartService";
-import { calculateTotalPrice, getTotalItemCount } from "../../services/OrderService";
+    addPackToCart, getClothesItems, getSampleItems, getPackItems} from "../../services/cartService";
+import { calculateTotalPrice, getTotalItemCount } from "../../services/orderService";
 import { ThreeCanvas } from "../../components/three/ThreeCanvas";
 import { ThreeCanvasAdvanced } from "../../components/three/ThreeCanvasAdvanced";
 import { audioPlayerActions, formatTime } from "../../state/audioPlayer.store";
@@ -317,6 +317,7 @@ function SampleCartRow({ item }: { item: CartItemState & { type: 'sample' } }) {
         genre: item.genre,
         price: item.price,
         sampleType: "oneshot",
+        authorId: "", // cheat here because dont need this here TODO FIX 
       });
     }
   };

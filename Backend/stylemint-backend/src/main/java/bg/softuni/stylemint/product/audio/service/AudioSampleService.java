@@ -28,13 +28,23 @@ public interface AudioSampleService {
     AudioSampleDTO getSampleById(UUID sampleId);
 
     /**
-     * Update sample metadata
+     * Update sample FILE and metadata
      * @param sampleId Sample ID
      * @param authorId Author ID (for authorization)
      * @param request Update request
      * @return Updated AudioSampleDTO
      */
     AudioSampleDTO updateSample(UUID sampleId, UUID authorId, UploadSampleRequest request);
+
+
+    /**
+     * Update sample METADATA
+     * @param sampleId Sample ID
+     * @param authorId Author ID (for authorization)
+     * @param request Update request
+     * @return Updated AudioSampleDTO
+     */
+    AudioSampleDTO updateSampleMetadata(UUID sampleId, UUID authorId, UpdateSampleRequest request);
 
     /**
      * Delete sample

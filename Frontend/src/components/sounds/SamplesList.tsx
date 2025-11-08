@@ -1,7 +1,10 @@
 // src/components/SamplesList.tsx
-import React, { useState } from 'react';
-import {  SamplesFromPackDTO } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { useSnapshot } from 'valtio';
+import { audioPlayerStore, audioPlayerActions } from '../../state/audioPlayer.store';
+import { SamplesFromPackDTO } from '../../types';
 import SampleItem from './SampleItem';
+import { useNavigate } from 'react-router-dom';
 import './SamplesList.css';
 
 interface SamplesListProps {
@@ -11,24 +14,29 @@ interface SamplesListProps {
 
 const SamplesList: React.FC<SamplesListProps> = ({ samples, onLoadMore }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
-
-const filteredSamples = samples.filter(sample => {
-  const q = searchQuery.toLowerCase();
-  return (
-    sample.name.toLowerCase().includes(q) ||
-    (sample.genre ?? "").toLowerCase().includes(q)
-  );
-});
-
-
-  const handleTogglePlay = (sampleId: string) => {
-    if (currentlyPlaying === sampleId) {
-      setCurrentlyPlaying(null);
-    } else {
-      setCurrentlyPlaying(sampleId);
+  const audioSnap = useSnapshot(audioPlayerStore);
+  const navigate = useNavigate();
+  // Preload samples when component mounts or samples change
+  useEffect(() => {
+    if (samples.length > 0) {
+      console.log('Preloading samples in SamplesList...');
+      // Preload first few samples for instant playback
+      const samplesToPreload = samples.slice(0, 5);
+      audioPlayerActions.preloadSamples(samplesToPreload).catch(console.error);
     }
-  };
+  }, [samples]);
+
+
+  const handleOnEdit = (sampleId: string) => {
+    navigate(`/edit-sample/${sampleId}`);
+  }
+  const filteredSamples = samples.filter(sample => {
+    const q = searchQuery.toLowerCase();
+    return (
+      sample.name.toLowerCase().includes(q) ||
+      (sample.genre ?? "").toLowerCase().includes(q)
+    );
+  });
 
   const handleDownload = (sampleId: string) => {
     console.log('Download sample:', sampleId);
@@ -67,6 +75,30 @@ const filteredSamples = samples.filter(sample => {
         )}
       </div>
 
+      {/* Loading State */}
+      {audioSnap.isLoading && (
+        <div className="global-loading">
+          <div className="loading-spinner"></div>
+          <span>Loading audio...</span>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {audioSnap.error && (
+        <div className="global-error">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{audioSnap.error}</span>
+          <button 
+            className="error-close"
+            onClick={() => audioPlayerActions.clearError()}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Samples */}
       <div className="samples-container">
         {filteredSamples.length > 0 ? (
@@ -74,8 +106,7 @@ const filteredSamples = samples.filter(sample => {
             <SampleItem
               key={sample.id}
               sample={sample}
-              isPlaying={currentlyPlaying === sample.id}
-              onTogglePlay={() => handleTogglePlay(sample.id)}
+              onEdit={() => handleOnEdit(sample.id)}
               onDownload={() => handleDownload(sample.id)}
               onLike={() => handleLike(sample.id)}
             />

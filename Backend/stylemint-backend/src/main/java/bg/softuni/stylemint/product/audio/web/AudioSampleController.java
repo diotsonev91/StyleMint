@@ -54,7 +54,7 @@ public class AudioSampleController {
     }
 
     /**
-     * Update sample
+     * Update sample file and metadata
      * PUT /api/v1/audio/samples/{sampleId}
      */
     @PutMapping(value = "/{sampleId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -65,6 +65,21 @@ public class AudioSampleController {
         UUID authorId = SecurityUtil.getCurrentUserId();
         AudioSampleDTO sample = audioSampleService.updateSample(sampleId, authorId, request);
         return ResponseEntity.ok(ApiResponse.success(sample, "Sample updated successfully"));
+    }
+
+    /**
+     * Update sample metadata
+     * PUT /api/v1/audio/samples/{sampleId}
+     */
+    @PutMapping(value = "/{sampleId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<AudioSampleDTO>> updateSampleMetadata(
+            @PathVariable UUID sampleId,
+            @Valid @RequestBody UpdateSampleRequest request) {
+
+        UUID authorId = SecurityUtil.getCurrentUserId();
+        AudioSampleDTO updated = audioSampleService.updateSampleMetadata(sampleId, authorId, request);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Sample metadata updated successfully"));
     }
 
     /**

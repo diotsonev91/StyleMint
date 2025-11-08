@@ -89,4 +89,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * Find users created between dates
      */
     List<User> findByCreatedAtBetween(OffsetDateTime startDate, OffsetDateTime endDate);
+
+    User getUserById(UUID id);
 }

@@ -19,6 +19,20 @@ export interface UploadSampleDto {
   tags: string[];
 }
 
+export interface UpdateSampleMetaDataDto {
+  name: string;
+  artist: string;
+  price: string;
+  bpm?: number;
+  musicalKey?: MusicalKey;
+  musicalScale?: MusicalScale;
+  genre?: Genre;
+  sampleType: SampleType;
+  instrumentGroup: InstrumentGroup;
+  tags: string[];
+}
+
+
 export interface UploadPackDto {
   title: string;
   artist: string;

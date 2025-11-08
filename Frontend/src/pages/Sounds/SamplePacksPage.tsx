@@ -7,7 +7,7 @@ import PacksFilterSidebar from '../../components/sounds/PacksFilterSidebar';
 import PackCard from '../../components/sounds/PackCard';
 import './SamplePacksPage.css';
 import { useNavigate } from 'react-router-dom';
-import { addSamplePackToCart } from '../../services/CartService';
+import { addSamplePackToCart } from '../../services/cartService';
 import mockPacks from '../../mock/mockPacks'; // ✅ Import mock data
 
 const SamplePacksPage: React.FC = () => {

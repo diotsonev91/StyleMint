@@ -1,7 +1,7 @@
 // src/pages/UserSamplesPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { audioService } from '../../services/audioService';
+import { audioSampleService } from '../../services/audioSampleService';
 import { checkAuth } from '../../api/auth';
 import SamplesList from '../../components/sounds/SamplesList';
 import { SamplesFromPackDTO } from '../../types';
@@ -53,7 +53,7 @@ const UserSamplesPage: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      const response = await audioService.getMyUploadedSamples();
+      const response = await audioSampleService.getMyUploadedSamples();
       
       if (response.success) {
         // Transform the response data to match SamplesFromPackDTO format
@@ -74,10 +74,12 @@ const UserSamplesPage: React.FC = () => {
               packId: sample.packId,
               packTitle: sample.packTitle,
               createdAt: sample.createdAt,
-              updatedAt: sample.updatedAt
+              updatedAt: sample.updatedAt,
+              authorId: sample.authorId,
+              tags: sample.tags
             }))
           : [];
-
+        console.log("USER SAMPLES", userSamples);
         if (page === 0) {
           setSamples(userSamples);
         } else {
@@ -115,8 +117,8 @@ const UserSamplesPage: React.FC = () => {
   const handleDeleteSample = async (sampleId: string) => {
     if (window.confirm('Are you sure you want to delete this sample? This action cannot be undone.')) {
       try {
-        // You'll need to implement delete functionality in your audioService
-        // const response = await audioService.deleteSample(sampleId);
+        // You'll need to implement delete functionality in your audioSampleService
+        // const response = await audioSampleService.deleteSample(sampleId);
         // if (response.success) {
         //   setSamples(prev => prev.filter(sample => sample.id !== sampleId));
         // } else {
@@ -220,13 +222,13 @@ const UserSamplesPage: React.FC = () => {
             </div>
             <div className="stat-card">
               <div className="stat-number">
-                {samples.filter(s => s.sampleType === 'loop').length}
+                {samples.filter(s => s.sampleType === 'LOOP').length}
               </div>
               <div className="stat-label">Loops</div>
             </div>
             <div className="stat-card">
               <div className="stat-number">
-                {samples.filter(s => s.sampleType === 'oneshot').length}
+                {samples.filter(s => s.sampleType === 'ONESHOT').length}
               </div>
               <div className="stat-label">One Shots</div>
             </div>

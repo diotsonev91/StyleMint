@@ -1,7 +1,7 @@
 // src/components/SaveDesignModal.tsx
 import { useState } from "react";
 import { state } from "../state";
-import { saveDesign } from "../services/ClothDesignService";
+import { saveDesign } from "../services/clothDesignService";
 import { useAuth } from "../hooks/useAuth";
 import "./SaveDesignModal.css"
 

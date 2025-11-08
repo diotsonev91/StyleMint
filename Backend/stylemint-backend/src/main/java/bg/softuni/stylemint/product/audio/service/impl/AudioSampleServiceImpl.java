@@ -9,6 +9,7 @@ import bg.softuni.stylemint.common.exception.NotFoundException;
 import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
 import bg.softuni.stylemint.common.exception.FileProcessingException;
 import bg.softuni.stylemint.common.service.CloudinaryService;
+import bg.softuni.stylemint.product.audio.service.utils.AudioSampleMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -30,7 +31,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
 
     private final AudioSampleRepository audioSampleRepository;
     private final CloudinaryService cloudinaryService;
-
+    private final AudioSampleMapper audioSampleMapper;
 
     @Override
     @Transactional
@@ -67,11 +68,12 @@ public class AudioSampleServiceImpl implements AudioSampleService {
                     .instrumentGroup(request.getInstrumentGroup())
                     .sampleType(request.getSampleType())
                     .price(request.getPrice().doubleValue())
+                    .tags(request.getTags())
                     .build();
 
             AudioSample saved = audioSampleRepository.save(sample);
 
-            return mapToDTO(saved);
+            return audioSampleMapper.toDTO(saved);
         } catch (Exception e) {
             log.error("Failed to upload audio sample", e);
             throw new FileProcessingException("Failed to upload audio sample: " + e.getMessage());
@@ -99,6 +101,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
             sample.setInstrumentGroup(request.getInstrumentGroup());
             sample.setSampleType(request.getSampleType());
             sample.setPrice(request.getPrice().doubleValue());
+            sample.setTags(request.getTags());
 
             // If new file is uploaded
             if (request.getFile() != null && !request.getFile().isEmpty()) {
@@ -122,7 +125,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
             }
 
             AudioSample updated = audioSampleRepository.save(sample);
-            return mapToDTO(updated);
+            return audioSampleMapper.toDTO(updated); // CHANGED HERE
         } catch (Exception e) {
             log.error("Failed to update audio sample", e);
             throw new FileProcessingException("Failed to update audio sample: " + e.getMessage());
@@ -130,13 +133,42 @@ public class AudioSampleServiceImpl implements AudioSampleService {
     }
 
     @Override
-    public AudioSampleDTO getSampleById(UUID sampleId) {
+    @Transactional
+    public AudioSampleDTO updateSampleMetadata(UUID sampleId, UUID authorId, UpdateSampleRequest request) {
         AudioSample sample = audioSampleRepository.findById(sampleId)
-                .orElseThrow(() -> new NotFoundException("Sample not found with id: " + sampleId));
-        return mapToDTO(sample);
+                .orElseThrow(() -> new NotFoundException("Sample not found"));
+
+        if (!sample.getAuthorId().equals(authorId)) {
+            throw new ForbiddenOperationException("Unauthorized to update this sample");
+        }
+
+        try {
+            sample.setName(request.getName());
+            sample.setArtist(request.getArtist());
+            sample.setBpm(request.getBpm());
+            sample.setKey(request.getMusicalKey());
+            sample.setScale(request.getMusicalScale());
+            sample.setGenre(request.getGenre());
+            sample.setInstrumentGroup(request.getInstrumentGroup());
+            sample.setSampleType(request.getSampleType());
+            sample.setPrice(request.getPrice().doubleValue());
+            sample.setTags(request.getTags());
+
+            AudioSample updated = audioSampleRepository.save(sample);
+            return audioSampleMapper.toDTO(updated);
+        } catch (Exception e) {
+            log.error("Failed to update audio sample metadata", e);
+            throw new FileProcessingException("Failed to update audio sample metadata: " + e.getMessage());
+        }
     }
 
 
+    @Override
+    public AudioSampleDTO getSampleById(UUID sampleId) {
+        AudioSample sample = audioSampleRepository.findById(sampleId)
+                .orElseThrow(() -> new NotFoundException("Sample not found with id: " + sampleId));
+        return audioSampleMapper.toDTO(sample); // CHANGED HERE
+    }
 
     @Override
     @Transactional
@@ -163,54 +195,54 @@ public class AudioSampleServiceImpl implements AudioSampleService {
     @Override
     public List<AudioSampleDTO> getSamplesByAuthor(UUID authorId) {
         return audioSampleRepository.findByAuthorId(authorId).stream()
-                .map(this::mapToDTO)
+                .map(audioSampleMapper::toDTO) // CHANGED HERE
                 .collect(Collectors.toList());
     }
 
     @Override
     public Page<AudioSampleDTO> getSamplesByGenre(Genre genre, Pageable pageable) {
         return audioSampleRepository.findByGenre(genre, pageable)
-                .map(this::mapToDTO);
+                .map(audioSampleMapper::toDTO); // CHANGED HERE
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByType(SampleType sampleType) {
         return audioSampleRepository.findBySampleType(sampleType).stream()
-                .map(this::mapToDTO)
+                .map(audioSampleMapper::toDTO) // CHANGED HERE
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByInstrumentGroup(InstrumentGroup instrumentGroup) {
         return audioSampleRepository.findByInstrumentGroup(instrumentGroup).stream()
-                .map(this::mapToDTO)
+                .map(audioSampleMapper::toDTO) // CHANGED HERE
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByBpmRange(Integer minBpm, Integer maxBpm) {
         return audioSampleRepository.findByBpmBetween(minBpm, maxBpm).stream()
-                .map(this::mapToDTO)
+                .map(audioSampleMapper::toDTO) // CHANGED HERE
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByKey(MusicalKey key) {
         return audioSampleRepository.findByKey(key).stream()
-                .map(this::mapToDTO)
+                .map(audioSampleMapper::toDTO) // CHANGED HERE
                 .collect(Collectors.toList());
     }
 
     @Override
     public Page<AudioSampleDTO> getStandaloneSamples(Pageable pageable) {
         return audioSampleRepository.findAll(pageable)
-                .map(this::mapToDTO);
+                .map(audioSampleMapper::toDTO); // CHANGED HERE
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByPack(UUID packId) {
         return audioSampleRepository.findByPackId(packId).stream()
-                .map(this::mapToDTO)
+                .map(audioSampleMapper::toDTO) // CHANGED HERE
                 .collect(Collectors.toList());
     }
 
@@ -224,13 +256,13 @@ public class AudioSampleServiceImpl implements AudioSampleService {
                 request.getKey(),
                 request.getInstrumentGroup(),
                 pageable
-        ).map(this::mapToDTO);
+        ).map(audioSampleMapper::toDTO); // CHANGED HERE
     }
 
     @Override
     public List<AudioSampleDTO> searchSamplesByName(String name) {
         return audioSampleRepository.findByNameContainingIgnoreCase(name).stream()
-                .map(this::mapToDTO)
+                .map(audioSampleMapper::toDTO) // CHANGED HERE
                 .collect(Collectors.toList());
     }
 
@@ -244,7 +276,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
                         sample.getBpm(),
                         sampleId
                 ).stream()
-                .map(this::mapToDTO)
+                .map(audioSampleMapper::toDTO) // CHANGED HERE
                 .collect(Collectors.toList());
     }
 
@@ -261,11 +293,11 @@ public class AudioSampleServiceImpl implements AudioSampleService {
     @Override
     public Page<AudioSampleDTO> getPopularSamplesByGenre(Genre genre, Pageable pageable) {
         return audioSampleRepository.findPopularByGenre(genre, pageable)
-                .map(this::mapToDTO);
+                .map(audioSampleMapper::toDTO); // CHANGED HERE
     }
 
     // ================ Helper Methods ================
-
+    // TODO add appropriate exceptions
     private void validateAudioFile(MultipartFile file) {
         String contentType = file.getContentType();
         if (contentType == null ||
@@ -282,25 +314,4 @@ public class AudioSampleServiceImpl implements AudioSampleService {
         }
     }
 
-    private AudioSampleDTO mapToDTO(AudioSample sample) {
-        return AudioSampleDTO.builder()
-                .id(sample.getId())
-                .name(sample.getName())
-                .authorId(sample.getAuthorId())
-                .artist(sample.getArtist())
-                .audioUrl(sample.getAudioUrl())
-                .duration(sample.getDuration())
-                .bpm(sample.getBpm())
-                .key(sample.getKey())
-                .scale(sample.getScale())
-                .genre(sample.getGenre())
-                .instrumentGroup(sample.getInstrumentGroup())
-                .sampleType(sample.getSampleType())
-                .price(sample.getPrice())
-                .packId(sample.getPack() != null ? sample.getPack().getId() : null)
-                .packTitle(sample.getPack() != null ? sample.getPack().getTitle() : null)
-                .createdAt(sample.getCreatedAt())
-                .updatedAt(sample.getUpdatedAt())
-                .build();
-    }
 }

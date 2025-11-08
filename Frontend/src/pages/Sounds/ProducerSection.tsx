@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { checkAuth } from '../../api/auth';
-import { audioService } from '../../services/audioService';
+import { audioSampleService } from '../../services/audioSampleService';
+import { audioPackService } from '../../services/audioPackService';
 import { LoginRequiredModal } from '../../components/LoginRequiredModal';
 import './ProducerSection.css';
 
@@ -43,14 +44,14 @@ export const ProducerSection: React.FC = () => {
     setIsLoadingContent(true);
     try {
       // Check for samples
-      const samplesResult = await audioService.hasUploadedSamples();
+      const samplesResult = await audioSampleService.hasUploadedSamples();
       if (!samplesResult.error) {
         setHasSamples(samplesResult.hasSamples);
-        setSamplesCount(samplesResult.count || 0);
+        setSamplesCount(samplesResult.totalCount || 0);
       }
 
       // Check for packs
-      const packsResult = await audioService.hasUploadedPacks();
+      const packsResult = await audioPackService.hasUploadedPacks();
       if (!packsResult.error) {
         setHasPacks(packsResult.hasPacks);
         setPacksCount(packsResult.count || 0);
@@ -125,30 +126,50 @@ export const ProducerSection: React.FC = () => {
               <h3>Individual Samples</h3>
               <p>Upload and sell individual audio samples</p>
               
-              {isAuthenticated && hasSamples ? (
-                <button
-                  className="producer-btn producer-btn-view"
-                  onClick={handleViewMySamples}
-                  disabled={isLoadingContent}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  My Samples ({samplesCount})
-                </button>
-              ) : (
-                <button
-                  className="producer-btn producer-btn-upload"
-                  onClick={handleUploadSample}
-                  disabled={isLoadingContent}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  Upload Sample
-                </button>
-              )}
+              <div className="producer-action-buttons">
+                {/* Always show Upload Sample button for authenticated users */}
+                {isAuthenticated && (
+                  <button
+                    className="producer-btn producer-btn-upload"
+                    onClick={handleUploadSample}
+                    disabled={isLoadingContent}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Upload Sample
+                  </button>
+                )}
+
+                {/* Show View My Samples button if user has samples */}
+                {isAuthenticated && hasSamples && (
+                  <button
+                    className="producer-btn producer-btn-view"
+                    onClick={handleViewMySamples}
+                    disabled={isLoadingContent}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    My Samples ({samplesCount})
+                  </button>
+                )}
+
+                {/* Show only Upload button for unauthenticated users */}
+                {!isAuthenticated && (
+                  <button
+                    className="producer-btn producer-btn-upload"
+                    onClick={handleUploadSample}
+                    disabled={isLoadingContent}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Upload Sample
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Pack Button/Link */}
@@ -161,30 +182,50 @@ export const ProducerSection: React.FC = () => {
               <h3>Sample Packs</h3>
               <p>Upload and sell complete sample packs</p>
               
-              {isAuthenticated && hasPacks ? (
-                <button
-                  className="producer-btn producer-btn-view"
-                  onClick={handleViewMyPacks}
-                  disabled={isLoadingContent}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  My Packs ({packsCount})
-                </button>
-              ) : (
-                <button
-                  className="producer-btn producer-btn-upload"
-                  onClick={handleUploadPack}
-                  disabled={isLoadingContent}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  Upload Pack
-                </button>
-              )}
+              <div className="producer-action-buttons">
+                {/* Always show Upload Pack button for authenticated users */}
+                {isAuthenticated && (
+                  <button
+                    className="producer-btn producer-btn-upload"
+                    onClick={handleUploadPack}
+                    disabled={isLoadingContent}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Upload Pack
+                  </button>
+                )}
+
+                {/* Show View My Packs button if user has packs */}
+                {isAuthenticated && hasPacks && (
+                  <button
+                    className="producer-btn producer-btn-view"
+                    onClick={handleViewMyPacks}
+                    disabled={isLoadingContent}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    My Packs ({packsCount})
+                  </button>
+                )}
+
+                {/* Show only Upload button for unauthenticated users */}
+                {!isAuthenticated && (
+                  <button
+                    className="producer-btn producer-btn-upload"
+                    onClick={handleUploadPack}
+                    disabled={isLoadingContent}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Upload Pack
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

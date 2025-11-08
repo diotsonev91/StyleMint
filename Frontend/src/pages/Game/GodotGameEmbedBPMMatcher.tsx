@@ -2,7 +2,7 @@
 // СТРУКТУРА КАТО Color Rush - ИЗПОЛЗВА IFRAME!
 
 import React, { useEffect, useState } from 'react';
-import { gameService, GameScore } from '../../services/GameService';
+import { gameService, GameScore } from '../../services/gameService';
 
 interface GodotGameEmbedBPMProps {
   gameTitle?: string;
