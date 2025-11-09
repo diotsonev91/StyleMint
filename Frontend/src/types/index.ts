@@ -30,6 +30,7 @@ export interface SamplePack {
   rating?: number;
   downloads?: number;
   releaseDate?: string;
+  isLoggedUserPack?: boolean;
 }
 
 export type SamplesFromPackDTO = {
@@ -38,8 +39,9 @@ export type SamplesFromPackDTO = {
   duration: number;
   bpm?: number;
   key?: string;
+  scale?: string;
   genre?: string;
-  instrument?: string;
+  instrumentGroup?: string;
   sampleType: "LOOP" | "ONESHOT";
   audioUrl: string;
   packName?: string;

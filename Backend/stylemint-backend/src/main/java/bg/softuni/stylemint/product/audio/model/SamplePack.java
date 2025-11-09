@@ -4,6 +4,7 @@ import bg.softuni.stylemint.product.audio.enums.Genre;
 import bg.softuni.stylemint.product.common.model.BaseProduct;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 
 import java.time.OffsetDateTime;
@@ -13,7 +14,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "sample_packs")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@NoArgsConstructor @AllArgsConstructor
+@SuperBuilder
 public class SamplePack extends BaseProduct {
 
     @Column(nullable = false, length = 128)

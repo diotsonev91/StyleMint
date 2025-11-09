@@ -10,6 +10,7 @@ import {
   Genre, 
   InstrumentGroup
 } from '../../types/audioEnums';
+import { SamplesFromPackDTO } from '../../types';
 import { PackFormHeader } from './PackForm/PackFormHeader';
 import { PackFormProgress } from './PackForm/PackFormProgress';
 import { PackInfoStep } from './PackForm/PackInfoStep';
@@ -22,7 +23,7 @@ export interface PackSample {
   file: File;
   name: string;
   artist: string;
-  duration?: string;
+  duration?: number;
   bpm?: number;
   musicalKey?: MusicalKey;
   musicalScale?: MusicalScale;
@@ -30,6 +31,8 @@ export interface PackSample {
   sampleType: SampleType;
   instrumentGroup: InstrumentGroup;
   audioUrl?: string;
+  isExisting?: boolean; // Flag to identify existing samples from user's library
+  existingSampleId?: string; // ID of the existing sample (for backend reference)
 }
 
 export interface PackFormData {
@@ -123,7 +126,7 @@ const PackForm: React.FC<PackFormProps> = ({
         audioRef.current.pause();
       }
       formData.samples.forEach(sample => {
-        if (sample.audioUrl) {
+        if (sample.audioUrl && !sample.isExisting) {
           URL.revokeObjectURL(sample.audioUrl);
         }
       });
@@ -214,12 +217,36 @@ const PackForm: React.FC<PackFormProps> = ({
           sampleType: SampleType.ONESHOT,
           instrumentGroup: InstrumentGroup.DRUMS,
           audioUrl,
+          isExisting: false,
         };
       });
       
       updateSamples([...formData.samples, ...newSamples]);
       setSubmitError(null);
     }
+  };
+
+  // Handler for adding existing samples
+  const handleAddExistingSamples = (existingSamples: SamplesFromPackDTO[]) => {
+    const newSamples: PackSample[] = existingSamples.map(sample => ({
+      id: `existing-${sample.id}`, // Prefix to identify existing samples
+      file: new File([], ''), // Empty file placeholder - not needed for existing samples
+      name: sample.name,
+      artist: sample.artist,
+      duration: sample.duration,
+      bpm: sample.bpm,
+      musicalKey: sample.key as MusicalKey,
+      musicalScale: sample.scale as MusicalScale,
+      genre: sample.genre as Genre,
+      sampleType: sample.sampleType as SampleType,
+      instrumentGroup: sample.instrumentGroup as InstrumentGroup,
+      audioUrl: sample.audioUrl,
+      isExisting: true,
+      existingSampleId: sample.id, // Store the actual sample ID for backend
+    }));
+
+    updateSamples([...formData.samples, ...newSamples]);
+    setSubmitError(null);
   };
 
   const updateSample = (id: string, field: keyof PackSample, value: any) => {
@@ -236,7 +263,7 @@ const PackForm: React.FC<PackFormProps> = ({
     }
 
     const sample = formData.samples.find(s => s.id === id);
-    if (sample?.audioUrl) {
+    if (sample?.audioUrl && !sample.isExisting) {
       URL.revokeObjectURL(sample.audioUrl);
     }
 
@@ -254,51 +281,30 @@ const PackForm: React.FC<PackFormProps> = ({
   };
 
   const isStep2Valid = () => {
-    return formData.samples.length >= 1;
+    return formData.samples.length > 0;
   };
 
-  // Submit handler
+  // Form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isAuthenticated) {
-      setSubmitError('You must be logged in to ' + mode + ' sample packs');
-      navigate('/login');
-      return;
-    }
-    
     if (!isStep2Valid()) {
-      setSubmitError('Please add at least 1 sample');
+      setSubmitError('Please add at least one sample to your pack.');
       return;
     }
-
-    if (!formData.coverImage) {
-      setSubmitError('Cover image is required');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-    setSubmitSuccess(false);
-    setSubmitProgress(0);
 
     try {
-      if (onSubmit) {
-        // Use custom onSubmit if provided
-        await onSubmit(formData);
-      } else if (mode === 'upload') {
-        // Default upload behavior
-        const samplesData = formData.samples.map(sample => ({
-          file: sample.file,
-          name: sample.name,
-          artist: sample.artist,
-          bpm: sample.bpm,
-          musicalKey: sample.musicalKey,
-          musicalScale: sample.musicalScale,
-          genre: sample.genre,
-          sampleType: sample.sampleType,
-          instrumentGroup: sample.instrumentGroup,
-        }));
+      setIsSubmitting(true);
+      setSubmitError(null);
+      setSubmitProgress(0);
+
+      if (mode === 'upload') {
+        // Separate new samples from existing samples
+        const newSamples = formData.samples.filter(s => !s.isExisting);
+        const existingSampleIds = formData.samples
+          .filter(s => s.isExisting)
+          .map(s => s.existingSampleId!)
+          .filter(id => id); // Filter out any undefined IDs
 
         const response = await audioPackService.uploadPackWithProgress(
           {
@@ -309,7 +315,18 @@ const PackForm: React.FC<PackFormProps> = ({
             genres: formData.selectedGenres,
             tags: formData.tags,
             coverImage: formData.coverImage,
-            samples: samplesData,
+            samples: newSamples.map(sample => ({
+              file: sample.file,
+              name: sample.name,
+              artist: sample.artist,
+              bpm: sample.bpm,
+              musicalKey: sample.musicalKey,
+              musicalScale: sample.musicalScale,
+              genre: sample.genre,
+              sampleType: sample.sampleType,
+              instrumentGroup: sample.instrumentGroup,
+            })),
+            existingSampleIds, // Add existing sample IDs to the request
           },
           (progress) => {
             setSubmitProgress(Math.round(progress));
@@ -320,20 +337,57 @@ const PackForm: React.FC<PackFormProps> = ({
           setSubmitSuccess(true);
           setTimeout(() => {
             resetForm();
-            if (mode === 'upload') {
-              navigate('/my-packs');
-            }
-          }, 3000);
+            navigate('/my-packs');
+          }, 2000);
         } else {
-          handleSubmitError(response.error || `${mode} failed. Please try again.`);
+          handleSubmitError(response.error || 'Upload failed. Please try again.');
         }
-      } else {
-        // Edit mode - would call update service here
-        console.log('Edit mode - implement update service call');
-        setSubmitSuccess(true);
-        setTimeout(() => {
-          navigate('/my-packs');
-        }, 3000);
+      } else if (mode === 'edit' && packId) {
+        // For edit mode, separate new and existing samples
+        const newSamples = formData.samples.filter(s => !s.isExisting && !s.id.includes('existing-'));
+        const existingSampleIds = formData.samples
+          .filter(s => s.isExisting)
+          .map(s => s.existingSampleId!)
+          .filter(id => id);
+
+        const response = await audioPackService.updatePackWithProgress(
+          packId,
+          {
+            title: formData.packTitle,
+            artist: formData.artist,
+            price: formData.price,
+            description: formData.description,
+            genres: formData.selectedGenres,
+            tags: formData.tags,
+            coverImage: formData.coverImage,
+            samplesToAdd: newSamples.map(sample => ({
+              file: sample.file,
+              name: sample.name,
+              artist: sample.artist,
+              bpm: sample.bpm,
+              musicalKey: sample.musicalKey,
+              musicalScale: sample.musicalScale,
+              sampleType: sample.sampleType,
+              instrumentGroup: sample.instrumentGroup,
+              individualPrice: '0'
+            })),
+            existingSamplesToAdd: existingSampleIds, // Add existing samples by ID
+            samplesToRemove: [],
+            samplePricing: {}
+          },
+          (progress) => {
+            setSubmitProgress(Math.round(progress));
+          }
+        );
+
+        if (response.success) {
+          setSubmitSuccess(true);
+          setTimeout(() => {
+            navigate('/my-packs');
+          }, 2000);
+        } else {
+          handleSubmitError(response.error || 'Update failed. Please try again.');
+        }
       }
     } catch (error: any) {
       console.error(`${mode} error:`, error);
@@ -345,11 +399,13 @@ const PackForm: React.FC<PackFormProps> = ({
   };
 
   const handleSubmitError = (error: string) => {
-    if (error?.includes('401') || error?.includes('unauthorized')) {
+    if (error?.includes('401') || error?.includes('unauthorized') || error?.includes('Session expired')) {
       setSubmitError('Session expired. Please log in again.');
       setTimeout(() => {
         navigate('/login');
       }, 2000);
+    } else if (error?.includes('network') || error?.includes('Failed to fetch')) {
+      setSubmitError('Network error. Please check your connection and try again.');
     } else {
       setSubmitError(error);
     }
@@ -363,7 +419,7 @@ const PackForm: React.FC<PackFormProps> = ({
     setPlayingSampleId(null);
 
     formData.samples.forEach(sample => {
-      if (sample.audioUrl) {
+      if (sample.audioUrl && !sample.isExisting) {
         URL.revokeObjectURL(sample.audioUrl);
       }
     });
@@ -447,8 +503,8 @@ const PackForm: React.FC<PackFormProps> = ({
       <div className="form-container">
         <PackFormHeader 
           mode={mode}
-          title={mode === 'upload' ? 'Upload Sample ' : 'Edit Sample '}
-          subtitle="Share your sounds with the community"
+          title={mode === 'upload' ? 'Upload Sample Pack' : 'Edit Sample Pack'}
+          subtitle={mode === 'upload' ? 'Share your sounds with the community' : 'Update your sample pack'}
         />
 
         <PackFormProgress step={step} />
@@ -468,6 +524,7 @@ const PackForm: React.FC<PackFormProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Sample pack {mode === 'upload' ? 'uploaded' : 'updated'} successfully!
+            {mode === 'upload' && ' Redirecting to your packs...'}
           </div>
         )}
 
@@ -490,6 +547,7 @@ const PackForm: React.FC<PackFormProps> = ({
             <SamplesStep
               formData={formData}
               onSampleUpload={handleSampleUpload}
+              onAddExistingSamples={handleAddExistingSamples}
               onUpdateSample={updateSample}
               onRemoveSample={removeSample}
               onPlaySample={handlePlaySample}
@@ -498,6 +556,7 @@ const PackForm: React.FC<PackFormProps> = ({
               isStepValid={isStep2Valid()}
               onSubmitProgress={submitProgress}
               onBack={() => setStep(1)}
+              mode={mode}
             />
           )}
         </form>

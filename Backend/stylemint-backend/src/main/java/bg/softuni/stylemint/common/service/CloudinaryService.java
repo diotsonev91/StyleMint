@@ -2,6 +2,7 @@ package bg.softuni.stylemint.common.service;
 
 import bg.softuni.stylemint.common.exception.FileProcessingException;
 import com.cloudinary.Cloudinary;
+import com.cloudinary.Transformation;
 import com.cloudinary.utils.ObjectUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,7 @@ public class CloudinaryService {
         try {
             String publicId = "audio/" + userId + "/" + UUID.randomUUID();
 
-            // Upload и Cloudinary връща metadata веднага!
+            // Upload в Cloudinary връща metadata веднага!
             Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
                     ObjectUtils.asMap(
                             "resource_type", "video", // Audio files as "video" type
@@ -80,10 +81,8 @@ public class CloudinaryService {
                             "resource_type", "image",
                             "public_id", publicId,
                             "folder", "stylemint/images",
-                            "transformation", ObjectUtils.asMap(
-                                    "quality", "auto",
-                                    "fetch_format", "auto"
-                            ),
+                            "quality", "auto",
+                            "fetch_format", "auto",
                             "overwrite", false
                     ));
 
@@ -111,23 +110,23 @@ public class CloudinaryService {
 
     /**
      * Upload sample pack cover image
+     * FIXED: Flattened transformation parameters to avoid nested map issues
      */
     public String uploadPackCover(MultipartFile file, UUID packId) {
         try {
             String publicId = "pack-covers/" + packId;
 
+            // FIXED: All parameters at the same level, no nested "transformation" map
             Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
                     ObjectUtils.asMap(
                             "resource_type", "image",
                             "public_id", publicId,
                             "folder", "stylemint/pack-covers",
-                            "transformation", ObjectUtils.asMap(
-                                    "width", 800,
-                                    "height", 800,
-                                    "crop", "fill",
-                                    "quality", "auto",
-                                    "fetch_format", "auto"
-                            ),
+                            "width", 800,
+                            "height", 800,
+                            "crop", "fill",
+                            "quality", "auto",
+                            "fetch_format", "auto",
                             "overwrite", true
                     ));
 
@@ -140,6 +139,28 @@ public class CloudinaryService {
             throw new FileProcessingException("Failed to upload pack cover: " + e.getMessage());
         }
     }
+
+    /**
+     * Get pack cover URL with CORS (800x800)
+     */
+    public String getPackCoverUrl(String publicId) {
+        return getCorsEnabledImageUrl(publicId, 800, 800);
+    }
+
+
+    public String getCorsEnabledImageUrl(String url, int width, int height) {
+        return cloudinary.url()
+                .transformation(new Transformation()
+                        .width(width)
+                        .height(height)
+                        .crop("fill")
+                        .quality("auto:good")
+                        .fetchFormat("auto")
+                        .flags("cross_origin")  // ✅ Add CORS flag
+                )
+                .generate(extractPublicIdFromUrl(url));
+    }
+
 
     /**
      * Delete file from Cloudinary

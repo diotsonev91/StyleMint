@@ -2,6 +2,9 @@ package bg.softuni.stylemint.product.audio.service;
 
 import bg.softuni.stylemint.product.audio.dto.*;
 import bg.softuni.stylemint.product.audio.enums.*;
+import bg.softuni.stylemint.product.audio.model.AudioSample;
+import bg.softuni.stylemint.product.audio.model.SamplePack;
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -26,6 +29,9 @@ public interface AudioSampleService {
      * @return AudioSampleDTO
      */
     AudioSampleDTO getSampleById(UUID sampleId);
+
+
+
 
     /**
      * Update sample FILE and metadata
@@ -160,4 +166,28 @@ public interface AudioSampleService {
      * @return Page of popular AudioSampleDTO
      */
     Page<AudioSampleDTO> getPopularSamplesByGenre(Genre genre, Pageable pageable);
+
+    /**
+     * Save AudioSample entity (for internal service use only)
+     */
+    AudioSample saveAudioSample(AudioSample sample);
+
+
+    /**
+     * Update sample price
+     */
+    AudioSampleDTO updateSamplePrice(UUID sampleId, UUID authorId, Double price);
+
+    /**
+     * Count samples by pack ID
+     */
+    int countSamplesByPack(UUID packId);
+
+    /**
+     * Get user's standalone samples (not in any pack)
+     */
+    List<AudioSampleDTO> getStandaloneSamplesByAuthor(UUID authorId);
+
+
+
 }

@@ -117,4 +117,7 @@ public interface SamplePackRepository extends JpaRepository<SamplePack, UUID> {
      */
     @Query("SELECT DISTINCT p FROM SamplePack p JOIN p.genres g WHERE g IN :genres AND p.id != :excludeId")
     List<SamplePack> findSimilarPacks(@Param("genres") List<Genre> genres, @Param("excludeId") UUID excludeId);
+
+
+    boolean existsByIdAndAuthorId(UUID packId, UUID authorId);
 }

@@ -33,6 +33,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
     private final CloudinaryService cloudinaryService;
     private final AudioSampleMapper audioSampleMapper;
 
+
     @Override
     @Transactional
     public AudioSampleDTO uploadSample(UUID authorId, UploadSampleRequest request) {
@@ -69,6 +70,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
                     .sampleType(request.getSampleType())
                     .price(request.getPrice().doubleValue())
                     .tags(request.getTags())
+                    .salesCount(0L)
                     .build();
 
             AudioSample saved = audioSampleRepository.save(sample);
@@ -169,6 +171,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
                 .orElseThrow(() -> new NotFoundException("Sample not found with id: " + sampleId));
         return audioSampleMapper.toDTO(sample); // CHANGED HERE
     }
+
 
     @Override
     @Transactional
@@ -296,6 +299,49 @@ public class AudioSampleServiceImpl implements AudioSampleService {
                 .map(audioSampleMapper::toDTO); // CHANGED HERE
     }
 
+
+
+    private AudioSample getAudioSampleEntityById(UUID sampleId) {
+        return audioSampleRepository.findById(sampleId)
+                .orElseThrow(() -> new NotFoundException("Sample not found with id: " + sampleId));
+    }
+
+    @Override
+    @Transactional
+    public AudioSample saveAudioSample(AudioSample sample) {
+        return audioSampleRepository.save(sample);
+    }
+
+
+
+    @Override
+    @Transactional
+    public AudioSampleDTO updateSamplePrice(UUID sampleId, UUID authorId, Double price) {
+        AudioSample sample = getAudioSampleEntityById(sampleId);
+
+        // Authorization check
+        if (!sample.getAuthorId().equals(authorId)) {
+            throw new ForbiddenOperationException("Unauthorized to modify this sample");
+        }
+
+        sample.setPrice(price);
+        AudioSample saved = saveAudioSample(sample);
+        return audioSampleMapper.toDTO(saved);
+    }
+
+
+    @Override
+    public int countSamplesByPack(UUID packId) {
+        return audioSampleRepository.countByPackId(packId);
+    }
+
+    @Override
+    public List<AudioSampleDTO> getStandaloneSamplesByAuthor(UUID authorId) {
+        return audioSampleRepository.findByAuthorIdAndPackIsNull(authorId).stream()
+                .map(audioSampleMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
     // ================ Helper Methods ================
     // TODO add appropriate exceptions
     private void validateAudioFile(MultipartFile file) {
@@ -313,5 +359,6 @@ public class AudioSampleServiceImpl implements AudioSampleService {
             throw new IllegalArgumentException("File size must not exceed 50MB");
         }
     }
+
 
 }

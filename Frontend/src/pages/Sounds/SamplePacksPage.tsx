@@ -1,45 +1,173 @@
-// src/components/SamplePacksPage.tsx - Using mockPacks data
+// src/components/SamplePacksPage.tsx - Refactored to use real backend API
 import React, { useState, useEffect } from 'react';
-import { useSnapshot } from 'valtio';
-import { cartState } from '../../state/CartItemState';
-import { SamplePack } from '../../types';
 import PacksFilterSidebar from '../../components/sounds/PacksFilterSidebar';
-import PackCard from '../../components/sounds/PackCard';
+import PacksGrid from '../../components/sounds/PacksGrid';
+import { SamplePack } from '../../types';
 import './SamplePacksPage.css';
-import { useNavigate } from 'react-router-dom';
-import { addSamplePackToCart } from '../../services/cartService';
-import mockPacks from '../../mock/mockPacks'; // ✅ Import mock data
-
+import { audioPackService } from '../../services/audioPackService';
+import { useAuth } from '../../hooks/useAuth';
 const SamplePacksPage: React.FC = () => {
-  const navigate = useNavigate();
-  const cartSnap = useSnapshot(cartState);
-  
   const [allPacks, setAllPacks] = useState<SamplePack[]>([]);
   const [selectedAuthor, setSelectedAuthor] = useState('');
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [error, setError] = useState<string | null>(null);
 
-  // ✅ Load from mockPacks instead of inline data
+    const { user, loading: authLoading } = useAuth();
+
+     const currentUserId = user?.id;
+  // ✅ Load from real backend API
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setAllPacks(mockPacks);
-      setLoading(false);
-      console.log(`✅ Loaded ${mockPacks.length} sample packs with samples:`, 
-        mockPacks.map(p => `${p.title}: ${p.samples.length} samples`)
-      );
-    }, 500);
+    const loadPacks = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Use getAllPacks with pagination - you might want to adjust page/size based on your needs
+        const response = await audioPackService.getAllPacks(0, 50); // Get first 50 packs
+        
+        if (response.success && response.data) {
+          // Handle both array and Page response format
+          const packsData = Array.isArray(response.data) 
+            ? response.data 
+            : response.data.content || [];
+          console.log(response.data)
+          // Transform backend DTO to frontend SamplePack type if needed
+          const transformedPacks = packsData.map((pack: any) => ({
+            id: pack.id,
+            title: pack.title,
+            artist: pack.artist,
+            price: pack.price,
+            description: pack.description,
+            coverImage: pack.coverImageUrl || pack.coverImage,
+            genres: pack.genres || [],
+            tags: pack.tags || [],
+            samples: pack.samples || [], // This might be empty in basic pack DTO
+            rating: pack.rating,
+            downloadCount: pack.downloadCount,
+            createdAt: pack.createdAt,
+            updatedAt: pack.updatedAt, 
+            isLoggedUserPack: currentUserId == pack.authorId
+          }));
+          console.log(currentUserId, "   ---", )
+          
+          
+          setAllPacks(transformedPacks);
+          console.log(`✅ Loaded ${transformedPacks.length} sample packs from API`);
+        } else {
+          setError(response.error || 'Failed to load sample packs');
+        }
+      } catch (err: any) {
+        console.error('Error loading sample packs:', err);
+        setError(err.message || 'An unexpected error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPacks();
   }, []);
 
-  // Get unique authors and genres
+  // Alternative: Load featured packs instead of all packs
+  const loadFeaturedPacks = async () => {
+    try {
+      setLoading(true);
+      const response = await audioPackService.getFeaturedPacks(0, 50);
+      
+      if (response.success && response.data) {
+        const packsData = Array.isArray(response.data) 
+          ? response.data 
+          : response.data.content || [];
+        
+        const transformedPacks = packsData.map((pack: any) => ({
+          id: pack.id,
+          title: pack.title,
+          artist: pack.artist,
+          price: pack.price,
+          description: pack.description,
+          coverImage: pack.coverImageUrl || pack.coverImage,
+          genres: pack.genres || [],
+          tags: pack.tags || [],
+          samples: pack.samples || [],
+          rating: pack.rating,
+          downloadCount: pack.downloadCount,
+          createdAt: pack.createdAt,
+          updatedAt: pack.updatedAt
+        }));
+        
+        setAllPacks(transformedPacks);
+      }
+    } catch (err: any) {
+      console.error('Error loading featured packs:', err);
+      setError(err.message || 'Failed to load featured packs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Search packs by title when search query changes
+  useEffect(() => {
+    const searchPacks = async () => {
+      if (searchQuery.trim()) {
+        try {
+          setLoading(true);
+          // You might want to implement a debounced search here
+          const response = await audioPackService.searchPacks({
+            title: searchQuery,
+            // Add other search criteria as needed
+          });
+          
+          if (response.success && response.data) {
+            const searchResults = Array.isArray(response.data) 
+              ? response.data 
+              : response.data.content || [];
+            
+            const transformedPacks = searchResults.map((pack: any) => ({
+              id: pack.id,
+              title: pack.title,
+              artist: pack.artist,
+              price: pack.price,
+              description: pack.description,
+              coverImage: pack.coverImageUrl || pack.coverImage,
+              genres: pack.genres || [],
+              tags: pack.tags || [],
+              samples: pack.samples || [],
+              rating: pack.rating,
+              downloadCount: pack.downloadCount,
+              createdAt: pack.createdAt,
+              updatedAt: pack.updatedAt
+            }));
+            
+            setAllPacks(transformedPacks);
+          }
+        } catch (err: any) {
+          console.error('Error searching packs:', err);
+          setError(err.message || 'Search failed');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    // Simple debounce - you might want to implement a proper debounce
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim()) {
+        searchPacks();
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  // Get unique authors and genres from loaded packs
   const availableAuthors = Array.from(new Set(allPacks.map(pack => pack.artist))).sort();
   const availableGenres = Array.from(
     new Set(allPacks.flatMap(pack => pack.genres))
   ).sort();
 
-  // Filter packs
+  // Filter packs client-side for author and genre filters
   const filteredPacks = allPacks.filter(pack => {
     const authorMatch = !selectedAuthor || 
                        pack.artist.toLowerCase().includes(selectedAuthor.toLowerCase());
@@ -69,30 +197,12 @@ const SamplePacksPage: React.FC = () => {
   const handleClearFilters = () => {
     setSelectedAuthor('');
     setSelectedGenres([]);
+    setSearchQuery('');
   };
 
-  const handleViewDetails = (packId: string) => {
-    navigate(`/pack/${packId}`);
-  };
-
-  const handleAddToCart = (pack: SamplePack) => {
-    // Check if pack is already in cart
-    const alreadyInCart = cartSnap.items.some(
-      item => item.id === pack.id && item.type === 'pack'
-    );
-
-    if (alreadyInCart) {
-      console.log(`⚠️ Pack "${pack.title}" is already in cart`);
-      // Optional: Show toast notification
-      return;
-    }
-
-    // ✅ Add pack + all samples
-    console.log(`📦 Adding pack "${pack.title}" with ${pack.samples.length} samples...`);
-    addSamplePackToCart(pack);
-    
-    // Optional: Show success notification
-    console.log(`✅ Added "${pack.title}" to cart`);
+  const handleRetry = () => {
+    // Reload the packs
+    window.location.reload(); // Or implement a proper retry function
   };
 
   if (loading) {
@@ -101,6 +211,21 @@ const SamplePacksPage: React.FC = () => {
         <div className="loading-container">
           <div className="loading-spinner"></div>
           <p>Loading sample packs...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="sample-packs-page">
+        <div className="error-container">
+          <div className="error-icon">⚠️</div>
+          <h3>Failed to load sample packs</h3>
+          <p>{error}</p>
+          <button onClick={handleRetry} className="retry-button">
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -117,6 +242,9 @@ const SamplePacksPage: React.FC = () => {
               <p className="packs-page-subtitle">
                 Discover premium sound packs from top artists and labels
               </p>
+              <div className="packs-stats">
+                <span className="packs-count">{filteredPacks.length} packs available</span>
+              </div>
             </div>
             
             <div className="packs-view-controls">
@@ -167,7 +295,7 @@ const SamplePacksPage: React.FC = () => {
           </div>
 
           {/* Active Filters */}
-          {(selectedAuthor || selectedGenres.length > 0) && (
+          {(selectedAuthor || selectedGenres.length > 0 || searchQuery) && (
             <div className="packs-active-filters">
               <span className="packs-active-filters-label">Active filters:</span>
               <div className="packs-filter-tags">
@@ -199,7 +327,27 @@ const SamplePacksPage: React.FC = () => {
                     </button>
                   </span>
                 ))}
+                {searchQuery && (
+                  <span className="packs-filter-tag">
+                    Search: "{searchQuery}"
+                    <button 
+                      className="packs-remove-filter"
+                      onClick={() => setSearchQuery('')}
+                      aria-label="Clear search"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                )}
               </div>
+              <button 
+                className="packs-clear-all-filters"
+                onClick={handleClearFilters}
+              >
+                Clear All
+              </button>
             </div>
           )}
 
@@ -220,31 +368,18 @@ const SamplePacksPage: React.FC = () => {
               />
             </aside>
 
-            {/* Packs Grid */}
+            {/* Packs Grid - Now using reusable component */}
             <section className="packs-content-area">
-              {filteredPacks.length > 0 ? (
-                <div className={`packs-grid ${viewMode === 'list' ? 'list-view' : ''}`}>
-                  {filteredPacks.map((pack) => (
-                    <PackCard
-                      key={pack.id}
-                      pack={pack}
-                      onViewDetails={handleViewDetails}
-                      onAddToCart={handleAddToCart}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="packs-no-results">
-                  <svg className="packs-no-results-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                  </svg>
-                  <h3>No packs found</h3>
-                  <p>Try adjusting your search or filters</p>
-                  <button className="btn btn-primary" onClick={handleClearFilters}>
-                    Clear All Filters
-                  </button>
-                </div>
-              )}
+              <PacksGrid
+                packs={filteredPacks}
+                viewMode={viewMode}
+                emptyStateMessage={{
+                  title: 'No packs found',
+                  description: 'Try adjusting your search or filters',
+                  showClearFilters: true
+                }}
+                onClearFilters={handleClearFilters}
+              />
             </section>
           </div>
         </div>

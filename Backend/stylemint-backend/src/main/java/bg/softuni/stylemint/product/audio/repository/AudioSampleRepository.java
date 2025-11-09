@@ -136,4 +136,8 @@ public interface AudioSampleRepository extends JpaRepository<AudioSample, UUID> 
     @Query("SELECT s FROM AudioSample s WHERE s.genre = :genre ORDER BY s.createdAt DESC")
     Page<AudioSample> findPopularByGenre(@Param("genre") Genre genre, Pageable pageable);
 
+
+    List<AudioSample> findByAuthorIdAndPackIsNull(UUID authorId);
+    int countByPackId(UUID packId);
+
 }

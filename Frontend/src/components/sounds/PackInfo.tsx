@@ -1,6 +1,8 @@
 // src/components/PackInfo.tsx
 import React, { useState } from 'react';
 import { SamplePack } from '../../types';
+import { useLocation } from 'react-router-dom';
+
 import './PackInfo.css';
 
 interface PackInfoProps {
@@ -17,6 +19,8 @@ const PackInfo: React.FC<PackInfoProps> = ({
   onShare 
 }) => {
   const [isLiked, setIsLiked] = useState(false);
+const location = useLocation();
+const { isLoggedUserPack } = location.state || {};
 
   return (
     <div className="pack-info">
@@ -76,21 +80,22 @@ const PackInfo: React.FC<PackInfoProps> = ({
               </svg>
             </button>
           </div>
-
+          {! isLoggedUserPack && 
           <button className="btn btn-primary action-btn" onClick={onAddToCart}>
             <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             Add to Cart
           </button>
-
+          }
           <button className="btn btn-secondary action-btn" onClick={onDownloadPreview}>
             <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            Download Preview
+            Download Pack
           </button>
-
+         
+           
           <button className="btn btn-ghost action-btn" onClick={onShare}>
             <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />

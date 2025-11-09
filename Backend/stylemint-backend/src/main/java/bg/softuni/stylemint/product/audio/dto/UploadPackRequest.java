@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -44,8 +45,16 @@ public class UploadPackRequest {
     @NotNull(message = "Cover image is required")
     private MultipartFile coverImage;
 
-    @NotEmpty(message = "At least one sample is required")
-    @Size(min = 1, max = 50, message = "Pack must contain between 1 and 50 samples")
+    // NEW: Allow adding existing samples by ID
+    private List<UUID> existingSamplesToAdd = new ArrayList<>();
+
+    // Note: Changed validation - at least one sample OR existing sample required
     @Valid
     private List<PackSampleInfo> samples = new ArrayList<>();
+
+    // Custom validation: Either samples or existingSamplesToAdd must have at least one item
+    public boolean hasAnySamples() {
+        return (samples != null && !samples.isEmpty()) ||
+                (existingSamplesToAdd != null && !existingSamplesToAdd.isEmpty());
+    }
 }

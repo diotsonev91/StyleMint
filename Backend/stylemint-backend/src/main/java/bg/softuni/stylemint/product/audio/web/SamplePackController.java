@@ -71,7 +71,7 @@ public class SamplePackController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<SamplePackDTO>> updatePack(
             @PathVariable UUID packId,
-            @Valid @ModelAttribute UploadPackRequest request) {
+            @Valid @ModelAttribute UpdatePackRequest request) {
         UUID authorId = SecurityUtil.getCurrentUserId();
         SamplePackDTO pack = samplePackService.updatePack(packId, authorId, request);
         return ResponseEntity.ok(ApiResponse.success(pack, "Pack updated successfully"));

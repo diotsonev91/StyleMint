@@ -2,6 +2,7 @@
 import API from '../api/config';
 import { UploadPackDto, ApiResponse } from '../api/upload.api';
 import { packUploadService } from './packUploadService';
+import { audioSampleService } from './audioSampleService'; // Import sample service
 
 /**
  * Audio Pack Service - complete pack CRUD operations
@@ -43,6 +44,25 @@ export const audioPackService = {
     }
   },
 
+  // Add to your audioPackService.ts
+async getAllPacks(page: number = 0, size: number = 50): Promise<ApiResponse> {
+  try {
+    const response = await API.get('/audio/packs/all', {
+      params: { page, size }
+    });
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error: any) {
+    console.error('Error fetching all packs:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message
+    };
+  }
+},
+
   async getMyUploadedPacks(): Promise<ApiResponse> {
     try {
       const response = await API.get('/audio/packs/my-packs');
@@ -75,6 +95,22 @@ export const audioPackService = {
     }
   },
 
+  async getPackWithSamples(packId: string): Promise<ApiResponse> {
+    try {
+      const response = await API.get(`/audio/packs/${packId}/detail`);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error fetching pack with samples:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
+
   async getPacksByGenre(genre: string): Promise<ApiResponse> {
     try {
       const response = await API.get(`/audio/packs/genre/${genre}`);
@@ -91,52 +127,69 @@ export const audioPackService = {
     }
   },
 
-  // UPDATE - Uses pack upload validation
+  // UPDATE - Fixed to use the new UpdatePackRequest structure
   async updatePack(
     packId: string, 
-    data: UploadPackDto
+    data: any // Changed to any to handle new structure
   ): Promise<ApiResponse> {
     try {
-      // Use pack upload service validation
-      const validation = packUploadService.validatePackData(data);
-      if (!validation.valid) {
-        return {
-          success: false,
-          error: validation.errors.join(', ')
-        };
-      }
-
       const formData = new FormData();
       
       // Append pack metadata
       formData.append('title', data.title);
       formData.append('artist', data.artist);
-      formData.append('price', data.price);
-      formData.append('description', data.description);
+      formData.append('price', data.price.toString());
+      formData.append('description', data.description || '');
       
       // Append genres
-      data.genres.forEach(genre => {
-        formData.append('genres', genre);
-      });
-      
-      // Append cover image if provided
-      if (data.coverImage) {
-        formData.append('coverImage', data.coverImage);
+      if (data.genres && Array.isArray(data.genres)) {
+        data.genres.forEach((genre: string) => {
+          formData.append('genres', genre);
+        });
       }
       
-      // Append samples
-      data.samples.forEach((sample, index) => {
-        formData.append(`samples[${index}].file`, sample.file);
-        formData.append(`samples[${index}].name`, sample.name);
-        
-        if (sample.bpm) formData.append(`samples[${index}].bpm`, sample.bpm.toString());
-        if (sample.musicalKey) formData.append(`samples[${index}].musicalKey`, sample.musicalKey);
-        if (sample.musicalScale) formData.append(`samples[${index}].musicalScale`, sample.musicalScale);
-        if (sample.genre) formData.append(`samples[${index}].genre`, sample.genre);
-        if (sample.sampleType) formData.append(`samples[${index}].sampleType`, sample.sampleType);
-        if (sample.instrumentGroup) formData.append(`samples[${index}].instrumentGroup`, sample.instrumentGroup);
-        
-      });
+      // Append tags if provided
+      if (data.tags && Array.isArray(data.tags)) {
+        data.tags.forEach((tag: string) => {
+          formData.append('tags', tag);
+        });
+      }
+      
+      // Append cover image if provided
+      if (data.coverImage && data.coverImage instanceof File) {
+        formData.append('coverImage', data.coverImage);
+      }
+
+      // Handle samples to add
+      if (data.samplesToAdd && Array.isArray(data.samplesToAdd)) {
+        data.samplesToAdd.forEach((sample: any, index: number) => {
+          if (sample.file) {
+            formData.append(`samplesToAdd[${index}].file`, sample.file);
+          }
+          formData.append(`samplesToAdd[${index}].name`, sample.name);
+          
+          if (sample.bpm) formData.append(`samplesToAdd[${index}].bpm`, sample.bpm.toString());
+          if (sample.musicalKey) formData.append(`samplesToAdd[${index}].musicalKey`, sample.musicalKey);
+          if (sample.musicalScale) formData.append(`samplesToAdd[${index}].musicalScale`, sample.musicalScale);
+          if (sample.sampleType) formData.append(`samplesToAdd[${index}].sampleType`, sample.sampleType);
+          if (sample.instrumentGroup) formData.append(`samplesToAdd[${index}].instrumentGroup`, sample.instrumentGroup);
+          if (sample.individualPrice) formData.append(`samplesToAdd[${index}].individualPrice`, sample.individualPrice.toString());
+        });
+      }
+
+      // Handle samples to remove
+      if (data.samplesToRemove && Array.isArray(data.samplesToRemove)) {
+        data.samplesToRemove.forEach((sampleId: string, index: number) => {
+          formData.append(`samplesToRemove[${index}]`, sampleId);
+        });
+      }
+
+      // Handle sample pricing updates
+      if (data.samplePricing && typeof data.samplePricing === 'object') {
+        Object.entries(data.samplePricing).forEach(([sampleId, price], index) => {
+          formData.append(`samplePricing[${sampleId}]`, price.toString());
+        });
+      }
 
       const response = await API.put(`/audio/packs/${packId}`, formData, {
         headers: {
@@ -161,45 +214,60 @@ export const audioPackService = {
   // UPDATE with progress tracking
   async updatePackWithProgress(
     packId: string,
-    data: UploadPackDto,
+    data: any,
     onProgress?: (progress: number) => void
   ): Promise<ApiResponse> {
     try {
-      const validation = packUploadService.validatePackData(data);
-      if (!validation.valid) {
-        return {
-          success: false,
-          error: validation.errors.join(', ')
-        };
-      }
-
       const formData = new FormData();
       
       formData.append('title', data.title);
       formData.append('artist', data.artist);
-      formData.append('price', data.price);
-      formData.append('description', data.description);
+      formData.append('price', data.price.toString());
+      formData.append('description', data.description || '');
       
-      data.genres.forEach(genre => {
-        formData.append('genres', genre);
-      });
-      
-      if (data.coverImage) {
-        formData.append('coverImage', data.coverImage);
+      if (data.genres && Array.isArray(data.genres)) {
+        data.genres.forEach((genre: string) => {
+          formData.append('genres', genre);
+        });
       }
       
-      data.samples.forEach((sample, index) => {
-        formData.append(`samples[${index}].file`, sample.file);
-        formData.append(`samples[${index}].name`, sample.name);
-        
-        if (sample.bpm) formData.append(`samples[${index}].bpm`, sample.bpm.toString());
-        if (sample.musicalKey) formData.append(`samples[${index}].musicalKey`, sample.musicalKey);
-        if (sample.musicalScale) formData.append(`samples[${index}].musicalScale`, sample.musicalScale);
-        if (sample.genre) formData.append(`samples[${index}].genre`, sample.genre);
-        if (sample.sampleType) formData.append(`samples[${index}].sampleType`, sample.sampleType);
-        if (sample.instrumentGroup) formData.append(`samples[${index}].instrumentGroup`, sample.instrumentGroup);
-        
-      }); 
+      if (data.tags && Array.isArray(data.tags)) {
+        data.tags.forEach((tag: string) => {
+          formData.append('tags', tag);
+        });
+      }
+      
+      if (data.coverImage && data.coverImage instanceof File) {
+        formData.append('coverImage', data.coverImage);
+      }
+
+      if (data.samplesToAdd && Array.isArray(data.samplesToAdd)) {
+        data.samplesToAdd.forEach((sample: any, index: number) => {
+          if (sample.file) {
+            formData.append(`samplesToAdd[${index}].file`, sample.file);
+          }
+          formData.append(`samplesToAdd[${index}].name`, sample.name);
+          
+          if (sample.bpm) formData.append(`samplesToAdd[${index}].bpm`, sample.bpm.toString());
+          if (sample.musicalKey) formData.append(`samplesToAdd[${index}].musicalKey`, sample.musicalKey);
+          if (sample.musicalScale) formData.append(`samplesToAdd[${index}].musicalScale`, sample.musicalScale);
+          if (sample.sampleType) formData.append(`samplesToAdd[${index}].sampleType`, sample.sampleType);
+          if (sample.instrumentGroup) formData.append(`samplesToAdd[${index}].instrumentGroup`, sample.instrumentGroup);
+          if (sample.individualPrice) formData.append(`samplesToAdd[${index}].individualPrice`, sample.individualPrice.toString());
+        });
+      }
+
+      if (data.samplesToRemove && Array.isArray(data.samplesToRemove)) {
+        data.samplesToRemove.forEach((sampleId: string, index: number) => {
+          formData.append(`samplesToRemove[${index}]`, sampleId);
+        });
+      }
+
+      if (data.samplePricing && typeof data.samplePricing === 'object') {
+        Object.entries(data.samplePricing).forEach(([sampleId, price], index) => {
+          formData.append(`samplePricing[${sampleId}]`, price.toString());
+        });
+      }
 
       const response = await API.put(`/audio/packs/${packId}`, formData, {
         headers: {
@@ -261,13 +329,23 @@ export const audioPackService = {
     }
   },
 
-  // PACK MANAGEMENT
+  // PACK MANAGEMENT - NEW METHODS using audioSampleService
   async addSampleToPack(packId: string, sampleData: any): Promise<ApiResponse> {
     try {
-      const response = await API.post(`/audio/packs/${packId}/samples`, sampleData);
+      // Use audioSampleService to upload the sample first
+      const uploadResult = await audioSampleService.uploadSample({
+        ...sampleData,
+        // Ensure the sample is associated with the pack
+        packId: packId
+      });
+
+      if (!uploadResult.success) {
+        return uploadResult;
+      }
+
       return {
         success: true,
-        data: response.data,
+        data: uploadResult.data,
         message: 'Sample added to pack successfully',
       };
     } catch (error: any) {
@@ -281,13 +359,167 @@ export const audioPackService = {
 
   async removeSampleFromPack(packId: string, sampleId: string): Promise<ApiResponse> {
     try {
-      await API.delete(`/audio/packs/${packId}/samples/${sampleId}`);
+      // Use audioSampleService to update the sample and remove pack association
+      const updateResult = await audioSampleService.updateSampleMetadata(sampleId, {
+        packId: null // Remove pack association
+      });
+
+      if (!updateResult.success) {
+        return updateResult;
+      }
+
       return {
         success: true,
         message: 'Sample removed from pack successfully',
       };
     } catch (error: any) {
       console.error('Error removing sample from pack:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
+
+  async updateSamplePriceInPack(sampleId: string, price: number): Promise<ApiResponse> {
+    try {
+      // Use audioSampleService to update the sample price
+      return await audioSampleService.updateSampleMetadata(sampleId, {
+        price: price.toString()
+      });
+    } catch (error: any) {
+      console.error('Error updating sample price:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
+
+  // PACK ACTIONS
+  async incrementDownloadCount(packId: string): Promise<ApiResponse> {
+    try {
+      await API.post(`/audio/packs/${packId}/download`);
+      return {
+        success: true,
+        message: 'Download recorded successfully',
+      };
+    } catch (error: any) {
+      console.error('Error recording download:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
+
+  async ratePack(packId: string, rating: number): Promise<ApiResponse> {
+    try {
+      if (rating < 1.0 || rating > 5.0) {
+        return {
+          success: false,
+          error: 'Rating must be between 1.0 and 5.0'
+        };
+      }
+
+      await API.post(`/audio/packs/${packId}/rate`, null, {
+        params: { rating }
+      });
+      
+      return {
+        success: true,
+        message: 'Pack rated successfully',
+      };
+    } catch (error: any) {
+      console.error('Error rating pack:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
+
+  // STATISTICS
+  async getProducerStats(authorId?: string): Promise<ApiResponse> {
+    try {
+      const endpoint = authorId 
+        ? `/audio/packs/producer/${authorId}/stats`
+        : '/audio/packs/producer/me/stats';
+      
+      const response = await API.get(endpoint);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error fetching producer stats:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
+
+  // FEATURED PACKS
+  async getTopRatedPacks(): Promise<ApiResponse> {
+    try {
+      const response = await API.get('/audio/packs/top-rated');
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error fetching top rated packs:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
+
+  async getMostDownloadedPacks(): Promise<ApiResponse> {
+    try {
+      const response = await API.get('/audio/packs/most-downloaded');
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error fetching most downloaded packs:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
+
+  async getLatestPacks(): Promise<ApiResponse> {
+    try {
+      const response = await API.get('/audio/packs/latest');
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error fetching latest packs:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
+
+  async getFeaturedPacks(page: number = 0, size: number = 20): Promise<ApiResponse> {
+    try {
+      const response = await API.get('/audio/packs/featured', {
+        params: { page, size }
+      });
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error fetching featured packs:', error);
       return {
         success: false,
         error: error.response?.data?.message || error.message

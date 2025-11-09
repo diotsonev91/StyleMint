@@ -363,3 +363,46 @@
 .sample-packs-page {
   animation: fadeIn 0.5s ease-out;
 }
+
+/* Add to SamplePacksPage.css */
+.error-container {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.retry-button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.retry-button:hover {
+  background: #0056b3;
+}
+
+.packs-stats {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.packs-clear-all-filters {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  margin-left: 1rem;
+}

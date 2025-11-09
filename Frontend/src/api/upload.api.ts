@@ -1,10 +1,10 @@
 import API from "./config";
 import { MusicalKey, MusicalScale, SampleType, Genre, InstrumentGroup } from "../types/audioEnums";
 
-// Upload endpoints with multipart form-data
-
+// API Base URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
+// Data Transfer Objects (DTOs)
 export interface UploadSampleDto {
   file: File;
   name: string;
@@ -30,8 +30,8 @@ export interface UpdateSampleMetaDataDto {
   sampleType: SampleType;
   instrumentGroup: InstrumentGroup;
   tags: string[];
+  packId?: string;
 }
-
 
 export interface UploadPackDto {
   title: string;
@@ -41,6 +41,7 @@ export interface UploadPackDto {
   genres: Genre[];
   tags: string[];
   coverImage: File;
+  existingSampleIds?: string[]; // IDs of existing samples to add
   samples: {
     file: File;
     name: string;
@@ -54,21 +55,47 @@ export interface UploadPackDto {
   }[];
 }
 
-export interface ApiResponse<T = any> {
+export interface PackSampleDto {
+  file: File;
+  name: string;
+  artist?: string;
+  bpm?: number;
+  musicalKey?: string;
+  musicalScale?: string;
+  genre?: string;
+  sampleType: string;
+  instrumentGroup: string;
+}
+
+export interface UpdatePackDto {
+  title: string;
+  artist: string;
+  price: string;
+  description?: string;
+  genres?: string[];
+  tags?: string[];
+  coverImage?: File;
+  samplesToAdd?: PackSampleDto[];
+  existingSamplesToAdd?: string[]; // IDs of existing samples to add
+  samplesToRemove?: string[];
+  samplePricing?: Record<string, number>;
+}
+
+export interface ApiResponse {
   success: boolean;
-  data?: T;
-  message?: string;
+  data?: any;
   error?: string;
+  message?: string;
 }
 
 /**
- * Upload API - handles HTTP requests to backend using Axios
+ * Upload API - handles multipart/form-data uploads
  */
 export const uploadApi = {
   /**
    * Upload a single sample
    */
-  async uploadSample(data: UploadSampleDto): Promise<any> {
+  async uploadSample(data: UploadSampleDto): Promise<ApiResponse> {
     const formData = new FormData();
     
     // Required fields
@@ -105,16 +132,16 @@ export const uploadApi = {
       withCredentials: true,
     });
 
-    return response;
+    return response.data;
   },
 
   /**
    * Upload a sample with progress tracking
    */
-  uploadSampleWithProgress(
+  async uploadSampleWithProgress(
     data: UploadSampleDto,
     onProgress?: (progress: number) => void
-  ): Promise<any> {
+  ): Promise<ApiResponse> {
     const formData = new FormData();
     
     // Required fields
@@ -144,7 +171,7 @@ export const uploadApi = {
       formData.append(`tags[${index}]`, tag);
     });
 
-    return API.post(`${API_BASE_URL}/audio/samples`, formData, {
+    const response = await API.post(`${API_BASE_URL}/audio/samples`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -156,12 +183,14 @@ export const uploadApi = {
         }
       },
     });
+
+    return response.data;
   },
 
   /**
    * Upload a sample pack
    */
-  async uploadPack(data: UploadPackDto): Promise<any> {
+  async uploadPack(data: UploadPackDto): Promise<ApiResponse> {
     const formData = new FormData();
     
     // Pack information
@@ -183,6 +212,12 @@ export const uploadApi = {
     if (data.coverImage) {
       formData.append('coverImage', data.coverImage);
     }
+
+    if (data.existingSampleIds && data.existingSampleIds.length > 0) {
+    data.existingSampleIds.forEach((sampleId, index) => {
+      formData.append(`existingSamplesToAdd[${index}]`, sampleId);
+    });
+  }
 
     // Samples
     data.samples.forEach((sample, index) => {
@@ -213,16 +248,16 @@ export const uploadApi = {
       withCredentials: true,
     });
 
-    return response;
+    return response.data;
   },
 
   /**
-   * Upload a pack with progress tracking
+   * Upload a sample pack with progress tracking
    */
-  uploadPackWithProgress(
+  async uploadPackWithProgress(
     data: UploadPackDto,
     onProgress?: (progress: number) => void
-  ): Promise<any> {
+  ): Promise<ApiResponse> {
     const formData = new FormData();
     
     // Pack information
@@ -252,6 +287,12 @@ export const uploadApi = {
       formData.append(`samples[${index}].artist`, sample.artist);
       formData.append(`samples[${index}].sampleType`, sample.sampleType);
       formData.append(`samples[${index}].instrumentGroup`, sample.instrumentGroup);
+
+      if (data.existingSampleIds && data.existingSampleIds.length > 0) {
+    data.existingSampleIds.forEach((sampleId, index) => {
+      formData.append(`existingSamplesToAdd[${index}]`, sampleId);
+    });
+  }
       
       if (sample.bpm !== undefined && sample.bpm !== null) {
         formData.append(`samples[${index}].bpm`, sample.bpm.toString());
@@ -267,6 +308,7 @@ export const uploadApi = {
       }
     });
 
+    // Handle progress tracking
     return API.post(`${API_BASE_URL}/audio/packs`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',

@@ -21,6 +21,7 @@ import { CheckoutSuccess } from "../pages/Cart/CheckoutPages";
 import GamesMenu from "../pages/Game/GamesMenu";
 import UserSamplesPage from "../pages/Sounds/UserSamplesPage";
 import EditSamplePage from "../pages/Sounds/EditSamplePage";
+import UserPacksPage from "../pages/Sounds/UserPacksPage";
 
 // You can easily expand this later with private routes or 404 pages
 export const AppRoutes: React.FC = () => {
@@ -44,6 +45,7 @@ export const AppRoutes: React.FC = () => {
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/profile/:userId" element={<ProfilePage />} />
       <Route path="/my-samples" element={<UserSamplesPage />} />  
+      <Route path="/my-packs" element={<UserPacksPage />} />  
       
        <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout/details" element={<CheckoutDetails />} />

@@ -94,8 +94,8 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onViewDetails, onAddToCart })
             </span>
           )}
         </div>
-
         {/* Price and Action */}
+         {! pack.isLoggedUserPack && 
         <div className="pack-card-footer">
           <span className="pack-card-price">${pack.price}</span>
           <button 
@@ -119,7 +119,9 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onViewDetails, onAddToCart })
               </>
             )}
           </button>
+         
         </div>
+        }
       </div>
     </div>
   );

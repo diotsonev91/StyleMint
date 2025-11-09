@@ -1,4 +1,4 @@
-// src/components/SamplePackDetailledPage.tsx - Fixed import
+// src/components/SamplePackDetailledPage.tsx - Fixed to use API
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { SamplePack } from '../../types';
@@ -7,7 +7,7 @@ import TabNavigation from '../../components/sounds/TabNavigation';
 import SamplesList from '../../components/sounds/SamplesList';
 import PackDetails from '../../components/sounds/PackDetails';
 import './SamplePackDetailedPage.css';
-import mockPacks from '../../mock/mockPacks'; 
+import { audioPackService } from '../../services/audioPackService';
 import { addSamplePackToCart } from '../../services/cartService';
 
 const SamplePackDetailledPage: React.FC = () => {
@@ -15,22 +15,63 @@ const SamplePackDetailledPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'samples' | 'details'>('samples');
   const [samplePack, setSamplePack] = useState<SamplePack | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // ✅ Load pack from mockPacks by ID
+  // ✅ Fetch pack from API by ID
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const pack = mockPacks.find(p => p.id === packId);
-      console.log(packId)
-      if (pack) {
-        setSamplePack(pack);
-        console.log(`✅ Loaded pack "${pack.title}" with ${pack.samples.length} samples`);
-      } else {
-        console.error(`❌ Pack with ID "${packId}" not found`);
+    const fetchPack = async () => {
+      if (!packId) {
+        setError('No pack ID provided');
+        setLoading(false);
+        return;
       }
-      
+
+      setLoading(true);
+      setError(null);
+
+      // Call API to get pack with samples
+      const response = await audioPackService.getPackWithSamples(packId);
+
+      // Debug: Log raw response to see backend format
+      console.log('🔍 Raw API response:', response);
+      console.log('🔍 Response data:', response.data);
+
+      if (response.success && response.data) {
+        // ✅ Backend returns nested structure: { pack: {...}, samples: [...] }
+        const packData = (response.data as any).pack || response.data;
+        const samplesData = (response.data as any).samples || packData.samples || [];
+        
+        // Transform backend response to ensure all required fields exist
+        const transformedPack: SamplePack = {
+          ...packData,
+          // Ensure title exists
+          title: packData.title || packData.name || 'Untitled Pack',
+          // Ensure artist exists
+          artist: packData.artist || packData.author || 'Unknown Artist',
+          // Ensure arrays exist (prevent .map() errors)
+          genres: Array.isArray(packData.genres) ? packData.genres : [],
+          tags: Array.isArray(packData.tags) ? packData.tags : [],
+          samples: Array.isArray(samplesData) ? samplesData : [],
+          // Ensure other fields have defaults
+          sampleCount: packData.sampleCount || samplesData.length || 0,
+          totalSize: packData.totalSize || '0 MB',
+          description: packData.description || '',
+          price: packData.price ?? 0,
+          coverImage: packData.coverImage || 'https://via.placeholder.com/400'
+        };
+        
+        setSamplePack(transformedPack);
+        console.log(`✅ Loaded pack "${transformedPack.title}" by ${transformedPack.artist} with ${transformedPack.samples?.length || 0} samples`);
+        console.log('✅ Transformed pack data:', transformedPack);
+      } else {
+        setError(response.error || 'Failed to load pack');
+        console.error(`❌ Error loading pack with ID "${packId}":`, response.error);
+      }
+
       setLoading(false);
-    }, 500);
+    };
+
+    fetchPack();
   }, [packId]);
 
   const handleAddToCart = () => {
@@ -38,7 +79,7 @@ const SamplePackDetailledPage: React.FC = () => {
     
     console.log(`📦 Adding pack "${samplePack.title}" to cart...`);
     addSamplePackToCart(samplePack);
-    console.log(`✅ Added "${samplePack.title}" with ${samplePack.samples.length} samples to cart`);
+    console.log(`✅ Added "${samplePack.title}" with ${samplePack.samples?.length || 0} samples to cart`);
     
     // Optional: Show success notification
     alert(`Added "${samplePack.title}" to cart!`);
@@ -84,6 +125,17 @@ const SamplePackDetailledPage: React.FC = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="samples-page">
+        <div className="error-container">
+          <p>{error}</p>
+          <button onClick={() => window.history.back()}>Go Back</button>
+        </div>
+      </div>
+    );
+  }
+
   if (!samplePack) {
     return (
       <div className="samples-page">
@@ -120,7 +172,7 @@ const SamplePackDetailledPage: React.FC = () => {
 
               {activeTab === 'samples' ? (
                 <SamplesList 
-                  samples={samplePack.samples} 
+                  samples={samplePack.samples || []} 
                   onLoadMore={handleLoadMore}
                 />
               ) : (

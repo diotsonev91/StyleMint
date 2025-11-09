@@ -14,9 +14,11 @@ export default defineConfig({
     }
   },
   server: {
+    //DOING THIS BECAUSE IF MAKE IT CORRECT WAY SHOULD CONFIG IN CLOUD AND COULD HAVE BUGS IN EXAM DONT WANT TO HAPPEN
+    // I KNOW ITS NOT THE CORRECT WAY
     headers: {
-      "Cross-Origin-Opener-Policy": "same-origin",
-      "Cross-Origin-Embedder-Policy": "require-corp"
+    'Cross-Origin-Embedder-Policy': 'unsafe-none',
+      'Cross-Origin-Opener-Policy': 'same-origin', 
     }
   }
 })
