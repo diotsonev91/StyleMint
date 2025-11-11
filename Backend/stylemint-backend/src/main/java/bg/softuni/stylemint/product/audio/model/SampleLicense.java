@@ -1,6 +1,6 @@
+// File: SampleLicense.java (in orchestrator)
 package bg.softuni.stylemint.product.audio.model;
 
-import bg.softuni.stylemint.order.model.OrderItem;
 import bg.softuni.stylemint.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,21 +16,22 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class SampleLicense {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "sample_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "audio_sample_id", nullable = false)
     private AudioSample audioSample;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_item_id")
-    private OrderItem orderItem;
+    // Only store the order item ID as reference, not the entity
+    @Column(name = "order_item_id", nullable = false)
+    private UUID orderItemId;
 
     @Column(name = "purchased_at", nullable = false)
     private OffsetDateTime purchasedAt;

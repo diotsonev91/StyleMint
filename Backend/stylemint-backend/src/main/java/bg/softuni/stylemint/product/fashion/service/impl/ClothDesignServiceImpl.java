@@ -3,7 +3,7 @@ package bg.softuni.stylemint.product.fashion.service.impl;
 
 import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
 import bg.softuni.stylemint.common.exception.NotFoundException;
-import bg.softuni.stylemint.common.service.FileService;
+import bg.softuni.stylemint.product.common.service.FileService;
 import bg.softuni.stylemint.product.fashion.dto.*;
 import bg.softuni.stylemint.product.fashion.model.ClothDesign;
 import bg.softuni.stylemint.product.fashion.repository.ClothDesignRepository;

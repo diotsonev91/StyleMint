@@ -1,6 +1,6 @@
 // src/components/PackForm/PackInfoStep.tsx
 import React, { useState } from 'react';
-import { PackFormData } from '../PackForm';
+import { PackFormData } from './types';
 import { Genre } from '../../../types/audioEnums';
 
 interface PackInfoStepProps {
@@ -13,6 +13,7 @@ interface PackInfoStepProps {
   isSubmitting: boolean;
   onNext: () => void;
   isStepValid: boolean;
+  mode: 'edit' | 'upload';
 }
 
 export const PackInfoStep: React.FC<PackInfoStepProps> = ({
@@ -24,7 +25,8 @@ export const PackInfoStep: React.FC<PackInfoStepProps> = ({
   onRemoveTag,
   isSubmitting,
   onNext,
-  isStepValid
+  isStepValid,
+  mode
 }) => {
   const [tagInput, setTagInput] = useState('');
   const genreOptions = Object.values(Genre);
@@ -198,7 +200,11 @@ export const PackInfoStep: React.FC<PackInfoStepProps> = ({
           onClick={onNext}
           disabled={!isStepValid || isSubmitting}
         >
-          Next: Add Samples
+           
+      {mode == 'upload' &&
+      <div>Add Samples</div>}
+       {mode == 'edit' &&
+      <div>Edit Samples</div>}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>

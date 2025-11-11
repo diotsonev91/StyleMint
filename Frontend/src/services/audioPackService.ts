@@ -1,8 +1,10 @@
 // src/services/audioPackService.ts
 import API from '../api/config';
 import { UploadPackDto, ApiResponse } from '../api/upload.api';
+import { UpdatePackDto } from '../api/update.api'; // You'll need to create this
 import { packUploadService } from './packUploadService';
-import { audioSampleService } from './audioSampleService'; // Import sample service
+import { packUpdateService } from './packUpdateService'; // Import new service
+import { audioSampleService } from './audioSampleService';
 
 /**
  * Audio Pack Service - complete pack CRUD operations
@@ -20,7 +22,20 @@ export const audioPackService = {
     return await packUploadService.uploadPackWithProgress(data, onProgress);
   },
 
-  // READ
+  // UPDATE - Uses pack update service
+  async updatePack(packId: string, data: UpdatePackDto): Promise<ApiResponse> {
+    return await packUpdateService.updatePack(packId, data);
+  },
+
+  async updatePackWithProgress(
+    packId: string,
+    data: UpdatePackDto,
+    onProgress?: (progress: number) => void
+  ): Promise<ApiResponse> {
+    return await packUpdateService.updatePackWithProgress(packId, data, onProgress);
+  },
+
+  // READ operations (unchanged)
   async hasUploadedPacks(): Promise<{ hasPacks: boolean; count?: number; error?: string }> {
     try {
       const response = await API.get('/audio/packs/my-packs');
@@ -44,24 +59,23 @@ export const audioPackService = {
     }
   },
 
-  // Add to your audioPackService.ts
-async getAllPacks(page: number = 0, size: number = 50): Promise<ApiResponse> {
-  try {
-    const response = await API.get('/audio/packs/all', {
-      params: { page, size }
-    });
-    return {
-      success: true,
-      data: response.data
-    };
-  } catch (error: any) {
-    console.error('Error fetching all packs:', error);
-    return {
-      success: false,
-      error: error.response?.data?.message || error.message
-    };
-  }
-},
+  async getAllPacks(page: number = 0, size: number = 50): Promise<ApiResponse> {
+    try {
+      const response = await API.get('/audio/packs/all', {
+        params: { page, size }
+      });
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error fetching all packs:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
 
   async getMyUploadedPacks(): Promise<ApiResponse> {
     try {
@@ -127,175 +141,7 @@ async getAllPacks(page: number = 0, size: number = 50): Promise<ApiResponse> {
     }
   },
 
-  // UPDATE - Fixed to use the new UpdatePackRequest structure
-  async updatePack(
-    packId: string, 
-    data: any // Changed to any to handle new structure
-  ): Promise<ApiResponse> {
-    try {
-      const formData = new FormData();
-      
-      // Append pack metadata
-      formData.append('title', data.title);
-      formData.append('artist', data.artist);
-      formData.append('price', data.price.toString());
-      formData.append('description', data.description || '');
-      
-      // Append genres
-      if (data.genres && Array.isArray(data.genres)) {
-        data.genres.forEach((genre: string) => {
-          formData.append('genres', genre);
-        });
-      }
-      
-      // Append tags if provided
-      if (data.tags && Array.isArray(data.tags)) {
-        data.tags.forEach((tag: string) => {
-          formData.append('tags', tag);
-        });
-      }
-      
-      // Append cover image if provided
-      if (data.coverImage && data.coverImage instanceof File) {
-        formData.append('coverImage', data.coverImage);
-      }
-
-      // Handle samples to add
-      if (data.samplesToAdd && Array.isArray(data.samplesToAdd)) {
-        data.samplesToAdd.forEach((sample: any, index: number) => {
-          if (sample.file) {
-            formData.append(`samplesToAdd[${index}].file`, sample.file);
-          }
-          formData.append(`samplesToAdd[${index}].name`, sample.name);
-          
-          if (sample.bpm) formData.append(`samplesToAdd[${index}].bpm`, sample.bpm.toString());
-          if (sample.musicalKey) formData.append(`samplesToAdd[${index}].musicalKey`, sample.musicalKey);
-          if (sample.musicalScale) formData.append(`samplesToAdd[${index}].musicalScale`, sample.musicalScale);
-          if (sample.sampleType) formData.append(`samplesToAdd[${index}].sampleType`, sample.sampleType);
-          if (sample.instrumentGroup) formData.append(`samplesToAdd[${index}].instrumentGroup`, sample.instrumentGroup);
-          if (sample.individualPrice) formData.append(`samplesToAdd[${index}].individualPrice`, sample.individualPrice.toString());
-        });
-      }
-
-      // Handle samples to remove
-      if (data.samplesToRemove && Array.isArray(data.samplesToRemove)) {
-        data.samplesToRemove.forEach((sampleId: string, index: number) => {
-          formData.append(`samplesToRemove[${index}]`, sampleId);
-        });
-      }
-
-      // Handle sample pricing updates
-      if (data.samplePricing && typeof data.samplePricing === 'object') {
-        Object.entries(data.samplePricing).forEach(([sampleId, price], index) => {
-          formData.append(`samplePricing[${sampleId}]`, price.toString());
-        });
-      }
-
-      const response = await API.put(`/audio/packs/${packId}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      return {
-        success: true,
-        data: response.data,
-        message: 'Pack updated successfully',
-      };
-    } catch (error: any) {
-      console.error('Pack update error:', error);
-      return {
-        success: false,
-        error: error.response?.data?.message || error.response?.data?.error || error.message || 'Update failed',
-      };
-    }
-  },
-
-  // UPDATE with progress tracking
-  async updatePackWithProgress(
-    packId: string,
-    data: any,
-    onProgress?: (progress: number) => void
-  ): Promise<ApiResponse> {
-    try {
-      const formData = new FormData();
-      
-      formData.append('title', data.title);
-      formData.append('artist', data.artist);
-      formData.append('price', data.price.toString());
-      formData.append('description', data.description || '');
-      
-      if (data.genres && Array.isArray(data.genres)) {
-        data.genres.forEach((genre: string) => {
-          formData.append('genres', genre);
-        });
-      }
-      
-      if (data.tags && Array.isArray(data.tags)) {
-        data.tags.forEach((tag: string) => {
-          formData.append('tags', tag);
-        });
-      }
-      
-      if (data.coverImage && data.coverImage instanceof File) {
-        formData.append('coverImage', data.coverImage);
-      }
-
-      if (data.samplesToAdd && Array.isArray(data.samplesToAdd)) {
-        data.samplesToAdd.forEach((sample: any, index: number) => {
-          if (sample.file) {
-            formData.append(`samplesToAdd[${index}].file`, sample.file);
-          }
-          formData.append(`samplesToAdd[${index}].name`, sample.name);
-          
-          if (sample.bpm) formData.append(`samplesToAdd[${index}].bpm`, sample.bpm.toString());
-          if (sample.musicalKey) formData.append(`samplesToAdd[${index}].musicalKey`, sample.musicalKey);
-          if (sample.musicalScale) formData.append(`samplesToAdd[${index}].musicalScale`, sample.musicalScale);
-          if (sample.sampleType) formData.append(`samplesToAdd[${index}].sampleType`, sample.sampleType);
-          if (sample.instrumentGroup) formData.append(`samplesToAdd[${index}].instrumentGroup`, sample.instrumentGroup);
-          if (sample.individualPrice) formData.append(`samplesToAdd[${index}].individualPrice`, sample.individualPrice.toString());
-        });
-      }
-
-      if (data.samplesToRemove && Array.isArray(data.samplesToRemove)) {
-        data.samplesToRemove.forEach((sampleId: string, index: number) => {
-          formData.append(`samplesToRemove[${index}]`, sampleId);
-        });
-      }
-
-      if (data.samplePricing && typeof data.samplePricing === 'object') {
-        Object.entries(data.samplePricing).forEach(([sampleId, price], index) => {
-          formData.append(`samplePricing[${sampleId}]`, price.toString());
-        });
-      }
-
-      const response = await API.put(`/audio/packs/${packId}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total && onProgress) {
-            const progress = (progressEvent.loaded / progressEvent.total) * 100;
-            onProgress(progress);
-          }
-        },
-      });
-
-      return {
-        success: true,
-        data: response.data,
-        message: 'Pack updated successfully',
-      };
-    } catch (error: any) {
-      console.error('Pack update error:', error);
-      return {
-        success: false,
-        error: error.response?.data?.message || error.response?.data?.error || error.message || 'Update failed',
-      };
-    }
-  },
-
-  // DELETE
+  // DELETE (unchanged)
   async deletePack(packId: string): Promise<ApiResponse> {
     try {
       await API.delete(`/audio/packs/${packId}`);
@@ -312,7 +158,7 @@ async getAllPacks(page: number = 0, size: number = 50): Promise<ApiResponse> {
     }
   },
 
-  // SEARCH
+  // SEARCH (unchanged)
   async searchPacks(searchRequest: any): Promise<ApiResponse> {
     try {
       const response = await API.post('/audio/packs/search', searchRequest);
@@ -527,10 +373,14 @@ async getAllPacks(page: number = 0, size: number = 50): Promise<ApiResponse> {
     }
   },
 
-  // Validation (re-export from pack upload service)
+  // Validation methods (re-export from services)
   validateCoverImage: packUploadService.validateCoverImage,
   validatePackData: packUploadService.validatePackData,
   validatePackStructure: packUploadService.validatePackStructure,
   generatePackSummary: packUploadService.generatePackSummary,
-  calculatePackSize: packUploadService.calculatePackSize
+  calculatePackSize: packUploadService.calculatePackSize,
+  // Add update-specific validation methods
+  validateUpdateData: packUpdateService.validateUpdateData,
+  hasSampleChanges: packUpdateService.hasSampleChanges,
+  generateUpdateSummary: packUpdateService.generateUpdateSummary
 };

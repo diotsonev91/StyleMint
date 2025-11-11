@@ -207,6 +207,23 @@ console.log("Validation check:", data);
     };
   }
 },
+async unboundSampleFromPack(packId: string, sampleId: string): Promise<ApiResponse> {
+  try {
+    const response = await API.delete(`/audio/samples/${sampleId}/pack/${packId}`);
+    
+    return {
+      success: true,
+      data: response.data,
+      message: 'Sample successfully unbound from pack',
+    };
+  } catch (error: any) {
+    console.error('Error unbinding sample from pack:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to unbind sample from pack',
+    };
+  }
+},
 
 
   // DELETE

@@ -8,7 +8,7 @@ import bg.softuni.stylemint.product.audio.service.AudioSampleService;
 import bg.softuni.stylemint.common.exception.NotFoundException;
 import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
 import bg.softuni.stylemint.common.exception.FileProcessingException;
-import bg.softuni.stylemint.common.service.CloudinaryService;
+import bg.softuni.stylemint.external.claudinary.CloudinaryService;
 import bg.softuni.stylemint.product.audio.service.utils.AudioSampleMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -56,30 +56,18 @@ export interface UploadPackDto {
 }
 
 export interface PackSampleDto {
-  file: File;
-  name: string;
-  artist?: string;
+  file: File; // This matches backend MultipartFile file
+  name: string; // This matches backend String name
+  artist?: string; // Extra field - not in backend, consider removing
   bpm?: number;
-  musicalKey?: string;
+  musicalKey?: string; 
   musicalScale?: string;
-  genre?: string;
-  sampleType: string;
-  instrumentGroup: string;
+  sampleType: string; 
+  instrumentGroup: string; 
+
 }
 
-export interface UpdatePackDto {
-  title: string;
-  artist: string;
-  price: string;
-  description?: string;
-  genres?: string[];
-  tags?: string[];
-  coverImage?: File;
-  samplesToAdd?: PackSampleDto[];
-  existingSamplesToAdd?: string[]; // IDs of existing samples to add
-  samplesToRemove?: string[];
-  samplePricing?: Record<string, number>;
-}
+
 
 export interface ApiResponse {
   success: boolean;

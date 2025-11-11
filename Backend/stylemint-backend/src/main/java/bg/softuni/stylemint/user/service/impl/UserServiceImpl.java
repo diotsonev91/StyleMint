@@ -1,9 +1,10 @@
+// File: UserServiceImpl.java (UPDATED)
 package bg.softuni.stylemint.user.service.impl;
 
 import bg.softuni.stylemint.common.exception.ConflictException;
 import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
 import bg.softuni.stylemint.common.exception.NotFoundException;
-import bg.softuni.stylemint.order.service.OrderService;
+import bg.softuni.stylemint.external.facade.order.OrderServiceFacade;
 import bg.softuni.stylemint.product.audio.service.AudioSampleService;
 import bg.softuni.stylemint.product.audio.service.SamplePackService;
 import bg.softuni.stylemint.product.fashion.service.ClothDesignService;
@@ -32,8 +33,8 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // домейнни зависимости за проверки при изтриване
-    private final OrderService orderService;
+    // Domain dependencies for deletion checks - UPDATED to use Facade
+    private final OrderServiceFacade orderServiceFacade;
     private final ClothDesignService clothDesignService;
     private final AudioSampleService audioSampleService;
     private final SamplePackService samplePackService;
@@ -78,8 +79,6 @@ public class UserServiceImpl implements UserService {
         return UserMapper.toDTO(userRepository.save(user));
     }
 
-
-
     @Override
     public UserDTO updateUser(UUID id, User user) {
         User existing = userRepository.findById(id)
@@ -102,7 +101,6 @@ public class UserServiceImpl implements UserService {
 
         return UserMapper.toDTO(userRepository.save(existing));
     }
-
 
     @Override
     public void deleteUser(UUID id) {
@@ -137,7 +135,10 @@ public class UserServiceImpl implements UserService {
     }
 
     private boolean canDeleteUser(UUID userId) {
-        return orderService.countOrdersByUser(userId) == 0
+        // Use OrderServiceFacade instead of OrderService
+        Long orderCount = orderServiceFacade.countOrdersByUser(userId);
+
+        return orderCount == 0
                 && clothDesignService.countDesignsByUser(userId) == 0
                 && audioSampleService.countSamplesByAuthor(userId) == 0
                 && samplePackService.countPacksByAuthor(userId) == 0;

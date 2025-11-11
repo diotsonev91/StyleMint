@@ -1,8 +1,8 @@
 package bg.softuni.stylemint.user.service.impl;
 
 import bg.softuni.stylemint.common.exception.NotFoundException;
+import bg.softuni.stylemint.external.facade.order.OrderServiceFacade;
 import bg.softuni.stylemint.game.service.GameStatsService;
-import bg.softuni.stylemint.order.service.OrderService;
 import bg.softuni.stylemint.product.audio.service.AudioSampleService;
 import bg.softuni.stylemint.product.audio.service.SamplePackService;
 import bg.softuni.stylemint.product.fashion.service.ClothDesignService;
@@ -27,7 +27,7 @@ import java.util.UUID;
 public class UserStatisticsServiceImpl implements UserStatisticsService {
 
     private final UserRepository userRepository;
-    private final OrderService orderService;
+    private final OrderServiceFacade orderServiceFacade;
     private final ClothDesignService clothDesignService;
     private final AudioSampleService audioSampleService;
     private final SamplePackService samplePackService;

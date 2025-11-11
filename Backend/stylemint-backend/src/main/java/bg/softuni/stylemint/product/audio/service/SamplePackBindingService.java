@@ -32,5 +32,5 @@ public interface SamplePackBindingService {
      * @param sampleId ID of the sample to unbind
      * @param authorId ID of the author (for authorization)
      */
-    void unbindSampleFromPack(UUID sampleId, UUID authorId);
+    void unbindSampleFromPack(UUID sampleId, UUID packId, UUID authorId);
 }

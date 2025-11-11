@@ -51,4 +51,5 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(name = "roles", length = 32, nullable = false)
     private Set<UserRole> roles = new HashSet<>();
+
 }

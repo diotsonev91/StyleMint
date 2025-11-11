@@ -5,6 +5,7 @@ import bg.softuni.stylemint.common.dto.ApiResponse;
 import bg.softuni.stylemint.product.audio.dto.*;
 import bg.softuni.stylemint.product.audio.enums.*;
 import bg.softuni.stylemint.product.audio.service.AudioSampleService;
+import bg.softuni.stylemint.product.audio.service.SamplePackBindingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,6 +28,7 @@ import static bg.softuni.stylemint.config.ApiPaths.BASE;
 public class AudioSampleController {
 
     private final AudioSampleService audioSampleService;
+    private final SamplePackBindingService samplePackBindingService;
 
     // ================ CRUD Operations ================
 
@@ -250,5 +252,21 @@ public class AudioSampleController {
     public ResponseEntity<Long> countByGenre(@PathVariable Genre genre) {
         long count = audioSampleService.countSamplesByGenre(genre);
         return ResponseEntity.ok(count);
+    }
+
+    /**
+     * Unbind sample from pack
+     * DELETE /api/v1/audio/samples/{sampleId}/pack/{packId}
+     */
+    @DeleteMapping("/{sampleId}/pack/{packId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Void>> unbindSampleFromPack(
+            @PathVariable UUID sampleId,
+            @PathVariable UUID packId) {
+
+        UUID authorId = SecurityUtil.getCurrentUserId();
+        samplePackBindingService.unbindSampleFromPack(sampleId,packId, authorId);
+
+        return ResponseEntity.ok(ApiResponse.success(null, "Sample successfully unbound from pack"));
     }
 }

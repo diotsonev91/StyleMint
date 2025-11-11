@@ -7,10 +7,11 @@ import bg.softuni.stylemint.product.audio.repository.SamplePackRepository;
 import bg.softuni.stylemint.common.exception.NotFoundException;
 import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
 import bg.softuni.stylemint.common.exception.FileProcessingException;
-import bg.softuni.stylemint.common.service.CloudinaryService;
+import bg.softuni.stylemint.external.claudinary.CloudinaryService;
 import bg.softuni.stylemint.product.audio.service.AudioSampleService;
 import bg.softuni.stylemint.product.audio.service.SamplePackBindingService;
 import bg.softuni.stylemint.product.audio.service.SamplePackManagementService;
+import bg.softuni.stylemint.product.audio.service.SamplePackStatisticsService;
 import bg.softuni.stylemint.product.audio.service.utils.FileSizeUtils;
 import bg.softuni.stylemint.product.audio.service.utils.SamplePackMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -36,6 +36,7 @@ public class SamplePackManagementServiceImpl implements SamplePackManagementServ
     private final CloudinaryService cloudinaryService;
     private final SamplePackMapper samplePackMapper;
     private final SamplePackBindingService samplePackBindingService;
+    private final SamplePackStatisticsService samplePackStatisticsService;
 
     // ================ PUBLIC METHODS ================
 
@@ -90,7 +91,7 @@ public class SamplePackManagementServiceImpl implements SamplePackManagementServ
             // 5. Update pack with calculated total size and recalculate statistics
             savedPack.setTotalSize(FileSizeUtils.formatFileSize(totalSizeBytes));
             savedPack.setSampleCount( audioSampleService.countSamplesByPack(savedPack.getId()));
-            recalculatePackStatistics(savedPack);
+            samplePackStatisticsService.recalculatePackStatistics(savedPack);
             samplePackRepository.save(savedPack);
 
             log.info("Successfully uploaded pack '{}' with {} samples",
@@ -180,29 +181,18 @@ public class SamplePackManagementServiceImpl implements SamplePackManagementServ
                         request.getSamplesToRemove().size(), pack.getTitle());
 
                 for (UUID sampleId : request.getSamplesToRemove()) {
-                    samplePackBindingService.unbindSampleFromPack(sampleId, authorId);
+                    samplePackBindingService.unbindSampleFromPack(sampleId,packId, authorId);
                 }
             }
 
-            // 4.4 Update individual sample pricing
-            if (request.getSamplePricing() != null && !request.getSamplePricing().isEmpty()) {
-                log.info("Updating pricing for {} samples in pack '{}'",
-                        request.getSamplePricing().size(), pack.getTitle());
-
-                for (Map.Entry<UUID, BigDecimal> entry : request.getSamplePricing().entrySet()) {
-                    UUID sampleId = entry.getKey();
-                    BigDecimal newPrice = entry.getValue();
-                    audioSampleService.updateSamplePrice(sampleId, authorId, newPrice.doubleValue());
-                }
-            }
 
             // 5. Recalculate pack statistics
             log.info("Recalculating statistics for pack '{}'", pack.getTitle());
-            recalculatePackStatistics(pack);
+            samplePackStatisticsService.recalculatePackStatistics(pack);
 
             // Update total size if new samples were added
             if (additionalSizeBytes > 0) {
-                updateTotalSize(pack, additionalSizeBytes);
+                samplePackStatisticsService.updateTotalSize(pack, additionalSizeBytes);
             }
 
             // 6. Save and return
@@ -238,7 +228,7 @@ public class SamplePackManagementServiceImpl implements SamplePackManagementServ
 
             for (AudioSampleDTO sample : packSamples) {
                 // Unbind sample from pack (make it standalone)
-                samplePackBindingService.unbindSampleFromPack(sample.getId(), authorId);
+                samplePackBindingService.unbindSampleFromPack(sample.getId(),packId, authorId);
                 // Delete the sample
                 audioSampleService.deleteSample(sample.getId(), authorId);
             }
@@ -328,50 +318,5 @@ public class SamplePackManagementServiceImpl implements SamplePackManagementServ
         return uploadRequest;
     }
 
-    /**
-     * Recalculate pack statistics (sample count, average BPM, total duration)
-     */
-    private void recalculatePackStatistics(SamplePack pack) {
-        List<AudioSampleDTO> packSamples = audioSampleService.getSamplesByPack(pack.getId());
 
-        if (!packSamples.isEmpty()) {
-            // Update sample count
-            pack.setSampleCount(packSamples.size());
-
-            // Calculate average BPM
-            Double averageBpm = packSamples.stream()
-                    .filter(sample -> sample.getBpm() != null && sample.getBpm() > 0)
-                    .mapToInt(AudioSampleDTO::getBpm)
-                    .average()
-                    .orElse(0.0);
-
-            // Calculate total duration
-            Integer totalDuration = packSamples.stream()
-                    .filter(sample -> sample.getDuration() != null && sample.getDuration() > 0)
-                    .mapToInt(AudioSampleDTO::getDuration)
-                    .sum();
-
-            log.debug("Pack '{}' statistics: {} samples, avg BPM: {}, total duration: {}s",
-                    pack.getTitle(), pack.getSampleCount(), averageBpm, totalDuration);
-        } else {
-            pack.setSampleCount(0);
-            log.debug("Pack '{}' has no samples", pack.getTitle());
-        }
-    }
-
-    /**
-     * Update pack total size by adding additional bytes
-     */
-    private void updateTotalSize(SamplePack pack, long additionalBytes) {
-        try {
-            long currentBytes = FileSizeUtils.parseFileSize(pack.getTotalSize());
-            long totalBytes = currentBytes + additionalBytes;
-            pack.setTotalSize(FileSizeUtils.formatFileSize(totalBytes));
-
-            log.debug("Updated pack '{}' total size to {}", pack.getTitle(), pack.getTotalSize());
-        } catch (Exception e) {
-            log.warn("Failed to parse existing pack size '{}', using only new size", pack.getTotalSize());
-            pack.setTotalSize(FileSizeUtils.formatFileSize(additionalBytes));
-        }
-    }
 }

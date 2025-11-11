@@ -8,7 +8,6 @@ import bg.softuni.stylemint.product.audio.service.AudioSampleService;
 import bg.softuni.stylemint.product.audio.service.SamplePackManagementService;
 import bg.softuni.stylemint.product.audio.service.SamplePackService;
 import bg.softuni.stylemint.common.exception.NotFoundException;
-import bg.softuni.stylemint.common.service.CloudinaryService;
 import bg.softuni.stylemint.product.audio.service.utils.SamplePackMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,12 +31,13 @@ public class SamplePackServiceImpl implements SamplePackService {
     private final SamplePackManagementService samplePackManagementService;
     private final AudioSampleService audioSampleService;
     private final SamplePackMapper samplePackMapper;
-    private final CloudinaryService cloudinaryService;
+
 
     @Override
     @Transactional
     public SamplePackDTO uploadPack(UUID authorId, UploadPackRequest request) {
         // POST request - no transformation needed
+
         return samplePackManagementService.uploadPack(authorId, request);
     }
 
@@ -45,6 +45,21 @@ public class SamplePackServiceImpl implements SamplePackService {
     @Transactional
     public SamplePackDTO updatePack(UUID packId, UUID authorId, UpdatePackRequest request) {
         // PUT request - no transformation needed
+        log.info("=== UPDATE PACK STARTED ===");
+        log.info("Pack ID: {}, Author ID: {}", packId, authorId);
+        log.info("Request title: {}", request.getTitle());
+        log.info("Request artist: {}", request.getArtist());
+        log.info("Cover image provided: {}", request.getCoverImage() != null && !request.getCoverImage().isEmpty());
+        log.info("Samples to add count: {}", request.getSamplesToAdd() != null ? request.getSamplesToAdd().size() : 0);
+        log.info("Samples to remove count: {}", request.getSamplesToRemove() != null ? request.getSamplesToRemove().size() : 0);
+
+        if (request.getSamplesToAdd() != null) {
+            for (int i = 0; i < request.getSamplesToAdd().size(); i++) {
+                PackSampleInfo sample = request.getSamplesToAdd().get(i);
+                log.info("Sample {}: name={}, file={}", i, sample.getName(),
+                        sample.getFile() != null ? sample.getFile().getOriginalFilename() : "null");
+            }
+        }
         return samplePackManagementService.updatePack(packId, authorId, request);
     }
 

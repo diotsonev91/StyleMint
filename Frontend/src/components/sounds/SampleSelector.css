@@ -303,14 +303,14 @@
 .sample-name {
   font-size: 1rem;
   font-weight: 600;
-  color: white;
+   color: var(--text-secondary);
   margin-bottom: 0.25rem;
   line-height: 1.4;
 }
 
 .sample-artist {
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.6);
+    color: var(--text-secondary);
   margin-bottom: 0.75rem;
 }
 

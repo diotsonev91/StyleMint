@@ -22,6 +22,7 @@ import GamesMenu from "../pages/Game/GamesMenu";
 import UserSamplesPage from "../pages/Sounds/UserSamplesPage";
 import EditSamplePage from "../pages/Sounds/EditSamplePage";
 import UserPacksPage from "../pages/Sounds/UserPacksPage";
+import EditPackPage from "../pages/Sounds/EditPackPage";
 
 // You can easily expand this later with private routes or 404 pages
 export const AppRoutes: React.FC = () => {
@@ -37,6 +38,7 @@ export const AppRoutes: React.FC = () => {
       <Route path="/samples" element={<AllSamplesPage />} />
       <Route path="/pack/:packId" element={<SamplePackDetailledPage />} />
       <Route path="/upload-pack" element={<UploadPackPage />} />
+         <Route path="/edit-pack/:packId" element={<EditPackPage />} />
       <Route path="/upload-sample" element={<UploadSamplePage />} />
       <Route path="/games" element={<GamesMenu />} />
        <Route path="/game/colorRush" element={<GodotGameEmbedRush />} />

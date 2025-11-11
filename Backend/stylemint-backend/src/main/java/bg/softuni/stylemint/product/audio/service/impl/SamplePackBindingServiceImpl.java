@@ -7,6 +7,7 @@ import bg.softuni.stylemint.product.audio.model.SamplePack;
 import bg.softuni.stylemint.product.audio.repository.AudioSampleRepository;
 import bg.softuni.stylemint.product.audio.repository.SamplePackRepository;
 import bg.softuni.stylemint.product.audio.service.SamplePackBindingService;
+import bg.softuni.stylemint.product.audio.service.SamplePackStatisticsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,8 @@ public class SamplePackBindingServiceImpl implements SamplePackBindingService {
 
     private final AudioSampleRepository audioSampleRepository;
     private final SamplePackRepository samplePackRepository;
+
+    private final SamplePackStatisticsService samplePackStatisticsService;
 
     @Override
     @Transactional
@@ -65,7 +68,7 @@ public class SamplePackBindingServiceImpl implements SamplePackBindingService {
 
     @Override
     @Transactional
-    public void unbindSampleFromPack(UUID sampleId, UUID authorId) {
+    public void unbindSampleFromPack(UUID sampleId,UUID packId, UUID authorId) {
         // Get sample entity
         AudioSample sample = audioSampleRepository.findById(sampleId)
                 .orElseThrow(() -> new NotFoundException("Sample not found"));
@@ -74,9 +77,16 @@ public class SamplePackBindingServiceImpl implements SamplePackBindingService {
             throw new ForbiddenOperationException("Unauthorized to unbind this sample");
         }
 
+
         // Remove pack reference
         sample.setPack(null);
         audioSampleRepository.save(sample);
+
+        //recalculate pack count
+        SamplePack pack = samplePackRepository.findById(packId)
+                .orElseThrow(() -> new NotFoundException("Pack not found"));
+        samplePackStatisticsService.recalculatePackStatistics(pack);
+        samplePackRepository.save(pack);
 
         log.info("Unbound sample '{}' from its pack", sample.getName());
     }

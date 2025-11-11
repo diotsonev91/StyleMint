@@ -171,10 +171,10 @@ const SamplePackDetailledPage: React.FC = () => {
               />
 
               {activeTab === 'samples' ? (
-                <SamplesList 
-                  samples={samplePack.samples || []} 
-                  onLoadMore={handleLoadMore}
-                />
+               <SamplesList
+  samples={samplePack.samples || []}
+  {...(samplePack.sampleCount > 10 ? { onLoadMore: handleLoadMore } : {})}
+/>
               ) : (
                 <PackDetails pack={samplePack} />
               )}

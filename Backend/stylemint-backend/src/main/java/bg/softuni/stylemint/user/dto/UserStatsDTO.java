@@ -4,7 +4,7 @@ import bg.softuni.stylemint.game.dto.UserGameSummaryDTO;
 import bg.softuni.stylemint.product.audio.dto.UserAuthorSummaryDTO;
 import bg.softuni.stylemint.product.dto.UserCreatedStatsDTO;
 import bg.softuni.stylemint.product.fashion.dto.UserDesignerSummaryDTO;
-import bg.softuni.stylemint.order.dto.UserOrderSummaryDTO;
+import bg.softuni.stylemint.external.dto.order.UserOrderSummaryDTO;
 import lombok.*;
 
 @Data
