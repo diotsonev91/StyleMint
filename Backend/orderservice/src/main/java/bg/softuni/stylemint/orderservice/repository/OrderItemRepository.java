@@ -62,4 +62,8 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, UUID> {
      * Useful for: filtering, reports
      */
     List<OrderItem> findByProductType(ProductType productType);
+
+    boolean existsByOrderIdAndProductTypeIn(UUID orderId, List<ProductType> sample);
+
+    List<OrderItem> findByOrderIdAndProductType(UUID orderId, ProductType productType);
 }

@@ -1,6 +1,5 @@
 package bg.softuni.stylemint.orderservice.dto;
 
-import bg.softuni.stylemint.orderservice.enums.OrderItemStatus;
 import bg.softuni.stylemint.orderservice.enums.ProductType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,12 +15,10 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderItemDTO {
-    private UUID itemId;
+public class OrderItemRequestDTO {
     private ProductType productType;
     private UUID productId;
     private Integer quantity;
     private Double pricePerUnit;
-    private String customizationJson;
-    private OrderItemStatus itemStatus;
+    private String customizationJson; // only for CLOTHES
 }
