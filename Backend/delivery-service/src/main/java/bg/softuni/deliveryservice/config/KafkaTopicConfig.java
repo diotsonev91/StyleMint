@@ -24,12 +24,17 @@ public class KafkaTopicConfig {
     }
 
     @Bean
-    public NewTopic startDeliveryTopic() {
-        return new NewTopic("start-delivery", 3, (short) 1);
+    public NewTopic deliveryStartTopic() {
+        return new NewTopic("delivery.start", 3, (short) 1);
+    }
+
+    @Bean
+    public NewTopic deliveryRegisteredTopic() {
+        return new NewTopic("delivery.registered", 3, (short) 1);
     }
 
     @Bean
     public NewTopic deliveryCompletedTopic() {
-        return new NewTopic("delivery-completed", 3, (short) 1);
+        return new NewTopic("delivery.completed", 3, (short) 1);
     }
 }

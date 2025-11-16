@@ -46,45 +46,11 @@ public class OrderController {
         return orderService.getUserOrderSummary(userId);
     }
 
-    // ORDER STATUS UPDATES (used by orchestrator / admin)
-    @PostMapping("/{orderId}/mark-paid")
-    public void markPaid(@PathVariable UUID orderId) {
-        orderService.markOrderAsPaid(orderId);
-    }
 
-    @PostMapping("/{orderId}/mark-failed")
-    public void markFailed(@PathVariable UUID orderId) {
-        orderService.markOrderAsFailed(orderId);
-    }
-
-    @PostMapping("/{orderId}/mark-cancelled")
-    public void markCancelled(@PathVariable UUID orderId) {
-        orderService.markOrderAsCancelled(orderId);
-    }
-
-    @PostMapping("/{orderId}/mark-fulfilled")
-    public void markFulfilled(@PathVariable UUID orderId) {
-        orderService.markOrderAsFulfilled(orderId);
-    }
-
-    // ITEM LEVEL UPDATES (used by orchestrator)
+    // ITEM LEVEL UPDATES (used by orchestrator stylemint backend)
     @PostMapping("/{orderId}/items/{itemId}/digital-unlocked")
     public void digitalUnlocked(@PathVariable UUID orderId, @PathVariable UUID itemId) {
         orderService.markOrderItemDigitalUnlocked(orderId, itemId);
     }
 
-    @PostMapping("/{orderId}/items/{itemId}/shipped")
-    public void markShipped(@PathVariable UUID orderId, @PathVariable UUID itemId) {
-        orderService.markOrderItemShipped(orderId, itemId);
-    }
-
-    @PostMapping("/{orderId}/items/{itemId}/delivered")
-    public void markDelivered(@PathVariable UUID orderId, @PathVariable UUID itemId) {
-        orderService.markOrderItemDelivered(orderId, itemId);
-    }
-
-    @PostMapping("/{orderId}/items/{itemId}/cancel")
-    public void cancelItem(@PathVariable UUID orderId, @PathVariable UUID itemId) {
-        orderService.cancelOrderItem(orderId, itemId);
-    }
 }

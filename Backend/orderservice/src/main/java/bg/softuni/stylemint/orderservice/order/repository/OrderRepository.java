@@ -1,5 +1,6 @@
 package bg.softuni.stylemint.orderservice.order.repository;
 
+import bg.softuni.dtos.enums.order.OrderStatus;
 import bg.softuni.stylemint.orderservice.order.model.Order;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -7,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,4 +22,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     @Query("SELECT SUM(oi.pricePerUnit * oi.quantity) FROM OrderItem oi " +
             "WHERE oi.order.userId = :userId")
     Double calculateTotalSpentByUser(@Param("userId") UUID userId);
+
+    List<Order> findByStatusAndCreatedAtBefore(OrderStatus orderStatus, OffsetDateTime threshold);
 }

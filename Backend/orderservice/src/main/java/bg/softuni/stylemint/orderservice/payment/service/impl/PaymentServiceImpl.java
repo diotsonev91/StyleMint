@@ -54,14 +54,14 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public PaymentResult initiatePayment(Order order, List<OrderItem> items) {
 
+        boolean hasClothes = items.stream()
+                .anyMatch(i -> i.getProductType() == ProductType.CLOTHES);
+
         if (order.getPaymentMethod() == PaymentMethod.CASH) {
 
-            boolean hasClothes = items.stream()
-                    .anyMatch(i -> i.getProductType() == ProductType.CLOTHES);
 
             return new PaymentResult(
                     true,   // is cash
-                    true,   // should mark paid immediately (after delivery)
                     hasClothes,
                     null    // no payment URL
             );
@@ -77,8 +77,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         return new PaymentResult(
                 false,
-                false,
-                false,
+                hasClothes,
                 url
         );
     }

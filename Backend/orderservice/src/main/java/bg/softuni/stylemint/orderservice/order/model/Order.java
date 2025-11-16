@@ -7,6 +7,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -22,7 +24,6 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "BINARY(16)")
     private UUID id;
-
 
     @Column(name = "user_id", nullable = false, columnDefinition = "BINARY(16)")
     private UUID userId;
@@ -48,4 +49,9 @@ public class Order {
     @Column(nullable = false, length = 32)
     private PaymentMethod paymentMethod;
 
+    private String trackingNumber;
+
+    // 🔥 THIS FIXES HIBERNATE DIRTY CHECKING
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    private List<OrderItem> items = new ArrayList<>();
 }

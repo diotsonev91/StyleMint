@@ -14,15 +14,19 @@ import bg.softuni.stylemint.orderservice.order.repository.OrderItemRepository;
 import bg.softuni.stylemint.orderservice.order.repository.OrderRepository;
 import bg.softuni.stylemint.orderservice.order.service.OrderService;
 
+import bg.softuni.stylemint.orderservice.outbox.enums.OutboxEventType;
+import bg.softuni.stylemint.orderservice.outbox.model.OutboxEvent;
+import bg.softuni.stylemint.orderservice.outbox.repository.OutboxEventRepository;
 import bg.softuni.stylemint.orderservice.payment.service.PaymentResult;
 import bg.softuni.stylemint.orderservice.payment.service.PaymentService;
-import bg.softuni.stylemint.orderservice.kafka.DeliveryEventProducer;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.scheduling.annotation.Async;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,9 +44,9 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
-    private final DeliveryEventProducer deliveryEventProducer;
     private final PaymentService paymentService;
-
+    private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     // ============================================================
     // CREATE ORDER
@@ -89,37 +93,17 @@ public class OrderServiceImpl implements OrderService {
         // 5) Delegate payment logic to PaymentService
         PaymentResult result = paymentService.initiatePayment(savedOrder, items);
 
-        // ============================================================
-        // CASH FLOW - АСИНХРОННО
-        // ============================================================
-        if (result.isCashOnDelivery()) {
 
-            // 🎯 ПЪРВО върни response-а
-            CreateOrderResponseDTO response = CreateOrderResponseDTO.builder()
-                    .orderId(savedOrder.getId())
-                    .totalAmount(totalAmount)
-                    .paymentUrl(null)
-                    .status(savedOrder.getStatus().name())
-                    .build();
+        if (result.shouldDeliverClothes()) {
+            List<OrderItem> clothesItems = items.stream()
+                    .filter(i -> i.getProductType() == ProductType.CLOTHES)
+                    .toList();
 
-            // 🎯 ПОСЛЕ асинхронно trigger-ни доставката
-            if (result.shouldDeliverClothes()) {
-                List<OrderItem> clothesItems = items.stream()
-                        .filter(i -> i.getProductType() == ProductType.CLOTHES)
-                        .toList();
-
-                if (!clothesItems.isEmpty()) {
-                    triggerDeliveryAsync(savedOrder.getId(), clothesItems, request);
-                }
+            if (!clothesItems.isEmpty()) {
+                saveDeliveryOutboxEvent(savedOrder.getId(), clothesItems, request, OutboxEventType.START_DELIVERY);
             }
-
-            // mark as PAID immediately (after delivery)
-            if (result.shouldMarkPaidImmediately()) {
-                markOrderAsPaid(savedOrder.getId());
-            }
-
-            return response; // 🚀 Response веднага!
         }
+
 
         // ============================================================
         // STRIPE FLOW
@@ -132,24 +116,39 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
-    @Async
-    public void triggerDeliveryAsync(UUID orderId, List<OrderItem> clothesItems, CreateOrderRequestDTO request) {
+    @Transactional
+    public void saveDeliveryOutboxEvent(UUID orderId,
+                                        List<OrderItem> clothesItems,
+                                        CreateOrderRequestDTO request
+                                        ,OutboxEventType eventType) {
+
+        StartDeliveryEvent event = new StartDeliveryEvent(
+                orderId,
+                clothesItems.stream().map(OrderItem::getId).toList(),
+                request.getDeliveryAddress(),
+                request.getUserName(),
+                request.getUserPhone()
+        );
+
+        String json;
         try {
-            StartDeliveryEvent deliveryEvent = new StartDeliveryEvent(
-                    orderId,
-                    clothesItems.stream().map(OrderItem::getId).collect(Collectors.toList()),
-                    request.getDeliveryAddress(),
-                    request.getUserName(),
-                    request.getUserPhone()
-            );
-            deliveryEventProducer.publishStartDelivery(deliveryEvent);
-            log.info("📤 Async delivery request sent for order {}", orderId);
+            json = objectMapper.writeValueAsString(event);
         } catch (Exception e) {
-            log.error("❌ Failed to send delivery event for order {}", orderId, e);
+            throw new RuntimeException("Failed to serialize StartDeliveryEvent", e);
         }
+
+        OutboxEvent outboxEvent = OutboxEvent.builder()
+                .orderId(orderId)
+                .payloadJson(json)
+                .eventType(eventType)
+                .createdAt(OffsetDateTime.now())
+                .processed(false)
+                .build();
+
+        outboxEventRepository.save(outboxEvent);
+
+        log.info("📥 Outbox event stored for order {}", orderId);
     }
-
-
 
     // ============================================================
     // PUBLIC DTO RETURN METHODS
@@ -202,13 +201,35 @@ public class OrderServiceImpl implements OrderService {
         Order order = getOrderEntity(orderId);
         List<OrderItem> items = getOrderItemEntities(orderId);
 
-        // Mark item statuses
-        items.forEach(i -> i.setItemStatus(OrderItemStatus.PAID));
+        for (OrderItem item : items) {
+
+            // 🧵 1) Ако е дреха → НЕ пипаме (обработва се по Kafka)
+            if (item.getProductType() == ProductType.CLOTHES) {
+                log.info("🧵 Skipping CLOTHES item {} when marking PAID", item.getId());
+                continue;
+            }
+
+            // 🔓 2) Ако вече е DIGITAL_UNLOCKED → НЕ пипаме (main-api-service го е отключил)
+            if (item.getItemStatus() == OrderItemStatus.DIGITAL_UNLOCKED) {
+                log.info("🔓 Skipping DIGITAL_UNLOCKED item {} (already processed)", item.getId());
+                continue;
+            }
+
+            // 💾 3) Ако НЕ е дреха и НЕ е unlocked → маркираме като PAID
+            log.info("💰 Marking digital item {} as PAID", item.getId());
+            item.setItemStatus(OrderItemStatus.PAID);
+
+
+        }
+
         orderItemRepository.saveAll(items);
 
-        order.setStatus(OrderStatus.PAID);
+
+        recalcOrderStatus(orderId);
         orderRepository.save(order);
+
     }
+
 
     @Override
     @Transactional
@@ -231,14 +252,6 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
     }
 
-    @Override
-    @Transactional
-    public void markOrderAsFulfilled(UUID orderId) {
-        Order order = getOrderEntity(orderId);
-        order.setStatus(OrderStatus.FULFILLED);
-        orderRepository.save(order);
-    }
-
     // ============================================================
     // ITEM-LEVEL STATUS OPERATIONS
     // ============================================================
@@ -257,18 +270,22 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public void markOrderItemShipped(UUID orderId, UUID itemId) {
-        OrderItem item = getValidatedOrderItem(orderId, itemId);
+
+        OrderItem item = orderItemRepository.findById(itemId)
+                .orElseThrow(() -> new RuntimeException("Item not found"));
+
+        // 🛑 Guard check — ако е вече DELIVERED, НИКОГА не връщай обратно!
+        if (item.getItemStatus() == OrderItemStatus.DELIVERED) {
+            return; // 👌 игнорираме event-а
+        }
+
         item.setItemStatus(OrderItemStatus.SHIPPED);
         orderItemRepository.save(item);
+
+        recalcOrderStatus(orderId);
     }
 
-    @Override
-    @Transactional
-    public void markOrderItemDelivered(UUID orderId, UUID itemId) {
-        OrderItem item = getValidatedOrderItem(orderId, itemId);
-        item.setItemStatus(OrderItemStatus.DELIVERED);
-        orderItemRepository.save(item);
-    }
+
 
     @Override
     @Transactional
@@ -301,7 +318,6 @@ public class OrderServiceImpl implements OrderService {
         items.stream()
                 .filter(item -> itemIds.contains(item.getId()))
                 .forEach(item -> {
-                    item.setItemStatus(OrderItemStatus.SHIPPED);  // First mark as shipped
                     item.setItemStatus(OrderItemStatus.DELIVERED); // Then delivered
                 });
 
@@ -349,6 +365,23 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
+    @Override
+    @Transactional
+    public void updateOrderTracking(UUID orderId, String trackingNumber) {
+
+        if (trackingNumber == null || trackingNumber.isBlank()) {
+            throw new IllegalArgumentException("Tracking number cannot be empty");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found: " + orderId));
+
+        order.setTrackingNumber(trackingNumber);
+
+        orderRepository.save(order);
+
+        log.info("🚚 Tracking number '{}' set for order {}", trackingNumber, orderId);
+    }
 
 
     // ============================================================
@@ -432,6 +465,12 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<OrderItem> getClothingItems(UUID orderId) {
         return orderItemRepository.findByOrderIdAndProductType(orderId, ProductType.CLOTHES);
+    }
+
+    @Override
+    public List<Order> findPendingOrdersOlderThanMinutes(int minutes) {
+        OffsetDateTime threshold = OffsetDateTime.now().minusMinutes(minutes);
+        return orderRepository.findByStatusAndCreatedAtBefore(OrderStatus.PENDING, threshold);
     }
 
 }

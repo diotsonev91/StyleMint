@@ -26,7 +26,14 @@ public class StripeServiceImpl implements StripeService {
                             .setMode(SessionCreateParams.Mode.PAYMENT)
                             .setSuccessUrl(successUrl)
                             .setCancelUrl(cancelUrl)
-                            .putMetadata("orderId", orderId.toString())
+                            .putMetadata("orderId", orderId.toString()) // session metadata
+
+                            .setPaymentIntentData(
+                                    SessionCreateParams.PaymentIntentData.builder()
+                                            .putMetadata("orderId", orderId.toString()) // FIX: PaymentIntent metadata
+                                            .build()
+                            )
+
                             .addLineItem(
                                     SessionCreateParams.LineItem.builder()
                                             .setQuantity(1L)

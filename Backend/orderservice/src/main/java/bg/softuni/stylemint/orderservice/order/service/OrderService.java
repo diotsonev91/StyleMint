@@ -29,13 +29,11 @@ public interface OrderService {
     void markOrderAsPaid(UUID orderId);
     void markOrderAsFailed(UUID orderId);
     void markOrderAsCancelled(UUID orderId);
-    void markOrderAsFulfilled(UUID orderId);
     void recalcOrderStatus(UUID orderId);
 
     // ITEM LEVEL STATUS
     void markOrderItemDigitalUnlocked(UUID orderId, UUID itemId);
     void markOrderItemShipped(UUID orderId, UUID itemId);
-    void markOrderItemDelivered(UUID orderId, UUID itemId);
     void cancelOrderItem(UUID orderId, UUID itemId);
     void markOrderItemsDelivered(UUID orderId, List<UUID> itemIds);
 
@@ -43,4 +41,9 @@ public interface OrderService {
     boolean containsClothes(UUID orderId);
     boolean containsDigitalAssets(UUID orderId);
     List<OrderItem> getClothingItems(UUID orderId);
+    void updateOrderTracking(UUID orderId, String trackingNumber);
+
+    //Cleanup
+    List<Order> findPendingOrdersOlderThanMinutes(int minutes);
+
 }
