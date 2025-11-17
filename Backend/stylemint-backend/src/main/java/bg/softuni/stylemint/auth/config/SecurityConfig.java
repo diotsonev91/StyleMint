@@ -2,6 +2,7 @@ package bg.softuni.stylemint.auth.config;
 
 import bg.softuni.stylemint.auth.security.CustomUserDetailsService;
 import bg.softuni.stylemint.auth.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,23 +33,27 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))  // ← Enable CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints - no authentication required
                         .requestMatchers(
                                 BASE + "/auth/register",
                                 BASE + "/auth/login",
                                 BASE + "/auth/refresh",
                                 BASE + "/auth/logout"
                         ).permitAll()
-
-                        // /auth/me requires authentication
                         .requestMatchers(BASE + "/auth/me").authenticated()
-
-                        // All other requests require authentication
                         .anyRequest().authenticated()
+                )
+                // 🔥 ДОБАВИ ТОВА:
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            System.out.println("🚫 Authentication failed - returning 401");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\":\"Unauthorized\"}");
+                        })
                 )
                 .authenticationProvider(authProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

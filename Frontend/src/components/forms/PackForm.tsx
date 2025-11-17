@@ -1,5 +1,5 @@
 // src/components/PackForm/PackForm.tsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePackForm } from './hooks/usePackForm';
 import { usePackFormAuth } from './hooks/usePackFormAuth';
@@ -22,8 +22,7 @@ interface PackFormProps {
 const PackForm: React.FC<PackFormProps> = ({ 
   mode, 
   initialData, 
-  packId, 
-  onCancel 
+  packId,
 }) => {
   const navigate = useNavigate();
   
@@ -40,13 +39,11 @@ const PackForm: React.FC<PackFormProps> = ({
     submitSuccess,
     playingSampleId,
     updateFormData,
-    updateSamples,
     setStep,
     setIsSubmitting,
     setSubmitProgress,
     setSubmitError,
     setSubmitSuccess,
-    setPlayingSampleId,
     handleCoverImageChange,
     toggleGenre,
     addTag,
@@ -97,13 +94,6 @@ const PackForm: React.FC<PackFormProps> = ({
     await submissionHandler.handleSubmit();
   };
 
-  const handleCancel = () => {
-    if (onCancel) {
-      onCancel();
-    } else {
-      navigate('/my-packs');
-    }
-  };
 
   // Show loading state while checking authentication
   if (isCheckingAuth) {

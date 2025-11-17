@@ -1,9 +1,10 @@
 // File: OrderServiceFacade.java (updated with DTOs)
 package bg.softuni.stylemint.external.facade.order;
 
+import bg.softuni.dtos.order.OrderItemDTO;
+import bg.softuni.dtos.order.UserOrderSummaryDTO;
 import bg.softuni.stylemint.external.client.order.OrderServiceClient;
-import bg.softuni.stylemint.external.dto.order.OrderItemDTO;
-import bg.softuni.stylemint.external.dto.order.UserOrderSummaryDTO;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

@@ -7,14 +7,15 @@ import {
     SampleType,
     InstrumentGroup
 } from '../../../types/audioEnums';
-import { SamplesFromPackDTO } from '../../../types';
+
 import SampleSelector from '../../sounds/SampleSelectorComponent';
 import './SamplesStep.css';
+import {AudioSample} from "../../../types";
 
 interface SamplesStepProps {
     formData: PackFormData;
     onSampleUpload: (files: FileList | null) => void;
-    onAddExistingSamples: (samples: SamplesFromPackDTO[]) => void;
+    onAddExistingSamples: (samples: AudioSample[]) => void;
     onUpdateSample: (id: string, field: keyof PackSample, value: any) => void;
     onRemoveSample: (id: string) => void;
     onPlaySample: (sample: PackSample) => void;
@@ -47,15 +48,20 @@ export const SamplesStep: React.FC<SamplesStepProps> = ({
         e.target.value = ''; // Reset input
     };
 
-    const handleExistingSamplesSelect = (samples: SamplesFromPackDTO[]) => {
+    const handleExistingSamplesSelect = (samples: AudioSample[]) => {
         onAddExistingSamples(samples);
     };
 
-// ✅ CORRECTED: Get IDs of samples to exclude from selector
+// ✅ CRITICAL FIX: Exclude ALL samples that have existingSampleId from selector
+// This includes:
+// 1. Samples already in this pack (isAlreadyInPack=true)
+// 2. Samples added from library (isFromLibrary=true, but NOT in pack yet)
     const alreadySelectedIds = formData.samples
-        .filter(s => s.isFromLibrary) // Only exclude library samples (they already exist in DB)
-        .map(s => s.existingSampleId || s.id) // Use existingSampleId for library samples
+        .filter(s => s.existingSampleId) // ✅ KEY FIX: Any sample with DB ID
+        .map(s => s.existingSampleId!)   // ✅ Always use existingSampleId (not prefixed id)
         .filter(id => id) as string[];
+
+    console.log('🔍 Already selected sample IDs for exclusion:', alreadySelectedIds);
 
     return (
         <div className="form-step samples-step">

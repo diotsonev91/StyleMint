@@ -49,25 +49,10 @@ public class UpdatePackRequest {
 
     // Sample management fields
     @Valid
-    private List<PackSampleInfo> samplesToAdd = new ArrayList<>();           // Add new samples
+    private List<NewSampleUploadForPack> samplesToAdd = new ArrayList<>();
 
-    private List<UUID> samplesToRemove = new ArrayList<>();                  // Remove existing samples
+    private List<UUID> samplesToRemove = new ArrayList<>();
 
-    private List<UUID> existingSamplesToAdd = new ArrayList<>();             // Add existing samples by ID
+    private List<UUID> existingSamplesToAdd = new ArrayList<>();
 
-    // Custom validation: Either samplesToAdd or existingSamplesToAdd must have at least one item when adding samples
-    public boolean hasAnySamplesToAdd() {
-        return (samplesToAdd != null && !samplesToAdd.isEmpty()) ||
-                (existingSamplesToAdd != null && !existingSamplesToAdd.isEmpty());
-    }
-
-    // Helper method to check if cover image should be removed
-    public boolean shouldRemoveCoverImage() {
-        return Boolean.TRUE.equals(removeCoverImage);
-    }
-
-    // Helper method to check if new cover image was uploaded
-    public boolean hasNewCoverImage() {
-        return coverImage != null && !coverImage.isEmpty();
-    }
 }

@@ -1,8 +1,9 @@
 // File: OrderServiceClient.java (updated with DTOs)
 package bg.softuni.stylemint.external.client.order;
 
-import bg.softuni.stylemint.external.dto.order.OrderItemDTO;
-import bg.softuni.stylemint.external.dto.order.UserOrderSummaryDTO;
+
+import bg.softuni.dtos.order.OrderItemDTO;
+import bg.softuni.dtos.order.UserOrderSummaryDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -269,4 +270,26 @@ public class AudioSampleController {
 
         return ResponseEntity.ok(ApiResponse.success(null, "Sample successfully unbound from pack"));
     }
+
+    @GetMapping("/metadata/genres")
+    public ResponseEntity<List<String>> getGenres() {
+        return ResponseEntity.ok(
+                Arrays.stream(Genre.values()).map(Enum::name).toList()
+        );
+    }
+
+    @GetMapping("/metadata/keys")
+    public ResponseEntity<List<String>> getKeys() {
+        return ResponseEntity.ok(
+                Arrays.stream(MusicalKey.values()).map(Enum::name).toList()
+        );
+    }
+
+    @GetMapping("/metadata/instruments")
+    public ResponseEntity<List<String>> getInstruments() {
+        return ResponseEntity.ok(
+                Arrays.stream(InstrumentGroup.values()).map(Enum::name).toList()
+        );
+    }
+
 }

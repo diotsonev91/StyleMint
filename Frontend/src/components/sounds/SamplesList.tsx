@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { useSnapshot } from 'valtio';
 import { audioPlayerStore, audioPlayerActions } from '../../state/audioPlayer.store';
-import { SamplesFromPackDTO } from '../../types';
+
 import SampleItem from './SampleItem';
 import { useNavigate } from 'react-router-dom';
 import './SamplesList.css';
+import {AudioSample} from "../../types";
 
 interface SamplesListProps {
-  samples: SamplesFromPackDTO[];
+  samples: AudioSample[];
   onLoadMore?: () => void;
 }
 

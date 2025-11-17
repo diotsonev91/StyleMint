@@ -1,7 +1,6 @@
 // src/pages/UserPacksPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PacksFilterSidebar from '../../components/sounds/PacksFilterSidebar';
 import PacksGrid from '../../components/sounds/PacksGrid';
 import { SamplePack } from '../../types';
 import { audioPackService } from '../../services/audioPackService';
@@ -59,11 +58,6 @@ useEffect(() => {
   fetchUserPacks();
 }, []);
 
-  // Get unique authors and genres from user's packs
-  const availableAuthors = Array.from(new Set(allPacks.map(pack => pack.artist))).sort();
-  const availableGenres = Array.from(
-    new Set(allPacks.flatMap(pack => pack.genres))
-  ).sort();
 
   // Filter packs
   const filteredPacks = allPacks.filter(pack => {
@@ -80,17 +74,7 @@ useEffect(() => {
     return authorMatch && genreMatch && searchMatch;
   });
 
-  const handleAuthorChange = (author: string) => {
-    setSelectedAuthor(author);
-  };
 
-  const handleGenreChange = (genre: string, checked: boolean) => {
-    if (checked) {
-      setSelectedGenres([...selectedGenres, genre]);
-    } else {
-      setSelectedGenres(selectedGenres.filter(g => g !== genre));
-    }
-  };
 
   const handleClearFilters = () => {
     setSelectedAuthor('');
@@ -145,7 +129,15 @@ useEffect(() => {
         <div className="container">
           {/* Page Header */}
           <div className="packs-page-header">
+
             <div className="packs-header-text">
+                <button
+                    className="btn btn-primary"
+                    onClick={handleUploadNew}
+                    style={{ marginBottom: '2rem', whiteSpace: 'nowrap' }}
+                >
+                    Upload New Pack
+                </button>
               <h1 className="packs-page-title">My Sample Packs</h1>
               <p className="packs-page-subtitle">
                 {allPacks.length === 0 
@@ -154,15 +146,10 @@ useEffect(() => {
                 }
               </p>
             </div>
-            
+
+
             <div className="packs-view-controls">
-              <button 
-                className="btn btn-primary"
-                onClick={handleUploadNew}
-                style={{ marginRight: '12px', whiteSpace: 'nowrap' }}
-              >
-                Upload New Pack
-              </button>
+
               <button 
                 className={`packs-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
                 onClick={() => setViewMode('grid')}

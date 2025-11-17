@@ -1,11 +1,12 @@
 // src/components/sounds/SampleSelector.tsx
 import React, { useState, useEffect } from 'react';
 import { audioSampleService } from '../../services/audioSampleService';
-import { SamplesFromPackDTO } from '../../types';
+
 import './SampleSelector.css';
+import {AudioSample} from "../../types";
 
 interface SampleSelectorProps {
-  onSelect: (samples: SamplesFromPackDTO[]) => void;
+  onSelect: (samples: AudioSample[]) => void;
   onClose: () => void;
   alreadySelectedIds?: string[]; // IDs of samples already in the pack
 }
@@ -16,7 +17,7 @@ const SampleSelector: React.FC<SampleSelectorProps> = ({
   alreadySelectedIds = [] 
 }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [samples, setSamples] = useState<SamplesFromPackDTO[]>([]);
+  const [samples, setSamples] = useState<AudioSample[]>([]);
   const [selectedSamples, setSelectedSamples] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,7 +35,7 @@ const SampleSelector: React.FC<SampleSelectorProps> = ({
       const response = await audioSampleService.getMyUploadedSamples();
       
       if (response.success) {
-        const userSamples: SamplesFromPackDTO[] = Array.isArray(response.data) 
+        const userSamples: AudioSample[] = Array.isArray(response.data)
           ? response.data.map((sample: any) => ({
               id: sample.id,
               name: sample.name,

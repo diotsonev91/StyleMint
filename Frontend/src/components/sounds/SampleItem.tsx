@@ -4,7 +4,7 @@ import { useSnapshot } from 'valtio';
 import { FaDownload, FaHeart, FaShoppingCart, FaCheck, FaEdit, FaTrash } from 'react-icons/fa';
 import { audioPlayerStore, audioPlayerActions } from '../../state/audioPlayer.store';
 import { cartState } from '../../state/CartItemState';
-import type { SamplesFromPackDTO } from '../../types';
+import type { AudioSample} from '../../types';
 import { addSampleToCart } from '../../services/cartService';
 import { useAuth } from '../../hooks/useAuth'; // Add auth hook
 import './SampleItem.css';
@@ -14,7 +14,7 @@ import playIcon from '../../assets/play-button.png';
 import pauseIcon from '../../assets/pause-button.png';
 
 interface SampleItemProps {
-  sample: SamplesFromPackDTO;
+  sample: AudioSample;
   onDownload: () => void;
   onLike: () => void;
   onEdit?: () => void; // New prop for edit
@@ -147,6 +147,10 @@ const SampleItem: React.FC<SampleItemProps> = ({
         {/* Sample Info */}
         <div className="sample-info">
           <h3 className="sample-name">{sample.name}</h3>
+            {isCreator && (
+                <p className="sample-name">${sample.price.toFixed(2)}</p>
+            )}
+            {sample.packTitle ? <p>Pack: {sample.packTitle}</p> : null}
           <div className="sample-meta">
             {sample.duration && (
               <span className="meta-item">
@@ -189,11 +193,7 @@ const SampleItem: React.FC<SampleItemProps> = ({
             ${sample.price.toFixed(2)}
           </div>
         )}
-        {isCreator && (
-          <div className="sample-price creator-price">
-            Your Sample
-          </div>
-        )}
+
       </div>
 
       {/* Actions with React Icons */}

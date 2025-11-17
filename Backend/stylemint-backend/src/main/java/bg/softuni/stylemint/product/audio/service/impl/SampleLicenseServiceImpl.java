@@ -1,9 +1,10 @@
 // File: SampleLicenseServiceImpl.java (FIXED - no Order entity)
 package bg.softuni.stylemint.product.audio.service.impl;
 
+import bg.softuni.dtos.enums.payment.ProductType;
+import bg.softuni.dtos.order.OrderItemDTO;
 import bg.softuni.stylemint.common.exception.NotFoundException;
-import bg.softuni.stylemint.external.dto.order.OrderItemDTO;
-import bg.softuni.stylemint.external.enums.ProductType;
+
 import bg.softuni.stylemint.external.facade.order.OrderServiceFacade;
 import bg.softuni.stylemint.product.audio.dto.AudioSampleDTO;
 import bg.softuni.stylemint.product.audio.model.AudioSample;
@@ -43,11 +44,11 @@ public class SampleLicenseServiceImpl implements SampleLicenseService {
             for (OrderItemDTO item : orderItems) {
                 if (item.getProductType() == ProductType.SAMPLE) {
                     // Single sample purchase
-                    grantSampleLicense(userId, item.getProductId(), item.getId());
+                    grantSampleLicense(userId, item.getProductId(), item.getItemId());
                 }
                 else if (item.getProductType() == ProductType.PACK) {
                     // Pack purchase - license ALL samples in the pack
-                    grantPackSampleLicenses(userId, item.getProductId(), item.getId());
+                    grantPackSampleLicenses(userId, item.getProductId(), item.getItemId());
                 }
             }
         } catch (Exception e) {

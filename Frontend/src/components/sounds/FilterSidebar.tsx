@@ -9,11 +9,11 @@ interface FilterSidebarProps {
   selectedGenre: string;
   selectedKey: string;
   selectedInstrument: string;
-  selectedType: 'all' | 'oneshot' | 'loop';
+  selectedType: 'all' | 'ONESHOT' | 'LOOP';
   onGenreChange: (genre: string) => void;
   onKeyChange: (key: string) => void;
   onInstrumentChange: (instrument: string) => void;
-  onTypeChange: (type: 'all' | 'oneshot' | 'loop') => void;
+  onTypeChange: (type: 'all' | 'ONESHOT' | 'LOOP') => void;
   onClearAll: () => void;
   totalSamples: number;
   filteredCount: number;
@@ -87,12 +87,12 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
               type="radio"
               name="sampleType"
               value="oneshot"
-              checked={selectedType === 'oneshot'}
-              onChange={() => onTypeChange('oneshot')}
+              checked={selectedType === 'ONESHOT'}
+              onChange={() => onTypeChange('ONESHOT')}
               className="radio-input"
             />
             <span className="radio-checkmark">
-              {selectedType === 'oneshot' && (
+              {selectedType === 'ONESHOT' && (
                 <span className="radio-dot"></span>
               )}
             </span>
@@ -104,12 +104,12 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
               type="radio"
               name="sampleType"
               value="loop"
-              checked={selectedType === 'loop'}
-              onChange={() => onTypeChange('loop')}
+              checked={selectedType === 'LOOP'}
+              onChange={() => onTypeChange('LOOP')}
               className="radio-input"
             />
             <span className="radio-checkmark">
-              {selectedType === 'loop' && (
+              {selectedType === 'LOOP' && (
                 <span className="radio-dot"></span>
               )}
             </span>

@@ -50,15 +50,17 @@ public class AuthController {
                 .secure(false) // TODO: Set to true in production
                 .path("/")
                 .maxAge(jwtTokenProvider.getAccessExpirationMs() / 1000)
+                .domain("localhost")
                 .sameSite("Lax")
                 .build();
 
         ResponseCookie refresh = ResponseCookie.from("SM_REFRESH", refreshToken)
                 .httpOnly(true)
                 .secure(false) // TODO: Set to true in production
-                .path(BASE + "/auth/refresh")
+                .path("/")
                 .maxAge(jwtTokenProvider.getRefreshExpirationMs() / 1000)
-                .sameSite("Strict")
+                .domain("localhost")
+                .sameSite("Lax")
                 .build();
 
         response.addHeader("Set-Cookie", access.toString());
@@ -78,6 +80,7 @@ public class AuthController {
                 .secure(false) // TODO: Set to true in production
                 .path("/")
                 .maxAge(jwtTokenProvider.getAccessExpirationMs() / 1000)
+                .domain("localhost")
                 .sameSite("Lax")
                 .build();
 
@@ -87,26 +90,55 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<AuthResponseDTO> logout(HttpServletResponse response) {
-        // Clear both access and refresh cookies by setting maxAge=0
+    public ResponseEntity<AuthResponseDTO> logout(
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
+        System.out.println("\n🚪 ==================== LOGOUT DEBUG ====================");
+
+        // Log incoming cookies
+        System.out.println("📥 INCOMING COOKIES:");
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                System.out.println(String.format("   %s: value='%s...', domain='%s', path='%s'",
+                        cookie.getName(),
+                        cookie.getValue().length() > 20 ? cookie.getValue().substring(0, 20) : cookie.getValue(),
+                        cookie.getDomain(),
+                        cookie.getPath()));
+            }
+        } else {
+            System.out.println("   NO COOKIES!");
+        }
+
+        // Create deletion cookies
         ResponseCookie clearAccess = ResponseCookie.from("SM_ACCESS", "")
                 .httpOnly(true)
-                .secure(false) // TODO: Set to true in production
+                .secure(false)
                 .path("/")
                 .maxAge(0)
+                .domain("localhost")
                 .sameSite("Lax")
                 .build();
 
         ResponseCookie clearRefresh = ResponseCookie.from("SM_REFRESH", "")
                 .httpOnly(true)
-                .secure(false) // TODO: Set to true in production
-                .path(BASE + "/auth/refresh")
+                .secure(false)
+                .path("/")
                 .maxAge(0)
-                .sameSite("Strict")
+                .domain("localhost")
+                .sameSite("Lax")
                 .build();
 
-        response.addHeader("Set-Cookie", clearAccess.toString());
+        // Log outgoing headers
+        System.out.println("\n📤 OUTGOING Set-Cookie HEADERS:");
+        System.out.println("   ACCESS:  " + clearAccess.toString());
+        System.out.println("   REFRESH: " + clearRefresh.toString());
+
+        // Set headers
+        response.setHeader("Set-Cookie", clearAccess.toString());
         response.addHeader("Set-Cookie", clearRefresh.toString());
+
+        System.out.println("==================== LOGOUT DEBUG END ====================\n");
 
         return ResponseEntity.ok(new AuthResponseDTO("Logged out successfully"));
     }

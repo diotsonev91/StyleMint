@@ -2,6 +2,7 @@ package bg.softuni.stylemint.product.audio.service.impl;
 
 import bg.softuni.stylemint.product.audio.dto.*;
 import bg.softuni.stylemint.product.audio.enums.Genre;
+import bg.softuni.stylemint.product.audio.model.AudioSample;
 import bg.softuni.stylemint.product.audio.model.SamplePack;
 import bg.softuni.stylemint.product.audio.repository.SamplePackRepository;
 import bg.softuni.stylemint.common.exception.NotFoundException;
@@ -262,37 +263,54 @@ public class SamplePackManagementServiceImpl implements SamplePackManagementServ
     /**
      * Upload new samples and bind them to pack
      */
-    private long uploadAndBindSamples(SamplePack pack, UUID authorId, List<PackSampleInfo> samples) {
-        long totalSizeBytes = 0;
+    private long uploadAndBindSamples(
+            SamplePack pack,
+            UUID authorId,
+            List<NewSampleUploadForPack> newSamples
+    ) {
+        long totalBytes = 0;
 
-        for (PackSampleInfo sampleInfo : samples) {
+        for (NewSampleUploadForPack sample : newSamples) {
             try {
-                // Create upload request
-                UploadSampleRequest uploadRequest = createUploadRequest(
-                        sampleInfo,
-                        pack.getArtist(),
-                        pack.getGenres().isEmpty() ? null : pack.getGenres().get(0)
-                );
+                // === 1. Създаваме UploadSampleRequest за AudioSampleService ===
+                UploadSampleRequest uploadReq = new UploadSampleRequest();
+                uploadReq.setFile(sample.getFile());
+                uploadReq.setName(sample.getName());
+                uploadReq.setArtist(pack.getArtist());
+                uploadReq.setBpm(sample.getBpm() != null ? sample.getBpm() : 0);
+                uploadReq.setMusicalKey(sample.getKey());
+                uploadReq.setMusicalScale(sample.getScale());
 
-                // Upload sample using AudioSampleService
-                AudioSampleDTO uploadedSample = audioSampleService.uploadSample(authorId, uploadRequest);
+                Genre genre = sample.getGenre() != null
+                        ? sample.getGenre()
+                        : (pack.getGenres().isEmpty() ? null : pack.getGenres().get(0));
 
-                // FIX: Correct parameter order - (sampleId, packId, authorId)
-                samplePackBindingService.bindSampleToPack(uploadedSample.getId(), pack.getId(), authorId);
+                uploadReq.setGenre(genre);
+                uploadReq.setInstrumentGroup(sample.getInstrumentGroup());
+                uploadReq.setSampleType(sample.getSampleType());
+                uploadReq.setPrice(BigDecimal.valueOf(-1));
+                uploadReq.setTags(sample.getTags());
 
-                // Track total size
-                totalSizeBytes += sampleInfo.getFile().getSize();
+                // === 2. Качваме семпъла - вече е в базата със salesCount = 0L ===
+                AudioSampleDTO saved = audioSampleService.uploadSample(authorId, uploadReq);
 
-                log.debug("Uploaded and bound sample '{}' to pack '{}'", sampleInfo.getName(), pack.getTitle());
+                // ✅ FIX: Use bindSampleToPack instead of manual entity manipulation
+                samplePackBindingService.bindSampleToPack(saved.getId(), pack.getId(), authorId);
+
+                // === 3. Добавяме размера към totalBytes ===
+                totalBytes += sample.getFile().getSize();
+
+                log.info("Uploaded new sample '{}' for pack '{}'", sample.getName(), pack.getTitle());
 
             } catch (Exception e) {
-                log.error("Failed to upload sample '{}': {}", sampleInfo.getName(), e.getMessage());
-                throw new FileProcessingException("Failed to upload sample '" + sampleInfo.getName() + "': " + e.getMessage());
+                log.error("Failed uploading sample '{}': {}", sample.getName(), e.getMessage());
+                throw new FileProcessingException("Failed uploading new sample '" + sample.getName() + "'");
             }
         }
 
-        return totalSizeBytes;
+        return totalBytes;
     }
+
 
     /**
      * Create UploadSampleRequest from PackSampleInfo

@@ -5,7 +5,7 @@ import { UpdatePackDto } from '../api/update.api'; // You'll need to create this
 import { packUploadService } from './packUploadService';
 import { packUpdateService } from './packUpdateService'; // Import new service
 import { audioSampleService } from './audioSampleService';
-
+import { updateApi } from '../api/update.api';
 /**
  * Audio Pack Service - complete pack CRUD operations
  */
@@ -27,13 +27,22 @@ export const audioPackService = {
     return await packUpdateService.updatePack(packId, data);
   },
 
-  async updatePackWithProgress(
-    packId: string,
-    data: UpdatePackDto,
-    onProgress?: (progress: number) => void
-  ): Promise<ApiResponse> {
-    return await packUpdateService.updatePackWithProgress(packId, data, onProgress);
-  },
+    updatePackWithProgress: async (packId: string, data: any, onProgress?: (progress: number) => void) => {
+        try {
+            const response = await updateApi.updatePackWithProgress(packId, data, onProgress);
+
+            return {
+                success: true,
+                data: response.data
+            };
+        } catch (error: any) {
+            console.error('❌ Update failed:', error);
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message || 'Update failed'
+            };
+        }
+    },
 
   // READ operations (unchanged)
   async hasUploadedPacks(): Promise<{ hasPacks: boolean; count?: number; error?: string }> {
@@ -93,21 +102,31 @@ export const audioPackService = {
     }
   },
 
-  async getPackById(packId: string): Promise<ApiResponse> {
-    try {
-      const response = await API.get(`/audio/packs/${packId}`);
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error: any) {
-      console.error('Error fetching pack:', error);
-      return {
-        success: false,
-        error: error.response?.data?.message || error.message
-      };
-    }
-  },
+    getPackById: async (packId: string) => {
+        try {
+            console.log(`📡 Fetching pack ${packId} with samples...`);
+
+            // ✅ Use the /detail endpoint that returns pack + samples
+            const response = await API.get(`/audio/packs/${packId}/detail`);
+
+            console.log('✅ Pack fetched successfully:', {
+                hasPack: !!response.data?.pack,
+                hasSamples: !!response.data?.samples,
+                samplesCount: response.data?.samples?.length || 0
+            });
+
+            return {
+                success: true,
+                data: response.data // This contains { pack, samples }
+            };
+        } catch (error: any) {
+            console.error('❌ Failed to fetch pack:', error);
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message || 'Failed to fetch pack'
+            };
+        }
+    },
 
   async getPackWithSamples(packId: string): Promise<ApiResponse> {
     try {
@@ -203,29 +222,34 @@ export const audioPackService = {
     }
   },
 
-  async removeSampleFromPack(packId: string, sampleId: string): Promise<ApiResponse> {
-    try {
-      // Use audioSampleService to update the sample and remove pack association
-      const updateResult = await audioSampleService.updateSampleMetadata(sampleId, {
-        packId: null // Remove pack association
-      });
+    unbindSampleFromPack: async (sampleId: string, packId: string) => {
+        try {
+            console.log(`🗑️ Service: Unbinding sample ${sampleId} from pack ${packId}`);
 
-      if (!updateResult.success) {
-        return updateResult;
-      }
+            const response = await updateApi.unbindSampleFromPack(sampleId, packId);
 
-      return {
-        success: true,
-        message: 'Sample removed from pack successfully',
-      };
-    } catch (error: any) {
-      console.error('Error removing sample from pack:', error);
-      return {
-        success: false,
-        error: error.response?.data?.message || error.message
-      };
-    }
-  },
+            if (response.success) {
+                console.log('✅ Service: Sample unbound successfully');
+                return {
+                    success: true,
+                    data: response.data,
+                    message: response.message
+                };
+            } else {
+                console.error('❌ Service: Unbind failed:', response.error);
+                return {
+                    success: false,
+                    error: response.error || 'Failed to unbind sample from pack'
+                };
+            }
+        } catch (error: any) {
+            console.error('❌ Service: Exception during unbind:', error);
+            return {
+                success: false,
+                error: error.message || 'An error occurred while unbinding sample'
+            };
+        }
+    },
 
   async updateSamplePriceInPack(sampleId: string, price: number): Promise<ApiResponse> {
     try {

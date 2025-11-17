@@ -42,66 +42,70 @@ const processQueue = (error: any = null) => {
   failedQueue = [];
 };
 
+
+
 API.interceptors.response.use(
-  (response) => {
-    // If response is successful, just return it
-    return response;
-  },
-  async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & {
-      _retry?: boolean;
-    };
+    (response) => {
+        return response;
+    },
+    async (error: AxiosError) => {
+        const originalRequest = error.config as InternalAxiosRequestConfig & {
+            _retry?: boolean;
+        };
 
-    // If error is 401 and we haven't retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      // Don't retry refresh or login endpoints
-      if (
-        originalRequest.url?.includes("/auth/refresh") ||
-        originalRequest.url?.includes("/auth/login")
-      ) {
+        // Only attempt refresh if status = 401
+        if (error.response?.status === 401 && !originalRequest._retry) {
+
+            // 1) Prevent retry loops on refresh/login endpoints
+            if (
+                originalRequest.url?.includes("/auth/refresh") ||
+                originalRequest.url?.includes("/auth/login")
+            ) {
+                return Promise.reject(error);
+            }
+
+            // 2) CRITICAL: check for refresh cookie BEFORE retrying
+            const hasRefreshCookie = document.cookie.includes("SM_REFRESH=");
+            if (!hasRefreshCookie) {
+                console.warn("⛔ No refresh cookie → user logged out → redirecting");
+                window.location.href = "/login";
+                return Promise.reject(error);
+            }
+
+            // 3) Already refreshing → queue requests
+            if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                })
+                    .then(() => API(originalRequest))
+                    .catch((err) => Promise.reject(err));
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            try {
+                await API.post("/auth/refresh", {}, { withCredentials: true });
+
+                processQueue();
+                return API(originalRequest); // retry original request
+
+            } catch (refreshError) {
+                processQueue(refreshError);
+
+                console.warn("⛔ Refresh failed → redirecting to login");
+                window.location.href = "/login";
+
+                return Promise.reject(refreshError);
+
+            } finally {
+                isRefreshing = false;
+            }
+        }
+
         return Promise.reject(error);
-      }
-
-      if (isRefreshing) {
-        // If already refreshing, queue this request
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then(() => {
-            return API(originalRequest);
-          })
-          .catch((err) => {
-            return Promise.reject(err);
-          });
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        // Try to refresh the token
-        await API.post("/auth/refresh", {}, { withCredentials: true });
-
-        // Process the queue
-        processQueue();
-
-        // Retry the original request
-        return API(originalRequest);
-      } catch (refreshError) {
-        // Refresh failed - clear queue and redirect to login
-        processQueue(refreshError);
-        
-        // Clear any auth state and redirect to login
-        window.location.href = "/login";
-        
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
     }
-
-    return Promise.reject(error);
-  }
 );
+
 
 export default API;

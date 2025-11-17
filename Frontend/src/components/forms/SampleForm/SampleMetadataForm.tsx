@@ -28,7 +28,6 @@ export const SampleMetadataForm: React.FC<SampleMetadataFormProps> = ({
   onAddTag,
   onRemoveTag,
   isSubmitting,
-  mode
 }) => {
   const [tagInput, setTagInput] = useState('');
 

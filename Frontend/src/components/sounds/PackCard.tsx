@@ -62,7 +62,10 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onViewDetails, onAddToCart })
             </svg>
           </button>
         </div>
+          <button className="btn-secondary" onClick={() => onViewDetails(pack.id)}>
 
+              View Details
+          </button>
         <p className="pack-card-artist">{pack.artist}</p>
 
         {/* Stats */}

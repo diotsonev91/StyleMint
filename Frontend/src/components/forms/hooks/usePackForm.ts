@@ -2,9 +2,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { PackFormData, PackSample } from '../PackForm/types';
 import { SampleType, InstrumentGroup, Genre, MusicalKey, MusicalScale } from '../../../types/audioEnums';
-import { SamplesFromPackDTO } from '../../../types';
 import {audioPackService} from "../../../services/audioPackService";
 import {loadPackForEditing} from "../PackForm/packDataLoader";
+import {AudioSample} from "../../../types";
 
 export const usePackForm = (mode: 'upload' | 'edit', initialData?: Partial<PackFormData>, packId?: string) => {
     const [step, setStep] = useState<1 | 2>(1);
@@ -184,7 +184,7 @@ export const usePackForm = (mode: 'upload' | 'edit', initialData?: Partial<PackF
     };
 
 // ✅ FIXED: Handle adding existing samples with null files
-    const handleAddExistingSamples = (existingSamples: SamplesFromPackDTO[]) => {
+    const handleAddExistingSamples = (existingSamples: AudioSample[]) => {
         const newSamples: PackSample[] = existingSamples.map(sample => ({
             id: `library-${sample.id}`, // Prefixed ID to distinguish
             file: null,                 // ✅ FIX: Use null for library samples

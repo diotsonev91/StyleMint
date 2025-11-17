@@ -36,10 +36,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check authentication status on mount
-  useEffect(() => {
-    checkAuth();
-  }, []);
+    useEffect(() => {
+     
+        if (window.location.pathname.startsWith("/login")) return;
+        if (window.location.pathname.startsWith("/register")) return;
+
+        checkAuth();
+    }, []);
+
+
 
   const checkAuth = async () => {
     try {

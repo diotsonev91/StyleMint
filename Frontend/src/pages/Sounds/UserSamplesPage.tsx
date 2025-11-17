@@ -4,15 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { audioSampleService } from '../../services/audioSampleService';
 import { checkAuth } from '../../api/auth';
 import SamplesList from '../../components/sounds/SamplesList';
-import { SamplesFromPackDTO } from '../../types';
+
 import './UserSamplesPage.css';
+import {AudioSample} from "../../types";
 
 const UserSamplesPage: React.FC = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const [samples, setSamples] = useState<SamplesFromPackDTO[]>([]);
+  const [samples, setSamples] = useState<AudioSample[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
@@ -57,7 +58,7 @@ const UserSamplesPage: React.FC = () => {
       
       if (response.success) {
         // Transform the response data to match SamplesFromPackDTO format
-        const userSamples: SamplesFromPackDTO[] = Array.isArray(response.data) 
+        const userSamples: AudioSample[] = Array.isArray(response.data)
           ? response.data.map((sample: any) => ({
               id: sample.id,
               name: sample.name,
@@ -108,31 +109,6 @@ const UserSamplesPage: React.FC = () => {
     navigate('/upload');
   };
 
-  const handleEditSample = (sampleId: string) => {
-    // Navigate to edit sample page or open edit modal
-    console.log('Edit sample:', sampleId);
-    // navigate(`/edit-sample/${sampleId}`);
-  };
-
-  const handleDeleteSample = async (sampleId: string) => {
-    if (window.confirm('Are you sure you want to delete this sample? This action cannot be undone.')) {
-      try {
-        // You'll need to implement delete functionality in your audioSampleService
-        // const response = await audioSampleService.deleteSample(sampleId);
-        // if (response.success) {
-        //   setSamples(prev => prev.filter(sample => sample.id !== sampleId));
-        // } else {
-        //   setError(response.error || 'Failed to delete sample');
-        // }
-        console.log('Delete sample:', sampleId);
-        // For now, just remove from local state
-        setSamples(prev => prev.filter(sample => sample.id !== sampleId));
-      } catch (err) {
-        console.error('Error deleting sample:', err);
-        setError('Failed to delete sample');
-      }
-    }
-  };
 
   // Show loading state while checking authentication
   if (isCheckingAuth) {

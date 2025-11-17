@@ -25,7 +25,9 @@ const location = useLocation();
 const { isLoggedUserPack } = location.state || {};
 const navigate = useNavigate();
 const handleEditPack = () => {
+    console.log(":should navigate to edit pack")
   navigate(`/edit-pack/${pack.id}`, { state: { pack } });
+
 };
   return (
     <div className="pack-info">

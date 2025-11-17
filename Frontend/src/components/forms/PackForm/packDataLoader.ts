@@ -4,15 +4,18 @@
 import { PackFormData, PackSample } from './types';
 import { SampleType, InstrumentGroup, Genre, MusicalKey, MusicalScale } from '../../../types/audioEnums';
 
-interface PackFromAPI {
-    id: string;
-    title: string;
-    artist: string;
-    price: number;
-    description: string;
-    coverImageUrl?: string;
-    genres: string[];
-    tags: string[];
+// ✅ CRITICAL: Backend returns { pack: {...}, samples: [...] }
+interface PackResponseFromAPI {
+    pack: {
+        id: string;
+        title: string;
+        artist: string;
+        price: number;
+        description: string;
+        coverImage?: string;  // Note: backend uses 'coverImage', not 'coverImageUrl'
+        genres: string[];
+        tags: string[];
+    };
     samples: Array<{
         id: string;
         name: string;
@@ -31,15 +34,23 @@ interface PackFromAPI {
 /**
  * ✅ Converts pack data from API into proper PackFormData for editing
  * This ensures all samples are marked as isAlreadyInPack = true
+ *
+ * CRITICAL: Backend returns structure { pack: {...}, samples: [...] }
  */
-export const loadPackForEditing = (packData: PackFromAPI): Partial<PackFormData> => {
-    console.log('🔄 Loading pack for editing - RAW DATA:', {
-        packId: packData.id,
-        samplesCount: packData.samples.length,
-        samples: packData.samples.map(s => ({ id: s.id, name: s.name }))
+export const loadPackForEditing = (apiResponse: PackResponseFromAPI): Partial<PackFormData> => {
+    const { pack, samples } = apiResponse;
+
+    console.log('🔄 Loading pack for editing - RAW API RESPONSE:', {
+        packId: pack.id,
+        packTitle: pack.title,
+        samplesCount: samples?.length || 0,
+        samples: samples?.map(s => ({ id: s.id, name: s.name })) || []
     });
 
-    const samples: PackSample[] = packData.samples.map(sample => {
+    // ✅ Handle case where samples might be undefined or null
+    const samplesList = samples || [];
+
+    const convertedSamples: PackSample[] = samplesList.map(sample => {
         const packSample: PackSample = {
             id: `existing-${sample.id}`,           // Prefixed ID to distinguish
             file: null,                            // ✅ FIX: Use null for existing samples
@@ -70,22 +81,25 @@ export const loadPackForEditing = (packData: PackFromAPI): Partial<PackFormData>
     });
 
     const formData: Partial<PackFormData> = {
-        packTitle: packData.title,
-        artist: packData.artist,
-        price: packData.price.toString(),
-        coverPreview: packData.coverImageUrl || '',
+        packTitle: pack.title,
+        artist: pack.artist,
+        price: pack.price.toString(),
+        coverPreview: pack.coverImage || '',  // ✅ Backend uses 'coverImage'
         coverImage: null,
-        description: packData.description,
-        selectedGenres: packData.genres as Genre[],
-        tags: packData.tags || [],
-        samples: samples,
+        description: pack.description,
+        selectedGenres: pack.genres as Genre[],
+        tags: pack.tags || [],
+        samples: convertedSamples,
     };
 
     console.log('✅ FINAL Loaded form data:', {
+        packTitle: formData.packTitle,
+        samplesCount: formData.samples?.length,
         samples: formData.samples?.map(s => ({
             name: s.name,
             isFromLibrary: s.isFromLibrary,
-            isAlreadyInPack: s.isAlreadyInPack
+            isAlreadyInPack: s.isAlreadyInPack,
+            existingSampleId: s.existingSampleId
         }))
     });
 

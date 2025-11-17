@@ -1,7 +1,7 @@
 // NftServiceClient.java
 package bg.softuni.stylemint.external.client.nft;
 
-import bg.softuni.stylemint.external.dto.nft.*;
+import bg.softuni.dtos.nft.*;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 

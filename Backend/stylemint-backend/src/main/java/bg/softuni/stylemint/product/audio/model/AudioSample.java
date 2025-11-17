@@ -5,6 +5,7 @@ import bg.softuni.stylemint.product.common.model.BaseProduct;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "audio_samples")
+@DynamicUpdate
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
 @SuperBuilder

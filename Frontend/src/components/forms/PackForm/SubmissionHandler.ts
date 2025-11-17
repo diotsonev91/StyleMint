@@ -94,7 +94,7 @@ export class SubmissionHandler {
         }
     }
 
-    // src/components/PackForm/SubmissionHandler.ts
+    // ✅ FIXED: Correctly handle all sample states in edit mode
     private async handleEdit() {
         try {
             const originalPackResponse = await audioPackService.getPackById(this.packId!);
@@ -102,11 +102,24 @@ export class SubmissionHandler {
                 throw new Error('Failed to fetch original pack data');
             }
 
-            const originalPack = originalPackResponse.data;
-            const originalSamples = originalPack.samples || [];
+            // ✅ CRITICAL FIX: Backend returns { pack: {...}, samples: [...] }
+            const originalPackData = originalPackResponse.data;
+            const originalPack = originalPackData.pack || originalPackData; // Handle both structures
+            const originalSamples = originalPackData.samples || originalPack.samples || [];
             const currentSamples = this.formData.samples;
 
-            console.log('🎯 SIMPLIFIED Edit Analysis:');
+            console.log('🎯 CORRECTED Edit Analysis:');
+            console.log('🔍 Original pack data structure:', originalPackData);
+            console.log('🔍 Original pack:', originalPack);
+            console.log('🔍 Original pack samples:', originalSamples.map(s => ({ id: s.id, name: s.name })));
+            console.log('🔍 Current form samples:', currentSamples.map(s => ({
+                id: s.id,
+                name: s.name,
+                isFromLibrary: s.isFromLibrary,
+                isAlreadyInPack: s.isAlreadyInPack,
+                existingSampleId: s.existingSampleId,
+                hasFile: !!s.file
+            })));
 
             // ✅ STATE 1: Samples to remove (were in original pack, but not in current)
             const samplesToRemove = originalSamples
@@ -117,35 +130,67 @@ export class SubmissionHandler {
                 )
                 .map(s => s.id);
 
-            // ✅ STATE 2 & 3: Separate current samples by type
+            // ✅ CRITICAL: Unbind samples from pack BEFORE updating pack
+            if (samplesToRemove.length > 0) {
+                console.log(`🗑️ Unbinding ${samplesToRemove.length} samples from pack...`);
+
+                // Call unbind API for each removed sample
+                for (const sampleId of samplesToRemove) {
+                    console.log(`🗑️ Calling unbind for sample: ${sampleId}`);
+
+                    const unbindResponse = await audioPackService.unbindSampleFromPack(
+                        sampleId,
+                        this.packId!
+                    );
+
+                    if (!unbindResponse.success) {
+                        console.error(`❌ Failed to unbind sample ${sampleId}:`, unbindResponse.error);
+                        throw new Error(`Failed to unbind sample: ${unbindResponse.error}`);
+                    }
+
+                    console.log(`✅ Successfully unbound sample ${sampleId}`);
+                }
+
+                console.log('✅ All samples unbound successfully');
+            }
+
+            // ✅ Create a Set of original sample IDs for quick lookup
+            const originalSampleIds = new Set(originalSamples.map(s => s.id));
+
+            // ✅ STATE 2 & 3: Process current samples correctly
             const { newUploads, libraryAdditions } = currentSamples.reduce((acc, sample) => {
-                // STATE 2: Adding existing library samples (isFromLibrary=true, isAlreadyInPack=false)
-                if (sample.isFromLibrary && !sample.isAlreadyInPack && sample.existingSampleId) {
+                // ✅ CRITICAL FIX: Skip samples that were already in the original pack
+                // These should NOT be added again or uploaded
+                if (sample.existingSampleId && originalSampleIds.has(sample.existingSampleId)) {
+                    console.log(`⏭️ Skipping original pack sample: ${sample.name} (ID: ${sample.existingSampleId})`);
+                    return acc;
+                }
+
+                // STATE 2: Adding existing library samples (isFromLibrary=true, NOT already in pack)
+                if (sample.isFromLibrary && sample.existingSampleId) {
+                    console.log(`📚 Adding from library: ${sample.name} (ID: ${sample.existingSampleId})`);
                     acc.libraryAdditions.push(sample.existingSampleId);
                 }
-                // STATE 3: Uploading new samples (isFromLibrary=false, isAlreadyInPack=false)
-                else if (!sample.isFromLibrary && !sample.isAlreadyInPack) {
-                    if (!sample.file || sample.file.size <= 0) {
-                        throw new Error(`Sample "${sample.name}" is missing a valid audio file`);
-                    }
+                // STATE 3: Uploading brand new samples (isFromLibrary=false, has file)
+                else if (!sample.isFromLibrary && sample.file && sample.file.size > 0) {
+                    console.log(`📤 Uploading new sample: ${sample.name}`);
                     acc.newUploads.push(sample);
                 }
-                // Ignore original pack samples (isFromLibrary=true, isAlreadyInPack=true) - they stay as-is
+                // ⚠️ VALIDATION: Catch samples that don't fit any valid state
+                else if (!sample.isFromLibrary && !sample.file) {
+                    console.warn(`⚠️ Sample "${sample.name}" has no file but isn't from library or original pack - skipping`);
+                }
+
                 return acc;
             }, { newUploads: [] as PackSample[], libraryAdditions: [] as string[] });
 
-            console.log('✅ FINAL SIMPLIFIED Actions:', {
-                samplesToRemove,
+            console.log('✅ FINAL CORRECTED Actions:', {
+                samplesUnbound: samplesToRemove.length,
                 newUploads: newUploads.map(s => s.name),
-                libraryAdditions
+                libraryAdditions: libraryAdditions.length > 0 ? libraryAdditions : 'None'
             });
 
-            // Validate we have work to do
-            if (samplesToRemove.length === 0 && newUploads.length === 0 && libraryAdditions.length === 0) {
-                console.log('ℹ️ No changes detected in samples');
-            }
-
-            // Submit the update
+            // ✅ NOW submit the pack update (without samplesToRemove since they're already unbound)
             const response = await audioPackService.updatePackWithProgress(
                 this.packId!,
                 {
@@ -167,7 +212,7 @@ export class SubmissionHandler {
                         instrumentGroup: sample.instrumentGroup,
                     })),
                     existingSamplesToAdd: libraryAdditions,
-                    samplesToRemove: samplesToRemove,
+                    samplesToRemove: [], // ✅ Empty since we already unbound them above
                 },
                 (progress) => {
                     this.setSubmitProgress(Math.round(progress));

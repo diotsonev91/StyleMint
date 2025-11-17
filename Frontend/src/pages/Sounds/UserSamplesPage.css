@@ -1,7 +1,7 @@
 /* src/pages/UserSamplesPage.css */
 .user-samples-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 100%);
+    background: linear-gradient(135deg, #19fbd3 0%, #111665 100%);
   position: relative;
   overflow-x: hidden;
 }

@@ -9,10 +9,6 @@ import {
   SampleType, 
   Genre, 
   InstrumentGroup,
-  getMusicalKeyDisplayName,
-  getMusicalScaleDisplayName,
-  getSampleTypeDisplayName,
-  getInstrumentGroupDisplayName
 } from '../../types/audioEnums';
 import { SampleFormHeader } from './SampleForm/SampleFormHeader';
 import { SampleFileUpload } from './SampleForm/SampleFileUpload';

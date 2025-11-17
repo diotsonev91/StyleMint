@@ -55,7 +55,7 @@ public class SamplePackServiceImpl implements SamplePackService {
 
         if (request.getSamplesToAdd() != null) {
             for (int i = 0; i < request.getSamplesToAdd().size(); i++) {
-                PackSampleInfo sample = request.getSamplesToAdd().get(i);
+                NewSampleUploadForPack sample = request.getSamplesToAdd().get(i);
                 log.info("Sample {}: name={}, file={}", i, sample.getName(),
                         sample.getFile() != null ? sample.getFile().getOriginalFilename() : "null");
             }
