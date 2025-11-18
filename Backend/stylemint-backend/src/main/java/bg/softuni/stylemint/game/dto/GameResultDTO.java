@@ -36,8 +36,4 @@ public class GameResultDTO {
      */
     private RewardType rewardType;
 
-    /**
-     * Additional game metadata (optional)
-     */
-    private String metadata;
 }

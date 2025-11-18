@@ -44,7 +44,6 @@ public class GameServiceImpl implements GameService {
                 .durationSeconds(result.getDurationSeconds())
                 .rewardType(result.getRewardType())
                 .rewardClaimed(false)
-                .metadata(result.getMetadata())
                 .build();
 
         GameSession savedSession = gameSessionRepository.save(session);
@@ -255,7 +254,6 @@ public class GameServiceImpl implements GameService {
                 .rewardType(session.getRewardType())
                 .rewardClaimed(session.getRewardClaimed())
                 .playedAt(session.getPlayedAt())
-                .metadata(session.getMetadata())
                 .build();
     }
 }

@@ -6,5 +6,5 @@ package bg.softuni.stylemint.game.enums;
 public enum GameType {
 
     COLOR_RUSH,
-    BPM_MATCH
+    BPM_MATCHER
 }

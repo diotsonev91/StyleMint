@@ -26,5 +26,4 @@ public class GameSessionDTO {
     private RewardType rewardType;
     private Boolean rewardClaimed;
     private OffsetDateTime playedAt;
-    private String metadata;
 }

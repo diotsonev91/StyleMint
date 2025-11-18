@@ -1,115 +1,202 @@
-// src/services/gameService.ts
-import API from "../api/config";
+// src/services/GameService.ts
+// Refactored to use game.api.ts for consistency
 
-interface GameScore {
-  score: number;
-  timestamp: number;
-  date: string;
-  game_mode: string;
-  difficulty: string;
-}
-
-interface LeaderboardEntry {
-  rank: number;
-  username: string;
-  score: number;
-}
+import {
+    gameApi,
+    GameType,
+    GameResultDTO,
+    LeaderboardEntryDTO,
+    GameSessionDTO,
+    UserGameSummaryDTO
+} from "../api/game.api";
 
 interface SaveScoreParams {
-  score: number;
-  timestamp: number;
-  date: string;
-  gameMode: string;
-  difficulty: string;
-  gameName: string;
+    score: number;
+    timestamp: number;
+    gameName: "bpm-matcher" | "3d-runner";
 }
 
 class GameService {
-  /**
-   * Send score to backend
-   * Uses HttpOnly cookies for authentication (SM_ACCESS and SM_REFRESH)
-   * The axios instance handles automatic token refresh on 401
-   */
-  async saveScore(params: SaveScoreParams): Promise<{ success: boolean; data?: any; error?: string }> {
-    try {
-      const response = await API.post("/game/scores", {
-        score: params.score,
-        timestamp: params.timestamp,
-        date: params.date,
-        gameMode: params.gameMode,
-        difficulty: params.difficulty,
-        gameName: params.gameName,
-      });
 
-      return { success: true, data: response.data };
-
-    } catch (error: any) {
-      console.error("❌ Error saving score:", error);
-      return { 
-        success: false, 
-        error: error.response?.data?.message || error.message 
-      };
+    /** Map game names from client to enum used by backend */
+    private mapGameNameToType(gameName: string): GameType {
+        switch (gameName) {
+            case "bpm-matcher":
+                return GameType.BPM_MATCHER;
+            case "3d-runner":
+                return GameType.COLOR_RUSH;
+            default:
+                return GameType.COLOR_RUSH;
+        }
     }
-  }
 
-  /**
-   * Fetch top scores from leaderboard
-   * Uses HttpOnly cookies for authentication
-   */
-  async fetchTopScores(): Promise<{ success: boolean; data?: LeaderboardEntry[]; error?: string }> {
-    try {
-      const response = await API.get("/game/leaderboard/top10");
-      return { success: true, data: response.data };
+    /** Submit score to backend — CLEAN version without metadata */
+    async saveScore(params: SaveScoreParams): Promise<{ success: boolean; data?: GameSessionDTO; error?: string }> {
+        try {
+            const gameResult: GameResultDTO = {
+                gameType: this.mapGameNameToType(params.gameName),
+                score: params.score,
+                durationSeconds: Math.floor(params.timestamp / 1000),
+            };
 
-    } catch (error: any) {
-      console.error("❌ Error fetching leaderboard:", error);
-      return { 
-        success: false, 
-        error: error.response?.data?.message || error.message 
-      };
+            const response = await gameApi.submitGameResult(gameResult);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            return { success: true, data };
+
+        } catch (error: any) {
+            console.error("❌ Error saving score:", error);
+            return { success: false, error: error.message || "Failed to save score" };
+        }
     }
-  }
 
-  /**
-   * Get mock scores (fallback when backend is unavailable)
-   */
-  getMockScores(gameType: "bpm" | "runner"): LeaderboardEntry[] {
-    if (gameType === "bpm") {
-      return [
-        { rank: 1, username: "BeatMaster", score: 9850 },
-        { rank: 2, username: "RhythmKing", score: 9420 },
-        { rank: 3, username: "MusicPro", score: 8990 },
-        { rank: 4, username: "TempoPro", score: 8450 },
-        { rank: 5, username: "BassHunter", score: 7980 },
-        { rank: 6, username: "DrumMaster", score: 7520 },
-        { rank: 7, username: "SynthWave", score: 7100 },
-      ];
-    } else {
-      return [
-        { rank: 1, username: "ProRunner", score: 15420 },
-        { rank: 2, username: "SpeedDemon", score: 14850 },
-        { rank: 3, username: "NightRacer", score: 13990 },
-        { rank: 4, username: "CyberSprint", score: 12750 },
-        { rank: 5, username: "PixelJumper", score: 11680 },
-        { rank: 6, username: "CyberSprint", score: 12750 },
-        { rank: 7, username: "PixelJumper", score: 11680 },
-      ];
+    /** Leaderboard for a game type */
+    async fetchLeaderboard(
+        gameType: GameType,
+        limit = 10
+    ): Promise<{ success: boolean; data?: LeaderboardEntryDTO[]; error?: string }> {
+        try {
+            const response = await gameApi.getLeaderboard(gameType, limit);
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.message || `HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            return { success: true, data };
+
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
     }
-  }
 
-  /**
-   * Get the backend URL (useful for iframe communication)
-   */
-  getBackendUrl(): string {
-    return import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
-  }
+    /** Global Top scores */
+    async fetchTopScores(
+        gameType?: GameType
+    ): Promise<{ success: boolean; data?: LeaderboardEntryDTO[]; error?: string }> {
+
+        if (!gameType) {
+            try {
+                const response = await gameApi.getGlobalLeaderboard(10);
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                return { success: true, data: await response.json() };
+
+            } catch (error: any) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        return this.fetchLeaderboard(gameType);
+    }
+
+    /** User summary */
+    async getUserSummary(): Promise<{ success: boolean; data?: UserGameSummaryDTO; error?: string }> {
+        try {
+            const response = await gameApi.getUserSummary();
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.message || `HTTP ${response.status}`);
+            }
+
+            return { success: true, data: await response.json() };
+
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    /** User sessions history */
+    async getUserSessions(): Promise<{ success: boolean; data?: GameSessionDTO[]; error?: string }> {
+        try {
+            const response = await gameApi.getUserSessions();
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.message || `HTTP ${response.status}`);
+            }
+
+            return { success: true, data: await response.json() };
+
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    /** Claim reward */
+    async claimReward(sessionId: string): Promise<{ success: boolean; data?: GameSessionDTO; error?: string }> {
+        try {
+            const response = await gameApi.claimReward(sessionId);
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.message || `HTTP ${response.status}`);
+            }
+
+            return { success: true, data: await response.json() };
+
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    /** Unclaimed rewards */
+    async getUnclaimedRewards(): Promise<{ success: boolean; data?: GameSessionDTO[]; error?: string }> {
+        try {
+            const response = await gameApi.getUnclaimedRewards();
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.message || `HTTP ${response.status}`);
+            }
+
+            return { success: true, data: await response.json() };
+
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    /** Best score */
+    async getBestScore(gameType: GameType): Promise<{ success: boolean; data?: number; error?: string }> {
+        try {
+            const response = await gameApi.getBestScore(gameType);
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.message || `HTTP ${response.status}`);
+            }
+
+            const body = await response.json();
+            return { success: true, data: body.bestScore };
+
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    /** Backend URL */
+    getBackendUrl(): string {
+        return import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+    }
 }
 
-// Export singleton instance
 export const gameService = new GameService();
-
-// Export class for custom instances
 export default GameService;
 
-// Export types
-export type { GameScore, LeaderboardEntry, SaveScoreParams };
+export {
+    GameType,
+    GameResultDTO,
+    LeaderboardEntryDTO,
+    GameSessionDTO,
+    UserGameSummaryDTO
+} from "../api/game.api";
+export type { SaveScoreParams };

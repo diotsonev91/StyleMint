@@ -68,9 +68,4 @@ public class GameSession {
     @Column(name = "played_at", nullable = false)
     private OffsetDateTime playedAt;
 
-    /**
-     * Additional metadata about the game (JSON or specific fields)
-     */
-    @Column(columnDefinition = "TEXT")
-    private String metadata;
 }
