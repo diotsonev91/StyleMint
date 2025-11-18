@@ -23,6 +23,8 @@ import UserSamplesPage from "../pages/Sounds/UserSamplesPage";
 import EditSamplePage from "../pages/Sounds/EditSamplePage";
 import UserPacksPage from "../pages/Sounds/UserPacksPage";
 import EditPackPage from "../pages/Sounds/EditPackPage";
+import {MyClothDesignsPage} from "../pages/Clothes/MyClothDesignsPage";
+import {EditClothDesignPage} from "../pages/Clothes/EditClothDesignPage";
 
 // You can easily expand this later with private routes or 404 pages
 export const AppRoutes: React.FC = () => {
@@ -47,13 +49,13 @@ export const AppRoutes: React.FC = () => {
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/profile/:userId" element={<ProfilePage />} />
       <Route path="/my-samples" element={<UserSamplesPage />} />  
-      <Route path="/my-packs" element={<UserPacksPage />} />  
-      
-       <Route path="/cart" element={<CartPage />} />
+      <Route path="/my-packs" element={<UserPacksPage />} />
+        <Route path="/my-designs" element={<MyClothDesignsPage />} />
+        <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout/details" element={<CheckoutDetails />} />
          <Route path="/checkout/summary" element={<CheckoutSummary />} />
-       <Route path="/checkout/success" element={<CheckoutSuccess />} />  
-
+       <Route path="/checkout/success" element={<CheckoutSuccess />} />
+        <Route path="/edit-design" element={<EditClothDesignPage />} />
         <Route path="/edit-sample/:sampleId" element={<EditSamplePage />} />
     </Routes>
   );

@@ -25,52 +25,64 @@ export function ThreeCanvasAdvanced({ isInsideCart = false, cartItem, tempRotati
   const type = isInsideCart ? cartItem?.selected_type : snap.selected_type;
 
   return (
-    <Canvas shadows camera={{ position: [-1, 0, 2.5], fov: 25 }}>
-      <ambientLight intensity={0.5} />
-      <Environment preset="city" />
+      <Canvas shadows camera={{ position: [-1, 0, 2.5], fov: 25 }}>
+          {/* Ambient soft light */}
+          <ambientLight intensity={0.6} />
 
-      {/* decal placement is disabled in cart preview */}
-      {!isInsideCart && <ClickLogicInside />}
+          {/* Main directional light */}
+          <directionalLight
+              position={[5, 5, 5]}
+              intensity={1.3}
+              castShadow
+              shadow-mapSize-width={2048}
+              shadow-mapSize-height={2048}
+          />
 
-      <Center>
-        {type === "hoodie" && (
-          <Hoodie
-            advanced
-            cartItem={isInsideCart ? cartItem : undefined}
-            rotationYOverride={isInsideCart ? tempRotationY : undefined}
-          />
-        )}
-        {type === "cap" && (
-          <Cap
-            advanced
-            cartItem={isInsideCart ? cartItem : undefined}
-            rotationYOverride={isInsideCart ? tempRotationY : undefined}
-          />
-        )}
-        {type === "t_shirt_sport" && (
-          <Shirt
-            variant="sport"
-            advanced
-            cartItem={isInsideCart ? cartItem : undefined}
-            rotationYOverride={isInsideCart ? tempRotationY : undefined}
-          />
-        )}
-        {type === "t_shirt_classic" && (
-          <Shirt
-            variant="classic"
-            advanced
-            cartItem={isInsideCart ? cartItem : undefined}
-            rotationYOverride={isInsideCart ? tempRotationY : undefined}
-          />
-        )}
-        {type === "shoe" && (
-          <Shoe
-            advanced
-            cartItem={isInsideCart ? cartItem : undefined}
-            rotationYOverride={isInsideCart ? tempRotationY : undefined}
-          />
-        )}
-      </Center>
-    </Canvas>
+          {/* Fill light */}
+          <pointLight position={[-3, 2, -3]} intensity={0.4} />
+
+          {!isInsideCart && <ClickLogicInside />}
+
+          <Center>
+              {type === "hoodie" && (
+                  <Hoodie
+                      advanced
+                      cartItem={isInsideCart ? cartItem : undefined}
+                      rotationYOverride={isInsideCart ? tempRotationY : undefined}
+                  />
+              )}
+              {type === "cap" && (
+                  <Cap
+                      advanced
+                      cartItem={isInsideCart ? cartItem : undefined}
+                      rotationYOverride={isInsideCart ? tempRotationY : undefined}
+                  />
+              )}
+              {type === "t_shirt_sport" && (
+                  <Shirt
+                      variant="sport"
+                      advanced
+                      cartItem={isInsideCart ? cartItem : undefined}
+                      rotationYOverride={isInsideCart ? tempRotationY : undefined}
+                  />
+              )}
+              {type === "t_shirt_classic" && (
+                  <Shirt
+                      variant="classic"
+                      advanced
+                      cartItem={isInsideCart ? cartItem : undefined}
+                      rotationYOverride={isInsideCart ? tempRotationY : undefined}
+                  />
+              )}
+              {type === "shoe" && (
+                  <Shoe
+                      advanced
+                      cartItem={isInsideCart ? cartItem : undefined}
+                      rotationYOverride={isInsideCart ? tempRotationY : undefined}
+                  />
+              )}
+          </Center>
+      </Canvas>
+
   );
 }

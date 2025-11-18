@@ -46,36 +46,49 @@ export const ThreeCanvas = ({
 
 
   return (
-    <Canvas
-      shadows
-      eventSource={document.getElementById("root")!}
-      eventPrefix="client"
-      camera={{ position, fov }}
-    >
-      <ambientLight intensity={0.5} />
-      <Environment preset="city" />
+      <Canvas
+          shadows
+          eventSource={document.getElementById("root")!}
+          eventPrefix="client"
+          camera={{ position, fov }}
+      >
+          {/* Ambient light */}
+          <ambientLight intensity={0.5} />
 
-      <CameraRig disabled={isInsideCart} tempRotationY={tempRotationY}>
-        <Center>
-          {type === "hoodie" && (
-            <Hoodie isInsideCart={isInsideCart} cartItem={cartItem} />
-          )}
-          {type === "cap" && (
-            <Cap isInsideCart={isInsideCart} cartItem={cartItem} />
-          )}
-          {type === "t_shirt_sport" && (
-            <Shirt variant="sport" isInsideCart={isInsideCart} cartItem={cartItem} />
-          )}
-          {type === "t_shirt_classic" && (
-            <Shirt variant="classic" isInsideCart={isInsideCart} cartItem={cartItem} />
-          )}
-          {type === "shoe" && (
-            <Shoe isInsideCart={isInsideCart} cartItem={cartItem} />
-          )}
-          <Backdrop isInsideCart={isInsideCart} cartItem={cartItem} />
-        </Center>
-      </CameraRig>
-    </Canvas>
+          {/* Directional light (основно осветление) */}
+          <directionalLight
+              position={[5, 5, 5]}
+              intensity={1.2}
+              castShadow
+              shadow-mapSize-width={2048}
+              shadow-mapSize-height={2048}
+          />
+
+          {/* Fill light (меко осветяване) */}
+          <pointLight position={[-5, 5, -5]} intensity={0.6} />
+
+          <CameraRig disabled={isInsideCart} tempRotationY={tempRotationY}>
+              <Center>
+                  {type === "hoodie" && (
+                      <Hoodie isInsideCart={isInsideCart} cartItem={cartItem} />
+                  )}
+                  {type === "cap" && (
+                      <Cap isInsideCart={isInsideCart} cartItem={cartItem} />
+                  )}
+                  {type === "t_shirt_sport" && (
+                      <Shirt variant="sport" isInsideCart={isInsideCart} cartItem={cartItem} />
+                  )}
+                  {type === "t_shirt_classic" && (
+                      <Shirt variant="classic" isInsideCart={isInsideCart} cartItem={cartItem} />
+                  )}
+                  {type === "shoe" && (
+                      <Shoe isInsideCart={isInsideCart} cartItem={cartItem} />
+                  )}
+                  <Backdrop isInsideCart={isInsideCart} cartItem={cartItem} />
+              </Center>
+          </CameraRig>
+      </Canvas>
+
   );
 };
 

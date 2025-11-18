@@ -16,7 +16,7 @@ import { snapshot, useSnapshot } from "valtio";
 import { state } from "../../state";
 import { addClothToCart } from "../../services/cartService";
 import { LoginRequiredModal } from "../LoginRequiredModal";
-
+import { useNavigate } from 'react-router-dom';
 const Overlay = () => {
   const snap = useSnapshot(state);
   console.log("👀 Overlay rendered");
@@ -134,6 +134,7 @@ const colors = [
 export const Customizer: FC = () => {
   const snap = useSnapshot(state);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+    const navigate = useNavigate();
   // Handler for adding item to cart
   const handlePurchase = async () => {
     console.log("🛒 Purchase button clicked in Overlay");
@@ -152,8 +153,9 @@ export const Customizer: FC = () => {
     }
   };
 const handleSaveSuccess = (design: any) => {
+
     console.log("Design saved successfully:", design);
-    // You can update state or show a success message
+    navigate('/my-designs');
   };
 function uploadImageAsDecal() {
   const input = document.createElement('input');
@@ -299,6 +301,7 @@ function uploadImageAsDecal() {
               <AiOutlineShopping size="1.3em" />
             </button>
 
+
             <button className="save-btn"
              onClick={() => setIsSaveModalOpen(true)}
             >
@@ -306,7 +309,7 @@ function uploadImageAsDecal() {
               <AiOutlineSave size="1.3em" />
             </button>
 
-           { snap.page === "advanced" && 
+           { snap.page === "advanced" &&
            <button className="share-btn"  onClick={uploadImageAsDecal}>
               Upload your decal to use it
              <RiNftFill />

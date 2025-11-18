@@ -1,6 +1,7 @@
 package bg.softuni.stylemint.product.fashion.web;
 
 import bg.softuni.stylemint.auth.security.SecurityUtil;
+import bg.softuni.stylemint.common.dto.ApiResponse;
 import bg.softuni.stylemint.product.fashion.dto.*;
 import bg.softuni.stylemint.product.fashion.service.ClothDesignService;
 import jakarta.validation.Valid;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -25,73 +27,67 @@ public class ClothDesignController {
     private final ClothDesignService clothDesignService;
 
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<DesignSummaryDTO> createDesign(
+    public ResponseEntity<ApiResponse<DesignSummaryDTO>> createDesign(
             @Valid @ModelAttribute DesignUploadRequestDTO request) {
         UUID userId = SecurityUtil.getCurrentUserId();
         DesignSummaryDTO design = clothDesignService.createDesign(userId, request);
-        return ResponseEntity.ok(design);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success(design, "Design created successfully"));
     }
 
     @PutMapping("/{designId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<DesignSummaryDTO> updateDesign(
+    public ResponseEntity<ApiResponse<DesignSummaryDTO>> updateDesign(
             @PathVariable UUID designId,
             @Valid @ModelAttribute DesignUploadRequestDTO request) {
         UUID userId = SecurityUtil.getCurrentUserId();
         DesignSummaryDTO design = clothDesignService.updateDesign(designId, userId, request);
-        return ResponseEntity.ok(design);
+        return ResponseEntity.ok(ApiResponse.success(design, "Design updated successfully"));
     }
 
     @DeleteMapping("/{designId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> deleteDesign(@PathVariable UUID designId) {
+    public ResponseEntity<ApiResponse<Void>> deleteDesign(@PathVariable UUID designId) {
         UUID userId = SecurityUtil.getCurrentUserId();
         clothDesignService.deleteDesign(designId, userId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity
+                .status(HttpStatus.NO_CONTENT)
+                .body(ApiResponse.successMessage("Design deleted successfully"));
     }
 
     @GetMapping("/{designId}")
-    public ResponseEntity<DesignSummaryDTO> getDesign(@PathVariable UUID designId) {
-        DesignSummaryDTO design = clothDesignService.getDesignById(designId);
-        return ResponseEntity.ok(design);
+    public ResponseEntity<ApiResponse<DesignDetailDTO>> getDesign(@PathVariable UUID designId) {
+        DesignDetailDTO design = clothDesignService.getDesignById(designId);
+        return ResponseEntity.ok(ApiResponse.success(design));
     }
 
     @GetMapping("/my-designs")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<DesignSummaryDTO>> getMyDesigns() {
+    public ResponseEntity<ApiResponse<List<DesignDetailDTO>>> getMyDesigns() {
         UUID userId = SecurityUtil.getCurrentUserId();
-        List<DesignSummaryDTO> designs = clothDesignService.getUserDesigns(userId);
-        return ResponseEntity.ok(designs);
+        List<DesignDetailDTO> designs = clothDesignService.getUserDesigns(userId);
+        return ResponseEntity.ok(ApiResponse.success(designs));
     }
 
     @GetMapping("/public")
-    public ResponseEntity<Page<DesignSummaryDTO>> getPublicDesigns(
+    public ResponseEntity<ApiResponse<Page<DesignSummaryDTO>>> getPublicDesigns(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<DesignSummaryDTO> designs = clothDesignService.getPublicDesigns(pageable);
-        return ResponseEntity.ok(designs);
+        return ResponseEntity.ok(ApiResponse.success(designs));
     }
 
-    /**
-     * Get the designer summary for the currently authenticated user
-     */
     @GetMapping("/user/me/summary")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UserDesignerSummaryDTO> getMyDesignerSummary() {
+    public ResponseEntity<ApiResponse<UserDesignerSummaryDTO>> getMyDesignerSummary() {
         UUID userId = SecurityUtil.getCurrentUserId();
         UserDesignerSummaryDTO summary = clothDesignService.getUserDesignerSummary(userId);
-        return ResponseEntity.ok(summary);
+        return ResponseEntity.ok(ApiResponse.success(summary));
     }
 
-    /**
-     * Get designer summary for a specific user (Admin only or remove if not needed)
-     */
     @GetMapping("/user/{userId}/summary")
-    @PreAuthorize("hasRole('ADMIN')") // Or remove this endpoint entirely
-    public ResponseEntity<UserDesignerSummaryDTO> getDesignerSummary(@PathVariable UUID userId) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserDesignerSummaryDTO>> getDesignerSummary(@PathVariable UUID userId) {
         UserDesignerSummaryDTO summary = clothDesignService.getUserDesignerSummary(userId);
-        return ResponseEntity.ok(summary);
+        return ResponseEntity.ok(ApiResponse.success(summary));
     }
 }

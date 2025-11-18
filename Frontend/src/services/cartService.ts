@@ -1,7 +1,7 @@
 // CartService.ts - Updated with proper pack handling
 import { cartState, state } from "../state";
 import type { ClothesCartItem, SampleCartItem, PackCartItem, CartItemState } from "../state";
-import type { SamplePack, SamplesFromPackDTO } from "../types";
+import type {AudioSample, SamplePack} from "../types";
 import { subscribe } from "valtio";
 import { fetchCartFromBackend } from "../api/cart";
 
@@ -92,7 +92,7 @@ export function addSampleToCart(item: Omit<SampleCartItem, "type" | "quantity">)
 }
 
 // ✅ UPDATED – add pack with all its samples
-export function addPackToCart(packData: Omit<PackCartItem, "type" | "quantity">, samples?: SamplesFromPackDTO[]) {
+export function addPackToCart(packData: Omit<PackCartItem, "type" | "quantity">, samples?: AudioSample[]) {
   // Check if pack already exists in cart
   const packExists = cartState.items.some((i) => i.id === packData.id && i.type === "pack");
   if (packExists) {

@@ -10,6 +10,8 @@ import bg.softuni.stylemint.product.fashion.repository.ClothDesignRepository;
 import bg.softuni.stylemint.product.fashion.service.ClothDesignService;
 import bg.softuni.stylemint.product.common.service.PriceCalculatorService;
 import bg.softuni.stylemint.product.fashion.service.ClothLikeService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -37,15 +39,17 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
     private final FileService fileService;
 
+    private final ObjectMapper objectMapper;
 
 
     @Autowired
     public ClothDesignServiceImpl(ClothDesignRepository clothDesignRepository,
-                                  @Qualifier("fashionPriceCalculatorService") PriceCalculatorService<ClothDesign> clothPriceCalculator, ClothLikeService clothLikeService, FileService fileService) {
+                                  @Qualifier("fashionPriceCalculatorService") PriceCalculatorService<ClothDesign> clothPriceCalculator, ClothLikeService clothLikeService, FileService fileService, ObjectMapper objectMapper) {
         this.clothDesignRepository = clothDesignRepository;
         this.clothPriceCalculator = clothPriceCalculator;
         this.clothLikeService = clothLikeService;
         this.fileService = fileService;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -68,15 +72,14 @@ public class ClothDesignServiceImpl implements ClothDesignService {
                 .salesCount(0L)
                 .build();
 
-        double calculatedPrice = clothPriceCalculator.calculatePrice(
-                design
-        );
-
-        design.setPrice(calculatedPrice);
-
+        // Process custom decal BEFORE calculating price
         if (request.getCustomDecalFile() != null && !request.getCustomDecalFile().isEmpty()) {
-            processCustomDecalFile(request.getCustomDecalFile(), design,  userId);
+            processCustomDecalFile(request.getCustomDecalFile(), design, userId);
         }
+
+        // NOW calculate price (will include custom decal premium if exists)
+        double calculatedPrice = clothPriceCalculator.calculatePrice(design);
+        design.setPrice(calculatedPrice);
 
         ClothDesign savedDesign = clothDesignRepository.save(design);
         return toSummaryDTO(savedDesign, 0);
@@ -93,7 +96,6 @@ public class ClothDesignServiceImpl implements ClothDesignService {
         }
 
         boolean needsPriceRecalculation = false;
-
 
         if (request.getLabel() != null) {
             design.setLabel(request.getLabel());
@@ -116,17 +118,16 @@ public class ClothDesignServiceImpl implements ClothDesignService {
             needsPriceRecalculation = true;
         }
 
-
-        if (needsPriceRecalculation) {
-            double newPrice = clothPriceCalculator.calculatePrice(
-                    design
-            );
-            design.setPrice(newPrice);
-        }
-
-
+        // Process new custom decal if provided
         if (request.getCustomDecalFile() != null && !request.getCustomDecalFile().isEmpty()) {
             processCustomDecalFile(request.getCustomDecalFile(), design, userId);
+            needsPriceRecalculation = true; // Custom decal affects price
+        }
+
+        // Recalculate price if needed
+        if (needsPriceRecalculation) {
+            double newPrice = clothPriceCalculator.calculatePrice(design);
+            design.setPrice(newPrice);
         }
 
         ClothDesign updatedDesign = clothDesignRepository.save(design);
@@ -166,17 +167,17 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
 
     @Override
-    public DesignSummaryDTO getDesignById(UUID designId) {
+    public DesignDetailDTO getDesignById(UUID designId) {
         ClothDesign design = clothDesignRepository.findById(designId)
                 .orElseThrow(() -> new RuntimeException("Design not found"));
-        return toSummaryDTO(design);
+        return toDetailDTO(design);
     }
 
     @Override
-    public List<DesignSummaryDTO> getUserDesigns(UUID userId) {
+    public List<DesignDetailDTO> getUserDesigns(UUID userId) {
         return clothDesignRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
-                .map(this::toSummaryDTO)
+                .map(this::toDetailDTO)  // Changed from toSummaryDTO
                 .collect(Collectors.toList());
     }
 
@@ -228,5 +229,35 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
     private String generatePreviewImageUrl(ClothDesign design) {
         return "/api/v1/designs/" + design.getId() + "/preview";
+    }
+
+    public DesignDetailDTO toDetailDTO(ClothDesign design) {
+        long likesCount = clothLikeService.getLikesCount(design.getId());
+
+        // Parse customizationJson to JsonNode
+        JsonNode customizationData = null;
+        if (design.getCustomizationJson() != null) {
+            try {
+                customizationData = objectMapper.readTree(design.getCustomizationJson());
+            } catch (Exception e) {
+                log.error("Failed to parse customizationJson for design {}: {}", design.getId(), e.getMessage());
+            }
+        }
+
+        return DesignDetailDTO.builder()
+                .id(design.getId())
+                .label(design.getLabel())
+                .clothType(design.getClothType())
+                .customizationType(design.getCustomizationType())
+                .previewImageUrl(generatePreviewImageUrl(design))
+                .isPublic(design.getIsPublic())
+                .price(design.getPrice())
+                .bonusPoints(design.getBonusPoints())
+                .salesCount(design.getSalesCount() != null ? design.getSalesCount() : 0L)
+                .likesCount(likesCount)
+                .createdAt(design.getCreatedAt())
+                .customizationData(customizationData)
+                .customDecalUrl(design.getCustomDecalPath())
+                .build();
     }
 }

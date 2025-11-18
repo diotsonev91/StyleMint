@@ -15,6 +15,12 @@ export interface DesignSummaryDTO {
     createdAt: string;
 }
 
+// Extended version with full customization data
+export interface DesignDetailDTO extends DesignSummaryDTO {
+    customizationData: CustomizationData;
+    customDecalUrl?: string;
+}
+
 export interface CustomizationData {
     selectedColor: string;
     selectedDecal: string;
@@ -76,15 +82,15 @@ export const clothDesignApi = {
     },
 
     /**
-     * Get user's designs
+     * Get user's designs (with full details including customizationData)
      */
-    async getUserDesigns(): Promise<ApiResponse<DesignSummaryDTO[]>> {
+    async getUserDesigns(): Promise<ApiResponse<DesignDetailDTO[]>> {
         const response = await API.get('/designs/my-designs');
         return response.data;
     },
 
     /**
-     * Get public designs (marketplace)
+     * Get public designs (marketplace) - summary only
      */
     async getPublicDesigns(page?: number, size?: number): Promise<ApiResponse<PaginatedResponse<DesignSummaryDTO>>> {
         const response = await API.get('/designs/public', {
@@ -116,4 +122,48 @@ export const clothDesignApi = {
         const response = await API.post(`/designs/${designId}/unpublish`);
         return response.data;
     },
+
+    /**
+     * Get single design with full details (including customizationData)
+     */
+    async getDesignById(designId: string): Promise<ApiResponse<DesignDetailDTO>> {
+        const response = await API.get(`/designs/${designId}`);
+        return response.data;
+    },
+
+    /**
+     * Update existing design
+     */
+    async updateDesign(designId: string, data: FormData): Promise<ApiResponse<DesignSummaryDTO>> {
+        const response = await API.put(`/designs/${designId}`, data, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
+
+    /**
+     * Get user designer statistics
+     */
+    async getDesignerSummary(): Promise<ApiResponse<UserDesignerSummaryDTO>> {
+        const response = await API.get('/designs/user/me/summary');
+        return response.data;
+    },
+
+    /**
+     * Toggle like on design
+     */
+    async toggleLike(designId: string): Promise<ApiResponse> {
+        const response = await API.post(`/designs/${designId}/like`);
+        return response.data;
+    },
 };
+
+export interface UserDesignerSummaryDTO {
+    totalDesigns: number;
+    publicDesigns: number;
+    privateDesigns: number;
+    totalSales: number;
+    revenue: number;
+}

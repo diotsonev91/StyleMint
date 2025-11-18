@@ -46,7 +46,7 @@ public class SecurityConfig {
                         .requestMatchers(BASE + "/auth/me").authenticated()
                         .anyRequest().authenticated()
                 )
-                // 🔥 ДОБАВИ ТОВА:
+
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
                             System.out.println("🚫 Authentication failed - returning 401");

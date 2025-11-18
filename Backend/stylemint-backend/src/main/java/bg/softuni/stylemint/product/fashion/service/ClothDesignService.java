@@ -19,9 +19,9 @@ public interface ClothDesignService {
     void deleteDesign(UUID designId, UUID userId);
 
     // ПРЕМАХВАМЕ publish/unpublish методите - ползваме updateDesign
-    DesignSummaryDTO getDesignById(UUID designId);
+    DesignDetailDTO getDesignById(UUID designId);
 
-    List<DesignSummaryDTO> getUserDesigns(UUID userId);
+    List<DesignDetailDTO> getUserDesigns(UUID userId);
 
     Page<DesignSummaryDTO> getPublicDesigns(Pageable pageable);
 

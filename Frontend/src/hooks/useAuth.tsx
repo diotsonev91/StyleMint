@@ -37,7 +37,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-     
+
         if (window.location.pathname.startsWith("/login")) return;
         if (window.location.pathname.startsWith("/register")) return;
 

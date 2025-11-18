@@ -1,9 +1,9 @@
 // src/stores/audioPlayer.store.ts
 import { proxy, subscribe } from 'valtio';
-import { SamplesFromPackDTO } from '../types';
+import {AudioSample} from '../types';
 
 interface AudioPlayerState {
-  currentSample: SamplesFromPackDTO | null;
+  currentSample: AudioSample | null;
   isPlaying: boolean;
   currentTime: number;
   duration: number;
@@ -218,7 +218,7 @@ const preloadAudio = async (audioUrl: string): Promise<void> => {
 };
 
 // Preload multiple samples
-const preloadSamples = async (samples: SamplesFromPackDTO[]): Promise<void> => {
+const preloadSamples = async (samples: AudioSample[]): Promise<void> => {
   console.log('Preloading', samples.length, 'samples...');
   
   // Preload first 3 samples immediately, rest in background
@@ -243,7 +243,7 @@ export const audioPlayerActions = {
   /**
    * Play a sample with caching
    */
-  playSample: async (sample: SamplesFromPackDTO) => {
+  playSample: async (sample: AudioSample) => {
     const audio = getAudioElement();
     
     // Clear previous state
@@ -316,7 +316,7 @@ export const audioPlayerActions = {
   /**
    * Fast play - assumes audio is already cached
    */
-  playSampleFast: async (sample: SamplesFromPackDTO) => {
+  playSampleFast: async (sample: AudioSample) => {
     const audio = getAudioElement();
     
     // Stop current audio
@@ -352,14 +352,14 @@ export const audioPlayerActions = {
   /**
    * Preload specific samples
    */
-  preloadSamples: async (samples: SamplesFromPackDTO[]) => {
+  preloadSamples: async (samples: AudioSample[]) => {
     return preloadSamples(samples);
   },
 
   /**
    * Preload a single sample
    */
-  preloadSample: async (sample: SamplesFromPackDTO) => {
+  preloadSample: async (sample: AudioSample) => {
     return preloadAudio(sample.audioUrl);
   },
 

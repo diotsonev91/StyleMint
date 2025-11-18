@@ -23,6 +23,12 @@ import java.time.Instant;
 public class ApiResponse<T> {
 
     /**
+     * Indicates if the operation was successful
+     * Always true for ApiResponse (errors use ErrorResponse)
+     */
+    private boolean success;
+
+    /**
      * The actual data payload
      */
     private T data;
@@ -45,7 +51,7 @@ public class ApiResponse<T> {
      * @return ApiResponse with data and timestamp
      */
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(data, null, Instant.now());
+        return new ApiResponse<>(true, data, null, Instant.now());
     }
 
     /**
@@ -55,7 +61,7 @@ public class ApiResponse<T> {
      * @return ApiResponse with data, message, and timestamp
      */
     public static <T> ApiResponse<T> success(T data, String message) {
-        return new ApiResponse<>(data, message, Instant.now());
+        return new ApiResponse<>(true, data, message, Instant.now());
     }
 
     /**
@@ -65,6 +71,6 @@ public class ApiResponse<T> {
      * @return ApiResponse with message and timestamp
      */
     public static <T> ApiResponse<T> successMessage(String message) {
-        return new ApiResponse<>(null, message, Instant.now());
+        return new ApiResponse<>(true, null, message, Instant.now());
     }
 }
