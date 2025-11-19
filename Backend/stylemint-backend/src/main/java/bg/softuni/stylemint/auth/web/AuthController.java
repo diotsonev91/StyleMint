@@ -20,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.UUID;
 
 import static bg.softuni.stylemint.config.ApiPaths.BASE;
 
@@ -156,12 +157,16 @@ public class AuthController {
             return ResponseEntity.status(401).build();
         }
 
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        User user = userDetails.getUser();
 
-        // Use existing UserService to get the full UserDTO
-        return ResponseEntity.ok(userService.findByEmail(user.getEmail()));
+        String userIdStr = authentication.getName();
+        UUID userId = UUID.fromString(userIdStr);
+
+
+        UserDTO userDto = userService.findById(userId);
+
+        return ResponseEntity.ok(userDto);
     }
+
 
     /**
      * Extracts refresh token from cookies

@@ -47,8 +47,8 @@ public class JwtTokenProvider {
         Date expiryDate = new Date(now.getTime() + validityMs);
 
         return Jwts.builder()
-                .subject(userId.toString()) // Store ID as subject
-                .claim("email", email)      // Optional: include email as claim
+                .subject(userId.toString())
+                .claim("email", email)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())

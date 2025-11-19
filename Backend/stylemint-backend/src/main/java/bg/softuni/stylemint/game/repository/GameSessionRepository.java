@@ -1,6 +1,7 @@
 package bg.softuni.stylemint.game.repository;
 
 import bg.softuni.stylemint.game.enums.GameType;
+import bg.softuni.stylemint.game.enums.RewardType;
 import bg.softuni.stylemint.game.model.GameSession;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -60,4 +61,6 @@ public interface GameSessionRepository extends JpaRepository<GameSession, UUID> 
      * Count unclaimed rewards for a user
      */
     long countByUserIdAndRewardClaimedFalse(UUID userId);
+
+    boolean existsByUserIdAndRewardType(UUID userId, RewardType rewardType);
 }

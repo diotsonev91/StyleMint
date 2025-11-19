@@ -6,6 +6,7 @@ import bg.softuni.stylemint.game.dto.UserGameSummaryDTO;
 import bg.softuni.stylemint.game.enums.GameType;
 import bg.softuni.stylemint.game.model.GameSession;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
@@ -60,4 +61,6 @@ public interface GameService {
      * @return List of sessions with unclaimed rewards
      */
     List<GameSessionDTO> getUnclaimedRewards(UUID userId);
+
+
 }

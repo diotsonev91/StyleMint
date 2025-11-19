@@ -4,11 +4,12 @@
 import {
     gameApi,
     GameType,
-    GameResultDTO,
-    LeaderboardEntryDTO,
-    GameSessionDTO,
-    UserGameSummaryDTO
+    type GameResultDTO,
+    type LeaderboardEntryDTO,
+    type GameSessionDTO,
+    type UserGameSummaryDTO
 } from "../api/game.api";
+
 
 interface SaveScoreParams {
     score: number;
@@ -192,11 +193,11 @@ class GameService {
 export const gameService = new GameService();
 export default GameService;
 
-export {
-    GameType,
+export { GameType } from "../api/game.api";
+export type {
     GameResultDTO,
     LeaderboardEntryDTO,
     GameSessionDTO,
-    UserGameSummaryDTO
-} from "../api/game.api";
-export type { SaveScoreParams };
+    UserGameSummaryDTO,
+    SaveScoreParams
+};

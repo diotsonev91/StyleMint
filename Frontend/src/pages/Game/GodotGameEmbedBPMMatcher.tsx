@@ -1,8 +1,10 @@
 // src/components/GodotGameEmbedBPMMatcher.tsx
-// Updated to use new game.api.ts structure
+// FIXED: Now shows GameOverModal after game ends
 
 import React, { useEffect, useState } from 'react';
-import { gameService, GameType, LeaderboardEntryDTO } from '../../services/gameService';
+import { gameService, GameType, LeaderboardEntryDTO, GameSessionDTO } from '../../services/gameService';
+import GameOverModal from "../../components/games/GameOverModal";
+// ← Import modal
 
 interface GameScore {
     score: number;
@@ -24,6 +26,11 @@ const GodotGameEmbedBPM: React.FC<GodotGameEmbedBPMProps> = ({
     const [lastScore, setLastScore] = useState<number | null>(null);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
     const [topScores, setTopScores] = useState<LeaderboardEntryDTO[]>([]);
+
+    // ← Add these states for GameOverModal
+    const [showGameOver, setShowGameOver] = useState(false);
+    const [currentGameSession, setCurrentGameSession] = useState<GameSessionDTO | undefined>();
+    const [isClaiming, setIsClaiming] = useState(false);
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -69,6 +76,12 @@ const GodotGameEmbedBPM: React.FC<GodotGameEmbedBPMProps> = ({
         if (result.success) {
             console.log('✅ Score saved:', result.data);
             setSaveStatus('success');
+
+            // ← Show modal with game session data
+            if (result.data) {
+                setCurrentGameSession(result.data);
+                setShowGameOver(true);
+            }
         } else {
             console.error('❌ Error:', result.error);
             setSaveStatus('error');
@@ -86,161 +99,200 @@ const GodotGameEmbedBPM: React.FC<GodotGameEmbedBPMProps> = ({
         }
     };
 
+    // ← Handle reward claiming
+    const handleClaimReward = async (sessionId: string) => {
+        setIsClaiming(true);
+
+        const result = await gameService.claimReward(sessionId);
+
+        if (result.success && result.data) {
+            console.log('✅ Reward claimed:', result.data);
+            setCurrentGameSession(result.data); // Update session
+            // Optionally: Show success message
+        } else {
+            console.error('❌ Failed to claim reward:', result.error);
+            alert('Failed to claim reward. Please try again.');
+        }
+
+        setIsClaiming(false);
+    };
+
+    // ← Handle play again
+    const handlePlayAgain = () => {
+        setShowGameOver(false);
+        setCurrentGameSession(undefined);
+        setLastScore(null);
+        // Optionally: Reload iframe or reset game state
+        window.location.reload();
+    };
+
     return (
-        <div style={{display: 'flex'}}>
-            <div style={{ width, height, position: 'relative' }}>
-                {isLoading && (
+        <>
+            <div style={{display: 'flex'}}>
+                <div style={{ width, height, position: 'relative' }}>
+                    {isLoading && (
+                        <div style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 100
+                        }}>
+                            <div style={{ textAlign: 'center', color: 'white' }}>
+                                <div style={{ fontSize: '64px', marginBottom: '20px' }}>🎵</div>
+                                <h2 style={{ fontSize: '32px', marginBottom: '15px' }}>{gameTitle}</h2>
+                                <div className="loading-spinner"></div>
+                                <p style={{ fontSize: '14px', opacity: 0.9, marginTop: '10px' }}>
+                                    Match the beat!
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    <iframe
+                        src="/bpm-game/bpm.html"
+                        title={gameTitle}
+                        onLoad={() => {
+                            setIsLoading(false);
+                            console.log('✅ BPM iframe loaded');
+                        }}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            border: 'none',
+                            display: 'block',
+                            background: '#000',
+                            marginLeft: '8rem'
+                        }}
+                        allow="autoplay; fullscreen"
+                    />
+
+                    {process.env.NODE_ENV === 'development' && (
+                        <div style={{
+                            position: 'absolute',
+                            top: '10px',
+                            left: '10px',
+                            background: 'rgba(0,0,0,0.8)',
+                            color: 'white',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            zIndex: 200
+                        }}>
+                            <details>
+                                <summary style={{cursor: 'pointer'}}>🔧 Debug</summary>
+                                <div style={{marginTop: '8px', lineHeight: '1.5'}}>
+                                    <p><strong>Game:</strong> BPM Matcher (iframe)</p>
+                                    <p><strong>Source:</strong> /bpm-game/bpm.html</p>
+                                    <p><strong>Last Score:</strong> {lastScore ?? 'None'}</p>
+                                    <p><strong>Status:</strong> {saveStatus}</p>
+                                    <p><strong>Backend:</strong> {gameService.getBackendUrl()}</p>
+                                    <p><strong>Leaderboard:</strong> {topScores.length} entries</p>
+                                </div>
+                            </details>
+                        </div>
+                    )}
+                </div>
+
+                {saveStatus !== 'idle' && (
                     <div style={{
                         position: 'absolute',
-                        inset: 0,
-                        background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 100
+                        top: '20px',
+                        right: '20px',
+                        padding: '12px 24px',
+                        borderRadius: '8px',
+                        background: saveStatus === 'success' ? '#10b981' : saveStatus === 'error' ? '#ef4444' : '#f59e0b',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        zIndex: 200
                     }}>
-                        <div style={{ textAlign: 'center', color: 'white' }}>
-                            <div style={{ fontSize: '64px', marginBottom: '20px' }}>🎵</div>
-                            <h2 style={{ fontSize: '32px', marginBottom: '15px' }}>{gameTitle}</h2>
-                            <div className="loading-spinner"></div>
-                            <p style={{ fontSize: '14px', opacity: 0.9, marginTop: '10px' }}>
-                                Match the beat!
-                            </p>
-                        </div>
+                        {saveStatus === 'saving' && '💾 Saving...'}
+                        {saveStatus === 'success' && '✅ Saved!'}
+                        {saveStatus === 'error' && '❌ Failed'}
                     </div>
                 )}
 
-                <iframe
-                    src="/bpm-game/bpm.html"
-                    title={gameTitle}
-                    onLoad={() => {
-                        setIsLoading(false);
-                        console.log('✅ BPM iframe loaded');
-                    }}
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        border: 'none',
-                        display: 'block',
-                        background: '#000',
-                        marginLeft: '8rem'
-                    }}
-                    allow="autoplay; fullscreen"
-                />
-
-                {process.env.NODE_ENV === 'development' && (
+                {lastScore !== null && (
                     <div style={{
                         position: 'absolute',
-                        top: '10px',
-                        left: '10px',
-                        background: 'rgba(0,0,0,0.8)',
-                        color: 'white',
-                        padding: '10px',
+                        top: '70px',
+                        right: '20px',
+                        padding: '10px 20px',
                         borderRadius: '8px',
-                        fontSize: '11px',
+                        background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
+                        color: 'white',
+                        fontWeight: 'bold',
                         zIndex: 200
                     }}>
-                        <details>
-                            <summary style={{cursor: 'pointer'}}>🔧 Debug</summary>
-                            <div style={{marginTop: '8px', lineHeight: '1.5'}}>
-                                <p><strong>Game:</strong> BPM Matcher (iframe)</p>
-                                <p><strong>Source:</strong> /bpm-game/bpm.html</p>
-                                <p><strong>Last Score:</strong> {lastScore ?? 'None'}</p>
-                                <p><strong>Status:</strong> {saveStatus}</p>
-                                <p><strong>Backend:</strong> {gameService.getBackendUrl()}</p>
-                                <p><strong>Leaderboard:</strong> {topScores.length} entries</p>
-                            </div>
-                        </details>
+                        Score: <span style={{fontSize: '18px', color: '#fde047'}}>{lastScore}</span>
+                    </div>
+                )}
+
+                {!isLoading && topScores.length > 0 && (
+                    <div style={{
+                        marginTop: '5px',
+                        marginLeft: '105px',
+                        background: 'rgba(0,0,0,0.85)',
+                        borderRadius: '12px',
+                        padding: '15px',
+                        minWidth: '600px',
+                        minHeight: '450px',
+                        backdropFilter: 'blur(10px)'
+                    }}>
+                        <div style={{
+                            color: 'white',
+                            margin: '10px 0',
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            textAlign: 'center'
+                        }}>
+                            🏆 Top BPM Scores
+                        </div>
+                        <div>
+                            {topScores.slice(0, 8).map((entry) => (
+                                <div
+                                    key={`${entry.userId}-${entry.rank}`}
+                                    style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        padding: '18px',
+                                        marginBottom: '5px',
+                                        background: entry.rank <= 3
+                                            ? 'linear-gradient(135deg, rgba(79,172,254,0.3), rgba(0,242,254,0.3))'
+                                            : 'rgba(255,255,255,0.05)',
+                                        borderRadius: '6px',
+                                        color: 'white',
+                                        fontSize: '14px',
+                                        width:'400px'
+                                    }}
+                                >
+                    <span style={{fontWeight: 'bold', marginRight: '10px', fontSize: '18px'}}>
+                      {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : `${entry.rank}.`}
+                    </span>
+                                    <span style={{flex: 1}}>{entry.displayName}</span>
+                                    <span style={{fontWeight: 'bold', color: '#4facfe'}}>
+                      {entry.totalScore.toLocaleString()}
+                    </span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
 
-            {saveStatus !== 'idle' && (
-                <div style={{
-                    position: 'absolute',
-                    top: '20px',
-                    right: '20px',
-                    padding: '12px 24px',
-                    borderRadius: '8px',
-                    background: saveStatus === 'success' ? '#10b981' : saveStatus === 'error' ? '#ef4444' : '#f59e0b',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    zIndex: 200
-                }}>
-                    {saveStatus === 'saving' && '💾 Saving...'}
-                    {saveStatus === 'success' && '✅ Saved!'}
-                    {saveStatus === 'error' && '❌ Failed'}
-                </div>
-            )}
-
-            {lastScore !== null && (
-                <div style={{
-                    position: 'absolute',
-                    top: '70px',
-                    right: '20px',
-                    padding: '10px 20px',
-                    borderRadius: '8px',
-                    background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    zIndex: 200
-                }}>
-                    Score: <span style={{fontSize: '18px', color: '#fde047'}}>{lastScore}</span>
-                </div>
-            )}
-
-            {!isLoading && topScores.length > 0 && (
-                <div style={{
-                    marginTop: '5px',
-                    marginLeft: '105px',
-                    background: 'rgba(0,0,0,0.85)',
-                    borderRadius: '12px',
-                    padding: '15px',
-                    minWidth: '600px',
-                    minHeight: '450px',
-                    backdropFilter: 'blur(10px)'
-                }}>
-                    <div style={{
-                        color: 'white',
-                        margin: '10px 0',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        textAlign: 'center'
-                    }}>
-                        🏆 Top BPM Scores
-                    </div>
-                    <div>
-                        {topScores.slice(0, 8).map((entry) => (
-                            <div
-                                key={`${entry.userId}-${entry.rank}`}
-                                style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    padding: '18px',
-                                    marginBottom: '5px',
-                                    background: entry.rank <= 3
-                                        ? 'linear-gradient(135deg, rgba(79,172,254,0.3), rgba(0,242,254,0.3))'
-                                        : 'rgba(255,255,255,0.05)',
-                                    borderRadius: '6px',
-                                    color: 'white',
-                                    fontSize: '14px',
-                                    width:'400px'
-                                }}
-                            >
-                <span style={{fontWeight: 'bold', marginRight: '10px', fontSize: '18px'}}>
-                  {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : `${entry.rank}.`}
-                </span>
-                                <span style={{flex: 1}}>{entry.displayName}</span>
-                                <span style={{fontWeight: 'bold', color: '#4facfe'}}>
-                  {entry.totalScore.toLocaleString()}
-                </span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-        </div>
+            {/* ← Add GameOverModal */}
+            <GameOverModal
+                isOpen={showGameOver}
+                onClose={() => setShowGameOver(false)}
+                gameSession={currentGameSession}
+                onPlayAgain={handlePlayAgain}
+                onClaimReward={handleClaimReward}
+                claiming={isClaiming}
+            />
+        </>
     );
 };
 

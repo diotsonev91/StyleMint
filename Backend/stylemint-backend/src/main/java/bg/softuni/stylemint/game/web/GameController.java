@@ -1,5 +1,6 @@
 package bg.softuni.stylemint.game.web;
 
+import bg.softuni.stylemint.auth.security.SecurityUtil;
 import bg.softuni.stylemint.game.dto.GameResultDTO;
 import bg.softuni.stylemint.game.dto.GameSessionDTO;
 import bg.softuni.stylemint.game.dto.LeaderboardEntryDTO;
@@ -20,8 +21,7 @@ import java.util.UUID;
 import static bg.softuni.stylemint.config.ApiPaths.BASE;
 
 /**
- * GameController with PRINCIPAL authentication
- * Cleanest approach - just use Principal parameter
+ * GameController - FIXED to handle email-based authentication
  */
 @RestController
 @RequestMapping(BASE + "/games")
@@ -33,23 +33,20 @@ public class GameController {
 
     /**
      * Submit game result and create new session
-     * Uses Principal to get userId from JWT
      */
     @PostMapping("/submit")
     public ResponseEntity<GameSessionDTO> submitGame(
-            Principal principal,  // ← Simple and clean
             @Valid @RequestBody GameResultDTO result) {
-
-        UUID userId = UUID.fromString(principal.getName());
-        return ResponseEntity.ok(gameService.recordGameSession(userId, result));
+        UUID userId = SecurityUtil.getCurrentUserId();
+        return ResponseEntity.ok(gameService.recordGameSession(userId,result));
     }
 
     /**
      * Get current user's game summary/statistics
      */
     @GetMapping("/summary")
-    public ResponseEntity<UserGameSummaryDTO> getUserGameSummary(Principal principal) {
-        UUID userId = UUID.fromString(principal.getName());
+    public ResponseEntity<UserGameSummaryDTO> getUserGameSummary() {
+        UUID userId = SecurityUtil.getCurrentUserId();
         return ResponseEntity.ok(gameService.getUserGameSummary(userId));
     }
 
@@ -57,8 +54,8 @@ public class GameController {
      * Get current user's total score
      */
     @GetMapping("/score")
-    public ResponseEntity<Long> getUserScore(Principal principal) {
-        UUID userId = UUID.fromString(principal.getName());
+    public ResponseEntity<Long> getUserScore() {
+        UUID userId = SecurityUtil.getCurrentUserId();
         return ResponseEntity.ok(gameStatsService.getUserScore(userId));
     }
 
@@ -67,9 +64,8 @@ public class GameController {
      */
     @GetMapping("/sessions")
     public ResponseEntity<List<GameSessionDTO>> getGameHistory(
-            Principal principal,
             @RequestParam(defaultValue = "20") int limit) {
-        UUID userId = UUID.fromString(principal.getName());
+        UUID userId = SecurityUtil.getCurrentUserId();
         return ResponseEntity.ok(gameService.getUserGameHistory(userId, limit));
     }
 
@@ -78,9 +74,8 @@ public class GameController {
      */
     @GetMapping("/type/{gameType}")
     public ResponseEntity<List<GameSessionDTO>> getGamesByType(
-            Principal principal,
             @PathVariable GameType gameType) {
-        UUID userId = UUID.fromString(principal.getName());
+        UUID userId = SecurityUtil.getCurrentUserId();
         return ResponseEntity.ok(gameService.getUserGamesByType(userId, gameType));
     }
 
@@ -89,7 +84,7 @@ public class GameController {
      */
     @GetMapping("/rewards/unclaimed")
     public ResponseEntity<List<GameSessionDTO>> getUnclaimedRewards(Principal principal) {
-        UUID userId = UUID.fromString(principal.getName());
+        UUID userId = SecurityUtil.getCurrentUserId();
         return ResponseEntity.ok(gameService.getUnclaimedRewards(userId));
     }
 
@@ -98,9 +93,8 @@ public class GameController {
      */
     @PostMapping("/sessions/{sessionId}/claim-reward")
     public ResponseEntity<GameSessionDTO> claimReward(
-            Principal principal,
             @PathVariable UUID sessionId) {
-        UUID userId = UUID.fromString(principal.getName());
+        UUID userId = SecurityUtil.getCurrentUserId();
         return ResponseEntity.ok(gameService.claimReward(sessionId, userId));
     }
 
@@ -128,9 +122,8 @@ public class GameController {
      */
     @GetMapping("/best-score/{gameType}")
     public ResponseEntity<Map<String, Integer>> getBestScore(
-            Principal principal,
             @PathVariable GameType gameType) {
-        UUID userId = UUID.fromString(principal.getName());
+        UUID userId = SecurityUtil.getCurrentUserId();
 
         List<GameSessionDTO> sessions = gameService.getUserGamesByType(userId, gameType);
 
@@ -147,9 +140,8 @@ public class GameController {
      */
     @GetMapping("/rank/{gameType}")
     public ResponseEntity<Map<String, Object>> getUserRank(
-            Principal principal,
             @PathVariable GameType gameType) {
-        UUID userId = UUID.fromString(principal.getName());
+        UUID userId = SecurityUtil.getCurrentUserId();
         int rank = gameStatsService.getUserRankForGameType(userId, gameType);
 
         return ResponseEntity.ok(Map.of(

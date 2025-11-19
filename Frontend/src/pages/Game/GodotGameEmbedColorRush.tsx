@@ -1,13 +1,18 @@
-// src/components/GodotGameEmbedColorRush.tsx
-// Updated to use new game.api.ts structure
+// GodotGameEmbedColorRush.tsx - FINAL VERSION
+// Хваща postMessage от WebBridge
 
 import React, { useEffect, useState } from 'react';
-import { gameService, GameType, LeaderboardEntryDTO } from '../../services/gameService';
+import { gameService, GameType, LeaderboardEntryDTO, GameSessionDTO } from '../../services/gameService';
+
 import './GodotGameEmbed.css';
+import GameOverModal from "../../components/games/GameOverModal";
 
 interface GameScore {
     score: number;
     timestamp: number;
+    game_mode?: string;
+    difficulty?: string;
+    date?: string;
 }
 
 interface GodotRunnerGameProps {
@@ -26,23 +31,32 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
     const [topScores, setTopScores] = useState<LeaderboardEntryDTO[]>([]);
 
+    const [showGameOver, setShowGameOver] = useState(false);
+    const [currentGameSession, setCurrentGameSession] = useState<GameSessionDTO | undefined>();
+    const [isClaiming, setIsClaiming] = useState(false);
+
     useEffect(() => {
-        // Setup communication handler
+        // Хващай postMessage от iframe
         const handleMessage = (event: MessageEvent) => {
+            console.log('📥 React received message:', event.data);
+
+            // Провери дали е от Godot
             if (event.data && event.data.type === 'GODOT_GAME_OVER') {
-                console.log('🎮 Game Over received from iframe:', event.data.payload);
+                console.log('✅ GODOT_GAME_OVER detected!');
+                console.log('   Payload:', event.data.payload);
                 handleGameOver(event.data.payload);
+            } else {
+                console.log('   Not a game over message, ignoring');
             }
         };
 
         window.addEventListener('message', handleMessage);
+        console.log('✅ Message listener attached');
 
-        // Also setup global handler (in case Godot can reach parent)
-        (window as any).onGodotGameOver = handleGameOver;
-
-        // Inject config for iframe (no auth token needed - uses cookies)
-        (window as any).GAME_CONFIG = {
-            backendUrl: gameService.getBackendUrl()
+        // Също така setup на fallback (за backward compatibility)
+        (window as any).onGodotGameOver = (data: GameScore) => {
+            console.log('🎮 onGodotGameOver (fallback) called with:', data);
+            handleGameOver(data);
         };
 
         fetchTopScores();
@@ -50,21 +64,27 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
         return () => {
             window.removeEventListener('message', handleMessage);
             delete (window as any).onGodotGameOver;
-            delete (window as any).GAME_CONFIG;
         };
     }, []);
 
     const handleGameOver = async (data: GameScore) => {
-        console.log('🎮 3D Runner Game Over:', data);
-        setLastScore(data.score);
+        console.log('🎮 handleGameOver called with:', data);
 
-        await sendScoreToBackend(data);
+        // WebBridge изпраща Unix timestamp в секунди, конвертирай в milliseconds
+        const score = data.score;
+        const timestamp = data.timestamp ? data.timestamp * 1000 : Date.now();
+
+        console.log('   Processing score:', score);
+        console.log('   Processing timestamp:', timestamp);
+
+        setLastScore(score);
+        await sendScoreToBackend({ score, timestamp });
         await fetchTopScores();
     };
 
-    const sendScoreToBackend = async (gameData: GameScore) => {
+    const sendScoreToBackend = async (gameData: { score: number; timestamp: number }) => {
         setSaveStatus('saving');
-        console.log('💾 Sending score to backend...');
+        console.log('💾 Sending score to backend:', gameData);
 
         const result = await gameService.saveScore({
             score: gameData.score,
@@ -73,8 +93,14 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
         });
 
         if (result.success) {
-            console.log('✅ Score saved:', result.data);
+            console.log('✅ Score saved successfully:', result.data);
             setSaveStatus('success');
+
+            if (result.data) {
+                console.log('   Setting game session and showing modal');
+                setCurrentGameSession(result.data);
+                setShowGameOver(true);
+            }
         } else {
             console.error('❌ Error saving score:', result.error);
             setSaveStatus('error');
@@ -84,7 +110,6 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
     };
 
     const fetchTopScores = async () => {
-        // Fetch Color Rush leaderboard specifically
         const result = await gameService.fetchLeaderboard(GameType.COLOR_RUSH, 10);
 
         if (result.success && result.data) {
@@ -92,9 +117,32 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
         }
     };
 
+    const handleClaimReward = async (sessionId: string) => {
+        setIsClaiming(true);
+
+        const result = await gameService.claimReward(sessionId);
+
+        if (result.success && result.data) {
+            console.log('✅ Reward claimed:', result.data);
+            setCurrentGameSession(result.data);
+        } else {
+            console.error('❌ Failed to claim reward:', result.error);
+            alert('Failed to claim reward. Please try again.');
+        }
+
+        setIsClaiming(false);
+    };
+
+    const handlePlayAgain = () => {
+        setShowGameOver(false);
+        setCurrentGameSession(undefined);
+        setLastScore(null);
+        window.location.reload();
+    };
+
     const handleIframeLoad = () => {
         setIsLoading(false);
-        console.log('✅ 3D Runner iframe loaded');
+        console.log('✅ Iframe loaded and ready');
     };
 
     return (
@@ -103,7 +151,6 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
                 className="godot-game-container runner-game"
                 style={{ width, height, position: 'relative' }}
             >
-                {/* Loading Overlay */}
                 {isLoading && (
                     <div className="game-loading" style={{
                         position: 'absolute',
@@ -125,7 +172,6 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
                     </div>
                 )}
 
-                {/* Game iframe */}
                 <iframe
                     src="/game/runner.html"
                     title={gameTitle}
@@ -141,7 +187,6 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
                     allow="autoplay; fullscreen"
                 />
 
-                {/* Debug Info */}
                 {process.env.NODE_ENV === 'development' && (
                     <div style={{
                         position: 'absolute',
@@ -154,13 +199,15 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
                         fontSize: '11px',
                         zIndex: 200
                     }}>
-                        <details>
+                        <details open>
                             <summary style={{cursor: 'pointer'}}>🔧 Debug</summary>
                             <div style={{marginTop: '8px', lineHeight: '1.5'}}>
                                 <p><strong>Game:</strong> 3D Runner (iframe)</p>
                                 <p><strong>Source:</strong> /game/runner.html</p>
+                                <p><strong>Handler:</strong> postMessage listener</p>
                                 <p><strong>Last Score:</strong> {lastScore ?? 'None'}</p>
                                 <p><strong>Save Status:</strong> {saveStatus}</p>
+                                <p><strong>Modal Open:</strong> {showGameOver ? 'Yes' : 'No'}</p>
                                 <p><strong>Backend:</strong> {gameService.getBackendUrl()}</p>
                                 <p><strong>Leaderboard:</strong> {topScores.length} entries</p>
                             </div>
@@ -169,7 +216,6 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
                 )}
             </div>
 
-            {/* Save Status */}
             {saveStatus !== 'idle' && (
                 <div
                     className={`save-status save-${saveStatus}`}
@@ -192,7 +238,6 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
                 </div>
             )}
 
-            {/* Last Score */}
             {lastScore !== null && (
                 <div
                     className="last-score-badge"
@@ -213,7 +258,6 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
                 </div>
             )}
 
-            {/* Leaderboard */}
             {!isLoading && topScores.length > 0 && (
                 <div
                     className='leaderboard'
@@ -256,18 +300,27 @@ const GodotGameEmbedRush: React.FC<GodotRunnerGameProps> = ({
                                     width:'400px'
                                 }}
                             >
-                <span style={{fontWeight: 'bold', marginRight: '10px', fontSize: '18px'}}>
-                  {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : `${entry.rank}.`}
-                </span>
+                                <span style={{fontWeight: 'bold', marginRight: '10px', fontSize: '18px'}}>
+                                  {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : `${entry.rank}.`}
+                                </span>
                                 <span style={{flex: 1}}>{entry.displayName}</span>
                                 <span style={{fontWeight: 'bold', color: '#fbbf24'}}>
-                  {entry.totalScore.toLocaleString()}
-                </span>
+                                  {entry.totalScore.toLocaleString()}
+                                </span>
                             </div>
                         ))}
                     </div>
                 </div>
             )}
+
+            <GameOverModal
+                isOpen={showGameOver}
+                onClose={() => setShowGameOver(false)}
+                gameSession={currentGameSession}
+                onPlayAgain={handlePlayAgain}
+                onClaimReward={handleClaimReward}
+                claiming={isClaiming}
+            />
         </>
     );
 };

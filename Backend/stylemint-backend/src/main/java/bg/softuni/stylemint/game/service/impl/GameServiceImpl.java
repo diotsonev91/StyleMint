@@ -6,6 +6,7 @@ import bg.softuni.stylemint.game.dto.GameResultDTO;
 import bg.softuni.stylemint.game.dto.GameSessionDTO;
 import bg.softuni.stylemint.game.dto.UserGameSummaryDTO;
 import bg.softuni.stylemint.game.enums.GameType;
+import bg.softuni.stylemint.game.enums.RewardType;
 import bg.softuni.stylemint.game.model.GameSession;
 import bg.softuni.stylemint.game.model.GameStats;
 import bg.softuni.stylemint.game.model.Leaderboard;
@@ -13,11 +14,15 @@ import bg.softuni.stylemint.game.repository.GameSessionRepository;
 import bg.softuni.stylemint.game.repository.GameStatsRepository;
 import bg.softuni.stylemint.game.repository.LeaderboardRepository;
 import bg.softuni.stylemint.game.service.GameService;
+import bg.softuni.stylemint.user.dto.UserDTO;
+
+import bg.softuni.stylemint.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.Principal;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -34,15 +39,19 @@ public class GameServiceImpl implements GameService {
     private final GameStatsRepository gameStatsRepository;
     private final LeaderboardRepository leaderboardRepository;
 
+    private final UserService userService;
+
     @Override
     public GameSessionDTO recordGameSession(UUID userId, GameResultDTO result) {
-        // Create new game session
+
+        RewardType reward = generateReward(userId);
+
         GameSession session = GameSession.builder()
                 .userId(userId)
                 .gameType(result.getGameType())
                 .score(result.getScore())
                 .durationSeconds(result.getDurationSeconds())
-                .rewardType(result.getRewardType())
+                .rewardType(reward)
                 .rewardClaimed(false)
                 .build();
 
@@ -256,4 +265,38 @@ public class GameServiceImpl implements GameService {
                 .playedAt(session.getPlayedAt())
                 .build();
     }
+
+    private RewardType generateReward(UUID userId) {
+
+        long gamesPlayed = gameSessionRepository.countByUserId(userId);
+        boolean isAuthor = userIsAuthorOrDesigner(userId);
+
+        // ---- FIRST GAME EVER ----
+        if (gamesPlayed == 0) {
+            return RewardType.NFT_DISCOUNT;
+        }
+
+        // ---- SECOND AND NEXT GAMES ----
+        if (isAuthor) {
+            boolean hasBadge = gameSessionRepository
+                    .existsByUserIdAndRewardType(userId, RewardType.NFT_AUTHOR_BADGE);
+
+            if (!hasBadge) {
+                return RewardType.NFT_AUTHOR_BADGE;
+            }
+        }
+
+        // ---- RANDOM FOR NORMAL USER OR AUTHOR WHO ALREADY HAS BADGE ----
+        return Math.random() < 0.5
+                ? RewardType.DISCOUNT_20
+                : RewardType.DISCOUNT_40;
+    }
+
+
+    private boolean userIsAuthorOrDesigner(UUID userId) {
+        UserDTO user = userService.findById(userId);
+        return user.getRoles().contains("AUTHOR") || user.getRoles().contains("DESIGNER");
+    }
+
+
 }
