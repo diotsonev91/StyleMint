@@ -4,8 +4,7 @@ import lombok.Data;
 import java.util.UUID;
 
 @Data
-public class TransferResponse {
+public class TransferNftResponse {
     private UUID transactionId;
-    private String status;
     private String message;
 }

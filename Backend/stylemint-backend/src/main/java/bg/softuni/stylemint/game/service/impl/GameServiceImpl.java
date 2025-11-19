@@ -22,7 +22,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.Principal;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -269,33 +268,56 @@ public class GameServiceImpl implements GameService {
     private RewardType generateReward(UUID userId) {
 
         long gamesPlayed = gameSessionRepository.countByUserId(userId);
-        boolean isAuthor = userIsAuthorOrDesigner(userId);
+        UserDTO user = userService.findById(userId);
 
-        // ---- FIRST GAME EVER ----
+        boolean isAuthor = user.getRoles().contains("AUTHOR");
+        boolean isDesigner = user.getRoles().contains("DESIGNER");
+
+
+        // ---- 1) FIRST GAME EVER ----
         if (gamesPlayed == 0) {
-            return RewardType.NFT_DISCOUNT;
-        }
-
-        // ---- SECOND AND NEXT GAMES ----
-        if (isAuthor) {
-            boolean hasBadge = gameSessionRepository
-                    .existsByUserIdAndRewardType(userId, RewardType.NFT_AUTHOR_BADGE);
-
-            if (!hasBadge) {
-                return RewardType.NFT_AUTHOR_BADGE;
+            if (doesNotHaveReward(userId, RewardType.NFT_DISCOUNT_5)) {
+                return RewardType.NFT_DISCOUNT_5;
             }
         }
 
-        // ---- RANDOM FOR NORMAL USER OR AUTHOR WHO ALREADY HAS BADGE ----
-        return Math.random() < 0.5
-                ? RewardType.DISCOUNT_20
-                : RewardType.DISCOUNT_40;
+        // ---- 2) SECOND GAME ----
+        if (gamesPlayed == 1) {
+            if (isAuthor && doesNotHaveReward(userId, RewardType.AUTHOR_BADGE_PRODUCER)) {
+                return RewardType.AUTHOR_BADGE_PRODUCER;
+            }
+
+            if (isDesigner && doesNotHaveReward(userId, RewardType.AUTHOR_BADGE_DESIGNER)) {
+                return RewardType.AUTHOR_BADGE_DESIGNER;
+            }
+        }
+
+        // ---- 3) NEXT 100 GAMES (3rd to 100th) ----
+        if (gamesPlayed >= 2 && gamesPlayed < 100) {
+            // DISCOUNT_20 and DISCOUNT_40 CAN REPEAT → return random always
+            return Math.random() < 0.5
+                    ? RewardType.DISCOUNT_20
+                    : RewardType.DISCOUNT_40;
+        }
+
+        // ---- 4) AFTER 100 GAMES ----
+        if (gamesPlayed >= 100) {
+            if (doesNotHaveReward(userId, RewardType.NFT_DISCOUNT_7)) {
+                return RewardType.NFT_DISCOUNT_7;
+            }
+
+            // If NFT_DISCOUNT_7 already given → keep giving normal discounts
+            return Math.random() < 0.5
+                    ? RewardType.DISCOUNT_20
+                    : RewardType.DISCOUNT_40;
+        }
+
+        // Just in case
+        return null;
     }
 
-
-    private boolean userIsAuthorOrDesigner(UUID userId) {
-        UserDTO user = userService.findById(userId);
-        return user.getRoles().contains("AUTHOR") || user.getRoles().contains("DESIGNER");
+    private boolean doesNotHaveReward(UUID userId, RewardType rewardType) {
+        return !gameSessionRepository.existsByUserIdAndRewardType(userId, rewardType);
     }
 
 

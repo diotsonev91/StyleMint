@@ -1,13 +1,13 @@
-// NftService.java
 package bg.softuni.stylemint.nft.service;
 
+import bg.softuni.dtos.nft.*;
 import bg.softuni.stylemint.blockchain.model.Transaction;
 import bg.softuni.stylemint.blockchain.service.TransactionService;
-import bg.softuni.stylemint.external.dto.nft.*;
-import bg.softuni.stylemint.nft.model.PseudoToken;
+import bg.softuni.stylemint.nft.model.*;
 import bg.softuni.stylemint.nft.repository.PseudoTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -18,99 +18,47 @@ public class NftService {
 
     private final PseudoTokenRepository tokenRepository;
     private final TransactionService transactionService;
+    private final BadgeCertificatePdfService pdfService;
 
-    public NftBadgeResponse mintBadge(NftBadgeRequest request) {
-        System.out.println("=== MINT BADGE REQUEST ===");
-        System.out.println("OwnerId: " + request.getOwnerId());
-        System.out.println("Name: " + request.getName());
-        System.out.println("Description: " + request.getDescription());
-        System.out.println("Metadata: " + request.getMetadata());
-
-        // Create pseudo token
+    public MintNftResponse mintNft(MintNftRequest request) {
+        // Create token
         PseudoToken token = new PseudoToken();
         token.setOwnerId(request.getOwnerId());
-        token.setName(request.getName() != null ? request.getName() : "Unnamed Badge"); // Default name
-        token.setDescription(request.getDescription());
-        token.setTokenType("BADGE");
-        token.setMetadata(request.getMetadata());
-        token.setIsTransferable(request.getIsTransferable() != null ? request.getIsTransferable() : true);
-
-        System.out.println("Token before save: " + token);
+        token.setNftType(request.getNftType());
 
         PseudoToken savedToken = tokenRepository.save(token);
 
-        System.out.println("Token after save: " + savedToken);
         // Create blockchain transaction
         Transaction transaction = new Transaction();
         transaction.setToUserId(request.getOwnerId());
         transaction.setTokenId(savedToken.getTokenId().toString());
-        transaction.setTokenType("BADGE");
-        transaction.setMetadata("MINT: " + request.getName());
+        transaction.setNftType(request.getNftType());
+        transaction.setTransactionType(Transaction.TransactionType.MINT);
 
         transactionService.processTransaction(transaction);
 
         // Build response
-        NftBadgeResponse response = new NftBadgeResponse();
+        MintNftResponse response = new MintNftResponse();
         response.setTokenId(savedToken.getTokenId());
         response.setTransactionId(transaction.getTransactionId());
-        response.setStatus("MINTED");
+        response.setMessage("NFT minted successfully");
 
         return response;
     }
 
-    public UserBadgesResponse getUserBadges(UUID userId) {
-        List<PseudoToken> badges = tokenRepository.findByOwnerIdAndTokenType(userId, "BADGE");
+    public UserNftsResponse getUserNfts(UUID userId) {
+        List<PseudoToken> tokens = tokenRepository.findByOwnerId(userId);
 
-        UserBadgesResponse response = new UserBadgesResponse();
+        UserNftsResponse response = new UserNftsResponse();
         response.setUserId(userId);
-        response.setBadges(badges.stream()
-                .map(this::mapToBadgeInfo)
+        response.setNfts(tokens.stream()
+                .map(this::mapToNftInfo)
                 .collect(Collectors.toList()));
 
         return response;
     }
 
-    public AchievementResponse unlockAchievement(AchievementRequest request) {
-        // Similar to mintBadge but for achievements
-        PseudoToken achievement = new PseudoToken();
-        achievement.setOwnerId(request.getUserId());
-        achievement.setName(request.getAchievementName());
-        achievement.setDescription(request.getDescription());
-        achievement.setTokenType("ACHIEVEMENT");
-        achievement.setMetadata(request.getMetadata());
-        achievement.setIsTransferable(false);
-
-        PseudoToken savedAchievement = tokenRepository.save(achievement);
-
-        Transaction transaction = new Transaction();
-        transaction.setToUserId(request.getUserId());
-        transaction.setTokenId(savedAchievement.getTokenId().toString());
-        transaction.setTokenType("ACHIEVEMENT");
-        transaction.setMetadata("UNLOCK: " + request.getAchievementName());
-
-        transactionService.processTransaction(transaction);
-
-        AchievementResponse response = new AchievementResponse();
-        response.setAchievementId(savedAchievement.getTokenId());
-        response.setTransactionId(transaction.getTransactionId());
-        response.setStatus("UNLOCKED");
-
-        return response;
-    }
-
-    public UserAssetsResponse getUserAssets(UUID userId) {
-        List<PseudoToken> assets = tokenRepository.findByOwnerId(userId);
-
-        UserAssetsResponse response = new UserAssetsResponse();
-        response.setUserId(userId);
-        response.setAssets(assets.stream()
-                .map(this::mapToAssetInfo)
-                .collect(Collectors.toList()));
-
-        return response;
-    }
-
-    public TransferResponse transferAsset(TransferRequest request) {
+    public TransferNftResponse transferNft(TransferNftRequest request) {
         // Find the token
         PseudoToken token = tokenRepository.findByTokenId(request.getTokenId())
                 .orElseThrow(() -> new RuntimeException("Token not found"));
@@ -118,6 +66,11 @@ public class NftService {
         // Verify ownership
         if (!token.getOwnerId().equals(request.getFromUserId())) {
             throw new RuntimeException("User does not own this token");
+        }
+
+        // Check if token is transferable
+        if (!token.isTransferable()) {
+            throw new RuntimeException("This NFT is not transferable");
         }
 
         // Update ownership
@@ -129,35 +82,35 @@ public class NftService {
         transaction.setFromUserId(request.getFromUserId());
         transaction.setToUserId(request.getToUserId());
         transaction.setTokenId(token.getTokenId().toString());
-        transaction.setTokenType(token.getTokenType());
-        transaction.setMetadata("TRANSFER: " + token.getName());
+        transaction.setNftType(token.getNftType());
+        transaction.setTransactionType(Transaction.TransactionType.TRANSFER);
 
         transactionService.processTransaction(transaction);
 
-        TransferResponse response = new TransferResponse();
+        TransferNftResponse response = new TransferNftResponse();
         response.setTransactionId(transaction.getTransactionId());
-        response.setStatus("TRANSFERRED");
+        response.setMessage("NFT transferred successfully");
 
         return response;
     }
 
-    private UserBadgesResponse.BadgeInfo mapToBadgeInfo(PseudoToken token) {
-        UserBadgesResponse.BadgeInfo badgeInfo = new UserBadgesResponse.BadgeInfo();
-        badgeInfo.setTokenId(token.getTokenId());
-        badgeInfo.setName(token.getName());
-        badgeInfo.setDescription(token.getDescription());
-        badgeInfo.setMetadata(token.getMetadata());
-        badgeInfo.setCreatedAt(token.getCreatedAt());
-        return badgeInfo;
+    public byte[] generateBadgeCertificatePdf(UUID tokenId, String ownerName) {
+        PseudoToken token = tokenRepository.findByTokenId(tokenId)
+                .orElseThrow(() -> new RuntimeException("Token not found"));
+
+        if (!token.getNftType().isAuthorBadge()) {
+            throw new RuntimeException("Certificate can only be generated for author badges");
+        }
+
+        return pdfService.generateCertificatePdf(token, ownerName);
     }
 
-    private UserAssetsResponse.AssetInfo mapToAssetInfo(PseudoToken token) {
-        UserAssetsResponse.AssetInfo assetInfo = new UserAssetsResponse.AssetInfo();
-        assetInfo.setTokenId(token.getTokenId());
-        assetInfo.setName(token.getName());
-        assetInfo.setTokenType(token.getTokenType());
-        assetInfo.setMetadata(token.getMetadata());
-        assetInfo.setCreatedAt(token.getCreatedAt());
-        return assetInfo;
+    private UserNftsResponse.NftInfo mapToNftInfo(PseudoToken token) {
+        UserNftsResponse.NftInfo nftInfo = new UserNftsResponse.NftInfo();
+        nftInfo.setTokenId(token.getTokenId());
+        nftInfo.setNftType(token.getNftType());
+        nftInfo.setIsTransferable(token.isTransferable());
+        nftInfo.setCreatedAt(token.getCreatedAt());
+        return nftInfo;
     }
 }

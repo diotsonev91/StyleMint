@@ -4,9 +4,8 @@ import lombok.Data;
 import java.util.UUID;
 
 @Data
-public class TransferRequest {
+public class TransferNftRequest {
     private UUID tokenId;
     private UUID fromUserId;
     private UUID toUserId;
-    private String metadata;
 }

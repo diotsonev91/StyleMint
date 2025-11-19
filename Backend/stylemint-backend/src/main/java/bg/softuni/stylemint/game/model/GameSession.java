@@ -68,4 +68,19 @@ public class GameSession {
     @Column(name = "played_at", nullable = false)
     private OffsetDateTime playedAt;
 
+
+    /**
+     * Whether the NFT reward has been minted
+     * Only applicable for NFT reward types
+     */
+    @Column(name = "nft_minted", nullable = false)
+    @Builder.Default
+    private Boolean nftMinted = false;
+
+    /**
+     * The minted NFT token ID from the NFT service
+     * This is the ONLY reference we need - the NFT microservice owns all other details
+     */
+    @Column(name = "nft_token_id")
+    private UUID nftTokenId;
 }

@@ -63,4 +63,6 @@ public interface GameSessionRepository extends JpaRepository<GameSession, UUID> 
     long countByUserIdAndRewardClaimedFalse(UUID userId);
 
     boolean existsByUserIdAndRewardType(UUID userId, RewardType rewardType);
+
+    List<GameSession> findClaimedNftRewardsNotMinted();
 }

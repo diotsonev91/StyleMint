@@ -1,6 +1,6 @@
-// Transaction.java
 package bg.softuni.stylemint.blockchain.model;
 
+import bg.softuni.dtos.enums.nft.NftType;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -12,11 +12,11 @@ public class Transaction {
     @Id
     private String id;
     private UUID transactionId;
-    private UUID fromUserId;
+    private UUID fromUserId;  // null for minting
     private UUID toUserId;
     private String tokenId;
-    private String tokenType; // "BADGE", "ASSET"
-    private String metadata;
+    private NftType nftType;
+    private TransactionType transactionType;
     private Long timestamp;
     private String blockHash;
     private TransactionStatus status;
@@ -28,6 +28,13 @@ public class Transaction {
     }
 
     public enum TransactionStatus {
-        PENDING, CONFIRMED, FAILED
+        PENDING,
+        CONFIRMED,
+        FAILED
+    }
+
+    public enum TransactionType {
+        MINT,
+        TRANSFER
     }
 }

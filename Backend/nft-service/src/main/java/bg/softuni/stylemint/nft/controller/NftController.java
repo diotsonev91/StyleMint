@@ -1,10 +1,13 @@
-// NftController.java
 package bg.softuni.stylemint.nft.controller;
 
-import bg.softuni.stylemint.external.dto.nft.*;
+import bg.softuni.dtos.nft.*;
 import bg.softuni.stylemint.nft.service.NftService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.UUID;
 
 @RestController
@@ -14,28 +17,34 @@ public class NftController {
 
     private final NftService nftService;
 
-    @PostMapping("/badges/mint")
-    public NftBadgeResponse mintBadge(@RequestBody NftBadgeRequest request) {
-        return nftService.mintBadge(request);
+    @PostMapping("/mint")
+    public MintNftResponse mintNft(@RequestBody MintNftRequest request) {
+        return nftService.mintNft(request);
     }
 
-    @GetMapping("/badges/user/{userId}")
-    public UserBadgesResponse getUserBadges(@PathVariable UUID userId) {
-        return nftService.getUserBadges(userId);
+    @GetMapping("/user/{userId}")
+    public UserNftsResponse getUserNfts(@PathVariable UUID userId) {
+        return nftService.getUserNfts(userId);
     }
 
-    @PostMapping("/badges/achievement/unlock")
-    public AchievementResponse unlockAchievement(@RequestBody AchievementRequest request) {
-        return nftService.unlockAchievement(request);
+    @PostMapping("/transfer")
+    public TransferNftResponse transferNft(@RequestBody TransferNftRequest request) {
+        return nftService.transferNft(request);
     }
 
-    @GetMapping("/assets/user/{userId}")
-    public UserAssetsResponse getUserAssets(@PathVariable UUID userId) {
-        return nftService.getUserAssets(userId);
-    }
+    @GetMapping("/badge/certificate/{tokenId}")
+    public ResponseEntity<byte[]> downloadBadgeCertificate(
+            @PathVariable UUID tokenId,
+            @RequestParam String ownerName) {
 
-    @PostMapping("/assets/transfer")
-    public TransferResponse transferAsset(@RequestBody TransferRequest request) {
-        return nftService.transferAsset(request);
+        byte[] pdfBytes = nftService.generateBadgeCertificatePdf(tokenId, ownerName);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "badge-certificate.pdf");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
     }
 }

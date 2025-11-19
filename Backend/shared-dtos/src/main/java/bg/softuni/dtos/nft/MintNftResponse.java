@@ -4,9 +4,8 @@ import lombok.Data;
 import java.util.UUID;
 
 @Data
-public class NftBadgeResponse {
+public class MintNftResponse {
     private UUID tokenId;
     private UUID transactionId;
-    private String status;
     private String message;
 }

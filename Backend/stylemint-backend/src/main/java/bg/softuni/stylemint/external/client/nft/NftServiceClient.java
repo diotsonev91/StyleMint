@@ -1,4 +1,4 @@
-// NftServiceClient.java
+// NftServiceClient.java - SIMPLIFIED VERSION
 package bg.softuni.stylemint.external.client.nft;
 
 import bg.softuni.dtos.nft.*;
@@ -10,18 +10,18 @@ import java.util.UUID;
 @FeignClient(name = "nft-service", url = "${app.services.nft.url}")
 public interface NftServiceClient {
 
-    @PostMapping("/api/nft/badges/mint")
-    NftBadgeResponse mintBadge(@RequestBody NftBadgeRequest request);
+    @PostMapping("/api/nft/mint")
+    MintNftResponse mintNft(@RequestBody MintNftRequest request);
 
-    @GetMapping("/api/nft/badges/user/{userId}")
-    UserBadgesResponse getUserBadges(@PathVariable UUID userId);
+    @GetMapping("/api/nft/user/{userId}")
+    UserNftsResponse getUserNfts(@PathVariable("userId") UUID userId);
 
-    @PostMapping("/api/nft/badges/achievement/unlock")
-    AchievementResponse unlockAchievement(@RequestBody AchievementRequest request);
+    @PostMapping("/api/nft/transfer")
+    TransferNftResponse transferNft(@RequestBody TransferNftRequest request);
 
-    @GetMapping("/api/nft/assets/user/{userId}")
-    UserAssetsResponse getUserAssets(@PathVariable UUID userId);
-
-    @PostMapping("/api/nft/assets/transfer")
-    TransferResponse transferAsset(@RequestBody TransferRequest request);
+    @GetMapping("/api/nft/badge/certificate/{tokenId}")
+    byte[] downloadBadgeCertificate(
+            @PathVariable("tokenId") UUID tokenId,
+            @RequestParam("ownerName") String ownerName
+    );
 }
