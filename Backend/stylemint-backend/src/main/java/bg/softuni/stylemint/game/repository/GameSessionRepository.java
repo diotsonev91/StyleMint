@@ -41,11 +41,6 @@ public interface GameSessionRepository extends JpaRepository<GameSession, UUID> 
     List<GameSession> findByUserIdAndRewardClaimedFalse(UUID userId);
 
     /**
-     * Find sessions played after a certain date
-     */
-    List<GameSession> findByUserIdAndPlayedAtAfter(UUID userId, OffsetDateTime date);
-
-    /**
      * Get total score for a user
      */
     @Query("SELECT COALESCE(SUM(gs.score), 0) FROM GameSession gs WHERE gs.userId = :userId")
@@ -64,5 +59,10 @@ public interface GameSessionRepository extends JpaRepository<GameSession, UUID> 
 
     boolean existsByUserIdAndRewardType(UUID userId, RewardType rewardType);
 
+    @Query("""
+    SELECT g FROM GameSession g 
+    WHERE g.rewardClaimed = true 
+    AND g.nftMinted = false
+""")
     List<GameSession> findClaimedNftRewardsNotMinted();
 }

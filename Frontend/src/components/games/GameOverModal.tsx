@@ -25,52 +25,75 @@ const GameOverModal: React.FC<GameOverModalProps> = ({
                                                      }) => {
     if (!isOpen || !gameSession) return null;
 
-    const hasReward = gameSession.rewardType && gameSession.rewardType !== RewardType.NONE;
+    const hasReward = !!gameSession.rewardType;
 
     const getRewardInfo = (rewardType?: RewardType) => {
         switch (rewardType) {
             case RewardType.DISCOUNT_20:
                 return {
-                    icon: '🎟️',
-                    text: '20% Discount',
-                    color: '#10b981',
-                    description: 'on your next purchase!',
-                    rarity: 'Common'
+                    icon: "🎟️",
+                    text: "20% Discount",
+                    color: "#10b981",
+                    description: "On your next purchase!",
+                    rarity: "Common"
                 };
+
             case RewardType.DISCOUNT_40:
                 return {
-                    icon: '🎟️',
-                    text: '40% Discount',
-                    color: '#3b82f6',
-                    description: 'Amazing deal!',
-                    rarity: 'Rare'
+                    icon: "🎟️",
+                    text: "40% Discount",
+                    color: "#3b82f6",
+                    description: "Amazing deal!",
+                    rarity: "Rare"
                 };
-            case RewardType.NFT_DISCOUNT:
+
+            case RewardType.NFT_DISCOUNT_5:
                 return {
-                    icon: '💎',
-                    text: 'NFT Discount',
-                    color: '#8b5cf6',
-                    description: 'Exclusive NFT discount!',
-                    rarity: 'Epic'
+                    icon: "💎",
+                    text: "5% NFT Discount",
+                    color: "#8b5cf6",
+                    description: "Permanent 5% off while you hold the NFT.",
+                    rarity: "Epic"
                 };
-            case RewardType.NFT_AUTHOR_BADGE:
+
+            case RewardType.NFT_DISCOUNT_7:
                 return {
-                    icon: '🏅',
-                    text: 'Author Badge NFT',
-                    color: '#f59e0b',
-                    description: 'Legendary reward!',
-                    rarity: 'Legendary'
+                    icon: "💎",
+                    text: "7% NFT Discount",
+                    color: "#a855f7",
+                    description: "Permanent 7% off while you hold the NFT.",
+                    rarity: "Epic"
                 };
+
+            case RewardType.AUTHOR_BADGE_DESIGNER:
+                return {
+                    icon: "🎨",
+                    text: "Designer Badge",
+                    color: "#f59e0b",
+                    description: "Exclusive NFT badge for style designers.",
+                    rarity: "Legendary"
+                };
+
+            case RewardType.AUTHOR_BADGE_PRODUCER:
+                return {
+                    icon: "🎵",
+                    text: "Producer Badge",
+                    color: "#fbbf24",
+                    description: "Exclusive NFT badge for music producers.",
+                    rarity: "Legendary"
+                };
+
             default:
                 return {
-                    icon: '🏆',
-                    text: 'No Reward',
-                    color: '#6b7280',
-                    description: 'Better luck next time!',
-                    rarity: 'None'
+                    icon: "🏆",
+                    text: "No Reward",
+                    color: "#6b7280",
+                    description: "Better luck next time!",
+                    rarity: "None"
                 };
         }
     };
+
 
     const getGameInfo = (gameType?: GameType) => {
         switch (gameType) {

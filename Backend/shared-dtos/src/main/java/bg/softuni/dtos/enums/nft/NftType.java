@@ -28,4 +28,9 @@ public enum NftType {
             default -> 0;
         };
     }
+
+    public boolean hasCertificate() {
+        return this == AUTHOR_BADGE_DESIGNER ||
+                this == AUTHOR_BADGE_PRODUCER;
+    }
 }

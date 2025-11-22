@@ -1,5 +1,5 @@
 // NftServiceException.java
-package bg.softuni.stylemint.external.facade.nft;
+package bg.softuni.stylemint.external.exceptions.nft;
 
 public class NftServiceException extends RuntimeException {
 

@@ -12,12 +12,19 @@ export enum GameType {
 }
 
 export enum RewardType {
+    // Standard discounts
     DISCOUNT_20 = "DISCOUNT_20",
     DISCOUNT_40 = "DISCOUNT_40",
-    NFT_DISCOUNT = "NFT_DISCOUNT",
-    NFT_AUTHOR_BADGE = "NFT_AUTHOR_BADGE",
-    NONE = "NONE",
+
+    // NFT discounts
+    NFT_DISCOUNT_5 = "NFT_DISCOUNT_5",
+    NFT_DISCOUNT_7 = "NFT_DISCOUNT_7",
+
+    // NFT author badges
+    AUTHOR_BADGE_DESIGNER = "AUTHOR_BADGE_DESIGNER",
+    AUTHOR_BADGE_PRODUCER = "AUTHOR_BADGE_PRODUCER",
 }
+
 
 // Payload sent from client → backend
 export interface GameResultDTO {

@@ -87,4 +87,5 @@ export const nftService = {
         };
         return typeMap[nftType] || nftType;
     },
+
 };

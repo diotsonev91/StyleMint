@@ -8,6 +8,7 @@ export interface NftInfo {
     nftType: string;
     isTransferable: boolean;
     createdAt: number;
+    hasCertificate: boolean;
 }
 
 export interface UserNftsResponse {

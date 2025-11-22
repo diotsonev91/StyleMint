@@ -83,4 +83,6 @@ public class GameSession {
      */
     @Column(name = "nft_token_id")
     private UUID nftTokenId;
+
+
 }

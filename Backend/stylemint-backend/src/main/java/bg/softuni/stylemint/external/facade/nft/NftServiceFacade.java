@@ -4,7 +4,9 @@ package bg.softuni.stylemint.external.facade.nft;
 import bg.softuni.dtos.enums.nft.NftType;
 import bg.softuni.dtos.nft.*;
 import bg.softuni.stylemint.external.client.nft.NftServiceClient;
+import bg.softuni.stylemint.external.exceptions.nft.NftServiceException;
 import bg.softuni.stylemint.game.enums.RewardType;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -85,15 +87,27 @@ public class NftServiceFacade {
         log.debug("Downloading badge certificate for tokenId: {}, owner: {}", tokenId, ownerName);
 
         try {
-            byte[] pdfBytes = nftServiceClient.downloadBadgeCertificate(tokenId, ownerName);
-            log.info("✅ Certificate downloaded successfully for tokenId: {}", tokenId);
-            return pdfBytes;
+            return nftServiceClient.downloadBadgeCertificate(tokenId, ownerName);
+
+        } catch (FeignException e) {
+
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+
+            // SPECIAL CASE → NFT сервис казва "Certificate can only be generated for author badges"
+            if (msg.contains("author badges")) {
+                log.warn("❌ Certificate not supported for this NFT type. tokenId={}", tokenId);
+                throw new NftServiceException("CERTIFICATE_NOT_SUPPORTED");
+            }
+
+            log.error("❌ Failed to download certificate for tokenId: {}, error: {}", tokenId, e.getMessage());
+            throw new NftServiceException("Failed to download badge certificate", e);
 
         } catch (Exception e) {
-            log.error("❌ Failed to download certificate for tokenId: {}, error: {}", tokenId, e.getMessage());
+            log.error("❌ Unexpected error while downloading certificate: {}", e.getMessage(), e);
             throw new NftServiceException("Failed to download badge certificate", e);
         }
     }
+
 
     /**
      * Convert RewardType to NftType enum (1:1 mapping with shared library)

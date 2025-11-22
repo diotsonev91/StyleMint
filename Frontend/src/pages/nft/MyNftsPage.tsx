@@ -28,19 +28,29 @@ export function MyNftsPage() {
     };
 
     const handleDownload = async (tokenId: string) => {
-        try {
-            await nftService.downloadCertificate(tokenId);
-            alert('✅ Certificate downloaded successfully!');
-        } catch (err) {
-            alert('❌ Failed to download certificate. Please try again.');
+        const nft = nfts.find(n => n.tokenId === tokenId);
+        if (nft?.hasCertificate) {
+            try {
+                await nftService.downloadCertificate(tokenId);
+                alert('✅ Certificate downloaded successfully!');
+            } catch (err) {
+                alert('❌ Failed to download certificate. Please try again.');
+            }
+        } else {
+            alert('❌ This NFT does not have a certificate available.');
         }
     };
 
     const handlePreview = async (tokenId: string) => {
-        try {
-            await nftService.previewCertificate(tokenId);
-        } catch (err) {
-            alert('❌ Failed to preview certificate. Please try again.');
+        const nft = nfts.find(n => n.tokenId === tokenId);
+        if (nft?.hasCertificate) {
+            try {
+                await nftService.previewCertificate(tokenId);
+            } catch (err) {
+                alert('❌ Failed to preview certificate. Please try again.');
+            }
+        } else {
+            alert('❌ This NFT does not have a certificate available.');
         }
     };
 

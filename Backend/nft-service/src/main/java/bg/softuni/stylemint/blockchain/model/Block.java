@@ -12,14 +12,18 @@ import java.util.List;
 @Data
 @Document(collection = "blocks")
 public class Block {
+
     @Id
-    private String id;
+    private String id; // MongoDB ObjectId
+
     private Long index;
     private Long timestamp;
     private String previousHash;
     private String hash;
     private Integer nonce;
+
     private List<Transaction> transactions;
+
     private Integer difficulty;
 
     public Block() {

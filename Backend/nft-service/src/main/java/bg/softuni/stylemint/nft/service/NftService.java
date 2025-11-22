@@ -31,7 +31,7 @@ public class NftService {
         // Create blockchain transaction
         Transaction transaction = new Transaction();
         transaction.setToUserId(request.getOwnerId());
-        transaction.setTokenId(savedToken.getTokenId().toString());
+        transaction.setTokenId(savedToken.getTokenId());
         transaction.setNftType(request.getNftType());
         transaction.setTransactionType(Transaction.TransactionType.MINT);
 
@@ -81,7 +81,7 @@ public class NftService {
         Transaction transaction = new Transaction();
         transaction.setFromUserId(request.getFromUserId());
         transaction.setToUserId(request.getToUserId());
-        transaction.setTokenId(token.getTokenId().toString());
+        transaction.setTokenId(token.getTokenId());
         transaction.setNftType(token.getNftType());
         transaction.setTransactionType(Transaction.TransactionType.TRANSFER);
 

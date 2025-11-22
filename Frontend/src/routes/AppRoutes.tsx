@@ -25,6 +25,7 @@ import UserPacksPage from "../pages/Sounds/UserPacksPage";
 import EditPackPage from "../pages/Sounds/EditPackPage";
 import {MyClothDesignsPage} from "../pages/Clothes/MyClothDesignsPage";
 import {EditClothDesignPage} from "../pages/Clothes/EditClothDesignPage";
+import {MyNftsPage} from "../pages/nft/MyNftsPage";
 
 // You can easily expand this later with private routes or 404 pages
 export const AppRoutes: React.FC = () => {
@@ -57,6 +58,8 @@ export const AppRoutes: React.FC = () => {
        <Route path="/checkout/success" element={<CheckoutSuccess />} />
         <Route path="/edit-design" element={<EditClothDesignPage />} />
         <Route path="/edit-sample/:sampleId" element={<EditSamplePage />} />
+
+        <Route path="/my-nfts" element={<MyNftsPage />} />
     </Routes>
   );
 };

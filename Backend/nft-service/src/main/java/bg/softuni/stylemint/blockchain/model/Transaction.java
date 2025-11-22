@@ -9,16 +9,23 @@ import java.util.UUID;
 @Data
 @Document(collection = "transactions")
 public class Transaction {
+
     @Id
     private String id;
+
     private UUID transactionId;
-    private UUID fromUserId;  // null for minting
+    private UUID fromUserId;
     private UUID toUserId;
-    private String tokenId;
+
+    private UUID tokenId;
+
     private NftType nftType;
     private TransactionType transactionType;
+
     private Long timestamp;
+
     private String blockHash;
+
     private TransactionStatus status;
 
     public Transaction() {

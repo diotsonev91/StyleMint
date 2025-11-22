@@ -25,11 +25,8 @@ public class NftMintingScheduler {
     private final GameSessionRepository gameSessionRepository;
     private final NftServiceFacade nftServiceFacade;
 
-    /**
-     * Process claimed NFT rewards and mint them
-     * Runs every 5 minutes (300000ms)
-     */
-    @Scheduled(fixedDelay = 300000)
+
+    @Scheduled(fixedDelayString = "${scheduler.nft-minting.delay-ms}")
     @Transactional
     public void processClaimedNftRewards() {
         log.debug("🔄 Starting NFT minting scheduler...");
