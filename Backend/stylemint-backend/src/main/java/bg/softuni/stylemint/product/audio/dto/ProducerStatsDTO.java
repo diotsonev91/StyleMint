@@ -15,4 +15,5 @@ public class ProducerStatsDTO {
     private Double totalRevenue;
     private Double averageRating;
     private Integer totalDownloads;
+    private Long totalSales;
 }

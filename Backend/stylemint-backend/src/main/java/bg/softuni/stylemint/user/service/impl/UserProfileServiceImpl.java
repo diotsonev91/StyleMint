@@ -71,14 +71,5 @@ public class UserProfileServiceImpl implements UserProfileService {
         userRepository.save(user);
     }
 
-    @Override
-    @Transactional
-    public void updateUserRoles(UUID userId, Set<UserRole> newRoles) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
-        user.setRoles(new HashSet<>(newRoles));
-        userRepository.save(user);
-    }
 
 }

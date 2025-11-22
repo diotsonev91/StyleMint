@@ -3,6 +3,8 @@ package bg.softuni.stylemint.common.exception;
 import bg.softuni.stylemint.auth.exception.InvalidCredentialsException;
 import bg.softuni.stylemint.auth.exception.InvalidTokenException;
 import bg.softuni.stylemint.auth.exception.MissingTokenException;
+import bg.softuni.stylemint.common.dto.ErrorResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -12,9 +14,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 
-import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -22,79 +23,74 @@ public class GlobalExceptionHandler {
     // ==================== Domain Exceptions ====================
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<?> handleNotFound(NotFoundException ex) {
-        return build(HttpStatus.NOT_FOUND, ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex, HttpServletRequest request) {
+        ErrorResponse error = ErrorResponse.of("Not Found", ex.getMessage(), HttpStatus.NOT_FOUND.value(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<?> handleConflict(ConflictException ex) {
-        return build(HttpStatus.CONFLICT, ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex, HttpServletRequest request) {
+        ErrorResponse error = ErrorResponse.of("Conflict", ex.getMessage(), HttpStatus.CONFLICT.value(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(ForbiddenOperationException.class)
-    public ResponseEntity<?> handleForbidden(ForbiddenOperationException ex) {
-        return build(HttpStatus.FORBIDDEN, ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenOperationException ex, HttpServletRequest request) {
+        ErrorResponse error = ErrorResponse.of("Forbidden", ex.getMessage(), HttpStatus.FORBIDDEN.value(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
     // ==================== Authentication Exceptions ====================
 
     @ExceptionHandler({InvalidCredentialsException.class, BadCredentialsException.class, UsernameNotFoundException.class})
-    public ResponseEntity<?> handleInvalidCredentials(Exception ex) {
-        // Don't expose whether user exists or not - generic message for security
-        return build(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+    public ResponseEntity<ErrorResponse> handleInvalidCredentials(Exception ex, HttpServletRequest request) {
+        ErrorResponse error = ErrorResponse.of("Unauthorized", "Invalid email or password", HttpStatus.UNAUTHORIZED.value(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
     @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<?> handleInvalidToken(InvalidTokenException ex) {
-        return build(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException ex, HttpServletRequest request) {
+        ErrorResponse error = ErrorResponse.of("Unauthorized", ex.getMessage(), HttpStatus.UNAUTHORIZED.value(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
     @ExceptionHandler(MissingTokenException.class)
-    public ResponseEntity<?> handleMissingToken(MissingTokenException ex) {
-        return build(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleMissingToken(MissingTokenException ex, HttpServletRequest request) {
+        ErrorResponse error = ErrorResponse.of("Unauthorized", ex.getMessage(), HttpStatus.UNAUTHORIZED.value(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
     // ==================== Validation Exceptions ====================
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> handleValidationErrors(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
+    public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        List<String> details = ex.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.toList());
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                Map.of(
-                        "status", HttpStatus.BAD_REQUEST.value(),
-                        "error", "Validation Failed",
-                        "message", "Invalid input data",
-                        "errors", errors,
-                        "timestamp", OffsetDateTime.now()
-                )
+        ErrorResponse error = ErrorResponse.withDetails(
+                "Validation Failed",
+                "Invalid input data",
+                HttpStatus.BAD_REQUEST.value(),
+                request.getRequestURI(),
+                details
         );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     // ==================== Generic Exception ====================
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleGeneric(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex, HttpServletRequest request) {
         // Log the full exception for debugging
         ex.printStackTrace(); // TODO: Replace with proper logger
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
-    }
 
-    // ==================== Helper Method ====================
-
-    private ResponseEntity<Map<String, Object>> build(HttpStatus status, String msg) {
-        return ResponseEntity.status(status).body(
-                Map.of(
-                        "status", status.value(),
-                        "error", status.getReasonPhrase(),
-                        "message", msg,
-                        "timestamp", OffsetDateTime.now()
-                )
+        ErrorResponse error = ErrorResponse.of(
+                "Internal Server Error",
+                "An unexpected error occurred",
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                request.getRequestURI()
         );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

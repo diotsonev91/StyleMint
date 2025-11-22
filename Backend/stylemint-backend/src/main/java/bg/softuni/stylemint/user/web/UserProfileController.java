@@ -57,15 +57,4 @@ public class UserProfileController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{userId}/roles")
-    @PreAuthorize("@userSecurity.isAdmin()")
-    public ResponseEntity<Void> updateUserRoles(
-            @PathVariable UUID userId,
-            @Valid @RequestBody UpdateRolesRequestDTO request) {
-        userProfileService.updateUserRoles(userId, request.getRoles());
-        return ResponseEntity.noContent().build();
-    }
-
-
-
 }

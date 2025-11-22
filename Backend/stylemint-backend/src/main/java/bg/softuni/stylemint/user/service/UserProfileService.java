@@ -14,5 +14,4 @@ public interface UserProfileService {
 
     void updateAvatar(UUID userId, String avatarUrl);
 
-    public void updateUserRoles(UUID userId, Set<UserRole> newRoles);
 }

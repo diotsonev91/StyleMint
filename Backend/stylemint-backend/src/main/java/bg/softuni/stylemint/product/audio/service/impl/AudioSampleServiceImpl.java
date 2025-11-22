@@ -2,6 +2,10 @@ package bg.softuni.stylemint.product.audio.service.impl;
 
 import bg.softuni.stylemint.product.audio.dto.*;
 import bg.softuni.stylemint.product.audio.enums.*;
+import bg.softuni.stylemint.product.audio.exceptions.AudioFileValidationException;
+import bg.softuni.stylemint.product.audio.exceptions.AudioProcessingException;
+import bg.softuni.stylemint.product.audio.exceptions.AudioSampleNotFoundException;
+import bg.softuni.stylemint.product.audio.exceptions.AudioUploadException;
 import bg.softuni.stylemint.product.audio.model.AudioSample;
 import bg.softuni.stylemint.product.audio.repository.AudioSampleRepository;
 import bg.softuni.stylemint.product.audio.service.AudioSampleService;
@@ -10,6 +14,8 @@ import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
 import bg.softuni.stylemint.common.exception.FileProcessingException;
 import bg.softuni.stylemint.external.claudinary.CloudinaryService;
 import bg.softuni.stylemint.product.audio.service.utils.AudioSampleMapper;
+import bg.softuni.stylemint.user.enums.UserRole;
+import bg.softuni.stylemint.user.service.util.UserRolesService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -32,6 +38,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
     private final AudioSampleRepository audioSampleRepository;
     private final CloudinaryService cloudinaryService;
     private final AudioSampleMapper audioSampleMapper;
+    private final UserRolesService userRolesService;
 
 
     @Override
@@ -40,7 +47,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
         MultipartFile file = request.getFile();
 
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("Audio file is required");
+            throw new AudioFileValidationException("Audio file is required");
         }
 
         validateAudioFile(file);
@@ -74,11 +81,11 @@ public class AudioSampleServiceImpl implements AudioSampleService {
                     .build();
 
             AudioSample saved = audioSampleRepository.save(sample);
-
+            userRolesService.addRoleToUser(authorId, UserRole.AUTHOR);
             return audioSampleMapper.toDTO(saved);
         } catch (Exception e) {
             log.error("Failed to upload audio sample", e);
-            throw new FileProcessingException("Failed to upload audio sample: " + e.getMessage());
+            throw new AudioUploadException("Failed to upload audio sample: " + e.getMessage(), e);
         }
     }
 
@@ -86,7 +93,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
     @Transactional
     public AudioSampleDTO updateSample(UUID sampleId, UUID authorId, UploadSampleRequest request) {
         AudioSample sample = audioSampleRepository.findById(sampleId)
-                .orElseThrow(() -> new NotFoundException("Sample not found"));
+                .orElseThrow(() -> new AudioSampleNotFoundException(sampleId));
 
         if (!sample.getAuthorId().equals(authorId)) {
             throw new ForbiddenOperationException("Unauthorized to update this sample");
@@ -111,7 +118,6 @@ public class AudioSampleServiceImpl implements AudioSampleService {
 
                 String oldUrl = sample.getAudioUrl();
 
-                // Upload new file
                 Map<String, Object> uploadResult = cloudinaryService.uploadAudio(request.getFile(), authorId);
                 String newAudioUrl = (String) uploadResult.get("url");
                 Double durationInSeconds = (Double) uploadResult.get("duration");
@@ -120,14 +126,13 @@ public class AudioSampleServiceImpl implements AudioSampleService {
                 sample.setAudioUrl(newAudioUrl);
                 sample.setDuration(newDuration);
 
-                // Delete old file after successful upload
                 if (oldUrl != null) {
                     cloudinaryService.deleteFile(oldUrl);
                 }
             }
 
             AudioSample updated = audioSampleRepository.save(sample);
-            return audioSampleMapper.toDTO(updated); // CHANGED HERE
+            return audioSampleMapper.toDTO(updated);
         } catch (Exception e) {
             log.error("Failed to update audio sample", e);
             throw new FileProcessingException("Failed to update audio sample: " + e.getMessage());
@@ -138,7 +143,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
     @Transactional
     public AudioSampleDTO updateSampleMetadata(UUID sampleId, UUID authorId, UpdateSampleRequest request) {
         AudioSample sample = audioSampleRepository.findById(sampleId)
-                .orElseThrow(() -> new NotFoundException("Sample not found"));
+                .orElseThrow(() -> new AudioSampleNotFoundException(sampleId));
 
         if (!sample.getAuthorId().equals(authorId)) {
             throw new ForbiddenOperationException("Unauthorized to update this sample");
@@ -160,7 +165,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
             return audioSampleMapper.toDTO(updated);
         } catch (Exception e) {
             log.error("Failed to update audio sample metadata", e);
-            throw new FileProcessingException("Failed to update audio sample metadata: " + e.getMessage());
+            throw new AudioProcessingException("Failed to update audio sample metadata: " + e.getMessage(), e);
         }
     }
 
@@ -168,7 +173,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
     @Override
     public AudioSampleDTO getSampleById(UUID sampleId) {
         AudioSample sample = audioSampleRepository.findById(sampleId)
-                .orElseThrow(() -> new NotFoundException("Sample not found with id: " + sampleId));
+                .orElseThrow(() -> new AudioSampleNotFoundException(sampleId));
         return audioSampleMapper.toDTO(sample); // CHANGED HERE
     }
 
@@ -177,7 +182,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
     @Transactional
     public void deleteSample(UUID sampleId, UUID authorId) {
         AudioSample sample = audioSampleRepository.findById(sampleId)
-                .orElseThrow(() -> new NotFoundException("Sample not found"));
+                .orElseThrow(() -> new AudioSampleNotFoundException(sampleId));
 
         // Authorization check
         if (!sample.getAuthorId().equals(authorId)) {
@@ -190,62 +195,73 @@ public class AudioSampleServiceImpl implements AudioSampleService {
 
             // Delete from database
             audioSampleRepository.delete(sample);
+
+            // Check if the user has any samples left
+            long remainingSamples = audioSampleRepository.countByAuthorId(authorId);
+
+            // If no samples are left, remove AUTHOR role
+            if (remainingSamples == 0) {
+                userRolesService.removeRoleFromUser(authorId, UserRole.AUTHOR);
+                log.info("User {} no longer has samples, AUTHOR role removed.", authorId);
+            }
         } catch (Exception e) {
+            log.error("Failed to delete audio sample", e);
             throw new FileProcessingException("Failed to delete audio sample: " + e.getMessage());
         }
     }
 
+
     @Override
     public List<AudioSampleDTO> getSamplesByAuthor(UUID authorId) {
         return audioSampleRepository.findByAuthorId(authorId).stream()
-                .map(audioSampleMapper::toDTO) // CHANGED HERE
+                .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public Page<AudioSampleDTO> getSamplesByGenre(Genre genre, Pageable pageable) {
         return audioSampleRepository.findByGenre(genre, pageable)
-                .map(audioSampleMapper::toDTO); // CHANGED HERE
+                .map(audioSampleMapper::toDTO);
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByType(SampleType sampleType) {
         return audioSampleRepository.findBySampleType(sampleType).stream()
-                .map(audioSampleMapper::toDTO) // CHANGED HERE
+                .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByInstrumentGroup(InstrumentGroup instrumentGroup) {
         return audioSampleRepository.findByInstrumentGroup(instrumentGroup).stream()
-                .map(audioSampleMapper::toDTO) // CHANGED HERE
+                .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByBpmRange(Integer minBpm, Integer maxBpm) {
         return audioSampleRepository.findByBpmBetween(minBpm, maxBpm).stream()
-                .map(audioSampleMapper::toDTO) // CHANGED HERE
+                .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByKey(MusicalKey key) {
         return audioSampleRepository.findByKey(key).stream()
-                .map(audioSampleMapper::toDTO) // CHANGED HERE
+                .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public Page<AudioSampleDTO> getStandaloneSamples(Pageable pageable) {
         return audioSampleRepository.findAll(pageable)
-                .map(audioSampleMapper::toDTO); // CHANGED HERE
+                .map(audioSampleMapper::toDTO);
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByPack(UUID packId) {
         return audioSampleRepository.findByPackId(packId).stream()
-                .map(audioSampleMapper::toDTO) // CHANGED HERE
+                .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
@@ -265,7 +281,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
     @Override
     public List<AudioSampleDTO> searchSamplesByName(String name) {
         return audioSampleRepository.findByNameContainingIgnoreCase(name).stream()
-                .map(audioSampleMapper::toDTO) // CHANGED HERE
+                .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
@@ -279,7 +295,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
                         sample.getBpm(),
                         sampleId
                 ).stream()
-                .map(audioSampleMapper::toDTO) // CHANGED HERE
+                .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
@@ -296,14 +312,14 @@ public class AudioSampleServiceImpl implements AudioSampleService {
     @Override
     public Page<AudioSampleDTO> getPopularSamplesByGenre(Genre genre, Pageable pageable) {
         return audioSampleRepository.findPopularByGenre(genre, pageable)
-                .map(audioSampleMapper::toDTO); // CHANGED HERE
+                .map(audioSampleMapper::toDTO);
     }
 
 
 
     private AudioSample getAudioSampleEntityById(UUID sampleId) {
         return audioSampleRepository.findById(sampleId)
-                .orElseThrow(() -> new NotFoundException("Sample not found with id: " + sampleId));
+                .orElseThrow(() -> new AudioSampleNotFoundException(sampleId));
     }
 
     @Override
@@ -343,20 +359,19 @@ public class AudioSampleServiceImpl implements AudioSampleService {
     }
 
     // ================ Helper Methods ================
-    // TODO add appropriate exceptions
     private void validateAudioFile(MultipartFile file) {
         String contentType = file.getContentType();
         if (contentType == null ||
                 (!contentType.equals("audio/mpeg") &&
                         !contentType.equals("audio/wav") &&
                         !contentType.equals("audio/wave"))) {
-            throw new IllegalArgumentException("Only MP3 and WAV files are allowed");
+            throw new AudioFileValidationException("Only MP3 and WAV files are allowed");
         }
 
         // Check file size (e.g., max 50MB)
         long maxSize = 50 * 1024 * 1024; // 50MB
         if (file.getSize() > maxSize) {
-            throw new IllegalArgumentException("File size must not exceed 50MB");
+            throw  new AudioFileValidationException("File size must not exceed 50MB");
         }
     }
 

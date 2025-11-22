@@ -54,4 +54,6 @@ public class UploadSampleRequest {
 
     @Size(max = 10, message = "Maximum 10 tags allowed")
     private List<@NotBlank @Size(max = 30, message = "Tag must not exceed 30 characters") String> tags = new ArrayList<>();
+
+    private Boolean isFree;
 }

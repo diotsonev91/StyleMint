@@ -125,20 +125,29 @@ export function MyNftsPage() {
                             </div>
 
                             <div className="nft-actions-nft">
-                                <button
-                                    className="btn-primary-nft"
-                                    onClick={() => handlePreview(nft.tokenId)}
-                                    title="Preview certificate in new tab"
-                                >
-                                    👁️ Preview
-                                </button>
-                                <button
-                                    className="btn-secondary-nft"
-                                    onClick={() => handleDownload(nft.tokenId)}
-                                    title="Download certificate PDF"
-                                >
-                                    📥 Download
-                                </button>
+                                {nft.hasCertificate && (
+                                    <>
+                                        <button
+                                            className="btn-primary-nft"
+                                            onClick={() => handlePreview(nft.tokenId)}
+                                            title="Preview certificate in new tab"
+                                        >
+                                            👁️ Preview
+                                        </button>
+                                        <button
+                                            className="btn-secondary-nft"
+                                            onClick={() => handleDownload(nft.tokenId)}
+                                            title="Download certificate PDF"
+                                        >
+                                            📥 Download
+                                        </button>
+                                    </>
+                                )}
+                                {!nft.hasCertificate && (
+                                    <p className="no-certificate-message-nft">
+                                        No certificate available
+                                    </p>
+                                )}
                             </div>
                         </div>
                     ))}

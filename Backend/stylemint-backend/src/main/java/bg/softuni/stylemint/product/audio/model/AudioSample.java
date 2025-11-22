@@ -73,5 +73,8 @@ public class AudioSample extends BaseProduct {
     @Column(name = "tag")
     private List<String> tags = new ArrayList<>();
 
+    @Column(name = "is_free", nullable = false)
+    @Builder.Default
+    private Boolean isFree = false;
 
 }
