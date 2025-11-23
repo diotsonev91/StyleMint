@@ -4,7 +4,7 @@ package bg.softuni.stylemint.game.scheduler;
 import bg.softuni.dtos.enums.nft.NftType;
 import bg.softuni.stylemint.external.facade.nft.NftServiceFacade;
 import bg.softuni.stylemint.game.model.GameSession;
-import bg.softuni.stylemint.game.repository.GameSessionRepository;
+import bg.softuni.stylemint.game.repository.GameRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -22,7 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NftMintingScheduler {
 
-    private final GameSessionRepository gameSessionRepository;
+    private final GameRepository gameSessionRepository;
     private final NftServiceFacade nftServiceFacade;
 
 

@@ -5,9 +5,19 @@ import { useNavigate } from "react-router-dom";
 import { clothDesignService } from "../../services/clothDesignService";
 import { DesignDetailDTO } from "../../api/clothDesign.api";
 import "./MyClothDesignsPage.css";
-import {ClothItemPreview} from "../../components/three/previews/ClothItemPreview";
+import { ClothItemPreview } from "../../components/three/previews/ClothItemPreview";
 
-export function MyClothDesignsPage() {
+interface MyClothDesignsPageProps {
+    userId?: string; // ✅ Optional - defaults to current user
+    isEmbedded?: boolean; // ✅ Optional - for embedding in profile
+    onClose?: () => void; // ✅ Optional - close callback for embedded mode
+}
+
+export function MyClothDesignsPage({
+                                       userId,
+                                       isEmbedded = false,
+                                       onClose
+                                   }: MyClothDesignsPageProps = {}) {
     const [designs, setDesigns] = useState<DesignDetailDTO[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -17,12 +27,16 @@ export function MyClothDesignsPage() {
 
     useEffect(() => {
         fetchMyDesigns();
-    }, []);
+    }, [userId]); // ✅ Re-fetch if userId changes
 
     const fetchMyDesigns = async () => {
         try {
             setLoading(true);
-            const result = await clothDesignService.getUserDesigns();
+
+            // ✅ Use userId if provided, otherwise get current user's designs
+            const result = userId
+                ? await clothDesignService.getUserDesignsById(userId)
+                : await clothDesignService.getUserDesigns();
 
             if (result.success && result.data) {
                 setDesigns(result.data);
@@ -38,6 +52,12 @@ export function MyClothDesignsPage() {
     };
 
     const handleDelete = async (designId: string) => {
+        // ✅ In embedded mode or viewing other user's designs, disable delete
+        if (isEmbedded || userId) {
+            alert("Cannot delete designs in view mode");
+            return;
+        }
+
         if (!confirm("Are you sure you want to delete this design?")) {
             return;
         }
@@ -62,6 +82,12 @@ export function MyClothDesignsPage() {
     };
 
     const handleEdit = (design: DesignDetailDTO) => {
+        // ✅ In embedded mode or viewing other user's designs, disable edit
+        if (isEmbedded || userId) {
+            alert("Cannot edit designs in view mode");
+            return;
+        }
+
         // Navigate to dedicated edit page
         navigate(`/edit-design?id=${design.id}`);
     };
@@ -85,12 +111,15 @@ export function MyClothDesignsPage() {
         setSelectedDesign(null);
     };
 
+    // ✅ Determine if we're in view-only mode
+    const isViewOnly = isEmbedded || !!userId;
+
     if (loading) {
         return (
-            <div className="my-designs-page">
+            <div className={`my-designs-page ${isEmbedded ? 'embedded' : ''}`}>
                 <div className="loading-container">
                     <div className="spinner"></div>
-                    <p>Loading your designs...</p>
+                    <p>Loading designs...</p>
                 </div>
             </div>
         );
@@ -98,7 +127,7 @@ export function MyClothDesignsPage() {
 
     if (error) {
         return (
-            <div className="my-designs-page">
+            <div className={`my-designs-page ${isEmbedded ? 'embedded' : ''}`}>
                 <div className="error-container">
                     <h2>Error</h2>
                     <p>{error}</p>
@@ -111,31 +140,61 @@ export function MyClothDesignsPage() {
     }
 
     return (
-        <div className="my-designs-page">
-            <div className="page-header">
-                <h1 className="page-title">My Cloth Designs</h1>
-                <button
-                    onClick={() => navigate("/customizer")}
-                    className="btn-create-new"
-                >
-                    ✨ Create New Design
-                </button>
-            </div>
+        <div className={`my-designs-page ${isEmbedded ? 'embedded' : ''}`}>
+            {/* ✅ Embedded Header */}
+            {isEmbedded && (
+                <div className="embedded-header">
+                    {onClose && (
+                        <button onClick={onClose} className="close-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    )}
+                    <h2 className="embedded-title">
+                        {userId ? "User Designs" : "My Designs"}
+                    </h2>
+                </div>
+            )}
+
+            {/* ✅ Regular Header (only show in non-embedded mode) */}
+            {!isEmbedded && (
+                <div className="page-header">
+                    <h1 className="page-title">
+                        {userId ? "User Designs" : "My Cloth Designs"}
+                    </h1>
+                    {!isViewOnly && (
+                        <button
+                            onClick={() => navigate("/customizer")}
+                            className="btn-create-new"
+                        >
+                            ✨ Create New Design
+                        </button>
+                    )}
+                </div>
+            )}
 
             {designs.length === 0 ? (
                 <div className="empty-state">
                     <div className="empty-icon">🎨</div>
                     <h2>No designs yet</h2>
-                    <p>Start creating your custom clothing designs!</p>
-                    <button
-                        onClick={() => navigate("/customizer")}
-                        className="btn-primary"
-                    >
-                        Create Your First Design
-                    </button>
+                    <p>
+                        {isViewOnly
+                            ? "This user hasn't created any designs yet"
+                            : "Start creating your custom clothing designs!"
+                        }
+                    </p>
+                    {!isViewOnly && (
+                        <button
+                            onClick={() => navigate("/customizer")}
+                            className="btn-primary"
+                        >
+                            Create Your First Design
+                        </button>
+                    )}
                 </div>
             ) : (
-                <div className="designs-grid">
+                <div className={`designs-grid ${isEmbedded ? 'embedded-grid' : ''}`}>
                     {designs.map((design) => {
                         // Safety check - skip designs without customization data
                         if (!design.customizationData) {
@@ -165,7 +224,6 @@ export function MyClothDesignsPage() {
                                             type: "clothes" as const,
                                             selectedColor: customization.selectedColor,
                                             selectedDecal: customization.selectedDecal,
-                                            // KEY FIX: Convert "T_SHIRT_SPORT" → "t_shirt_sport"
                                             selected_type: design.clothType.toLowerCase() as any,
                                             decalPosition: customization.decalPosition as [number, number, number] | null,
                                             rotationY: customization.rotationY ?? 0,
@@ -213,29 +271,52 @@ export function MyClothDesignsPage() {
                                     </div>
                                 </div>
 
-                                {/* Actions */}
+                                {/* ✅ Conditional Actions based on mode */}
                                 <div className="design-actions">
-                                    <button
-                                        onClick={() => handleEdit(design)}
-                                        className="btn-action btn-edit"
-                                        title="Edit design"
-                                    >
-                                        ✏️ Edit
-                                    </button>
-                                    <button
-                                        onClick={() => handleAddToCart(design)}
-                                        className="btn-action btn-cart"
-                                        title="Add to cart"
-                                    >
-                                        🛒 Add to Cart
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(design.id)}
-                                        className="btn-action btn-delete"
-                                        title="Delete design"
-                                    >
-                                        🗑️
-                                    </button>
+                                    {!isViewOnly ? (
+                                        // ✅ Full actions for owner
+                                        <>
+                                            <button
+                                                onClick={() => handleEdit(design)}
+                                                className="btn-action btn-edit"
+                                                title="Edit design"
+                                            >
+                                                ✏️ Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleAddToCart(design)}
+                                                className="btn-action btn-cart"
+                                                title="Add to cart"
+                                            >
+                                                🛒 Add to Cart
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(design.id)}
+                                                className="btn-action btn-delete"
+                                                title="Delete design"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </>
+                                    ) : (
+                                        // ✅ View-only actions for others
+                                        <>
+                                            <button
+                                                onClick={() => openPreview(design)}
+                                                className="btn-action btn-preview"
+                                                title="Preview design"
+                                            >
+                                                👁️ Preview
+                                            </button>
+                                            <button
+                                                onClick={() => handleAddToCart(design)}
+                                                className="btn-action btn-cart"
+                                                title="Add to cart"
+                                            >
+                                                🛒 Add to Cart
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -266,7 +347,6 @@ export function MyClothDesignsPage() {
                                     type: "clothes" as const,
                                     selectedColor: selectedDesign.customizationData.selectedColor,
                                     selectedDecal: selectedDesign.customizationData.selectedDecal,
-                                    // KEY FIX: Convert here too
                                     selected_type: selectedDesign.clothType.toLowerCase() as any,
                                     decalPosition: selectedDesign.customizationData.decalPosition as [number, number, number] | null,
                                     rotationY: rotationY,
@@ -326,24 +406,40 @@ export function MyClothDesignsPage() {
                         </div>
 
                         <div className="modal-actions">
-                            <button
-                                onClick={() => {
-                                    closePreview();
-                                    handleEdit(selectedDesign);
-                                }}
-                                className="btn-modal-action btn-edit-full"
-                            >
-                                ✏️ Edit Design
-                            </button>
-                            <button
-                                onClick={() => {
-                                    closePreview();
-                                    handleAddToCart(selectedDesign);
-                                }}
-                                className="btn-modal-action btn-cart-full"
-                            >
-                                🛒 Add to Cart
-                            </button>
+                            {!isViewOnly ? (
+                                // ✅ Full actions for owner
+                                <>
+                                    <button
+                                        onClick={() => {
+                                            closePreview();
+                                            handleEdit(selectedDesign);
+                                        }}
+                                        className="btn-modal-action btn-edit-full"
+                                    >
+                                        ✏️ Edit Design
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            closePreview();
+                                            handleAddToCart(selectedDesign);
+                                        }}
+                                        className="btn-modal-action btn-cart-full"
+                                    >
+                                        🛒 Add to Cart
+                                    </button>
+                                </>
+                            ) : (
+                                // ✅ View-only actions for others
+                                <button
+                                    onClick={() => {
+                                        closePreview();
+                                        handleAddToCart(selectedDesign);
+                                    }}
+                                    className="btn-modal-action btn-cart-full"
+                                >
+                                    🛒 Add to Cart
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

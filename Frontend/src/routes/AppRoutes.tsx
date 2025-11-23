@@ -13,7 +13,7 @@ import UploadPackPage from "../pages/Sounds/UploadPackPage";
 import UploadSamplePage from "../pages/Sounds/UploadSamplePage";
 import GodotGameEmbedRush from "../pages/Game/GodotGameEmbedColorRush";
 import GodotGameEmbedBpm from "../pages/Game/GodotGameEmbedBPMMatcher";
-import ProfilePage from "../pages/User/UserProfile";
+
 import { CartPage } from "../pages/Cart/CartPage";
 import { CheckoutDetails } from "../pages/Cart/CheckoutDetails";
 import { CheckoutSummary } from "../pages/Cart/CheckoutSummary";
@@ -26,6 +26,8 @@ import EditPackPage from "../pages/Sounds/EditPackPage";
 import {MyClothDesignsPage} from "../pages/Clothes/MyClothDesignsPage";
 import {EditClothDesignPage} from "../pages/Clothes/EditClothDesignPage";
 import {MyNftsPage} from "../pages/nft/MyNftsPage";
+import MyProfilePage from "../pages/User/MyProfilePage";
+import UserProfilePage from "../pages/User/UserProfilePage";
 
 // You can easily expand this later with private routes or 404 pages
 export const AppRoutes: React.FC = () => {
@@ -47,8 +49,8 @@ export const AppRoutes: React.FC = () => {
        <Route path="/game/colorRush" element={<GodotGameEmbedRush />} />
       <Route path="/game/bpmMatcher" element={<GodotGameEmbedBpm />} />
       {/* User Profile Routes */}
-      <Route path="/profile" element={<ProfilePage />} />
-      <Route path="/profile/:userId" element={<ProfilePage />} />
+        <Route path="/profile" element={<MyProfilePage />} />
+        <Route path="/users/:userId" element={<UserProfilePage />} />
       <Route path="/my-samples" element={<UserSamplesPage />} />  
       <Route path="/my-packs" element={<UserPacksPage />} />
         <Route path="/my-designs" element={<MyClothDesignsPage />} />

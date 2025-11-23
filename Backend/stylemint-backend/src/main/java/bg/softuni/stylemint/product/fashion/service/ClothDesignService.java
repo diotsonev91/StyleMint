@@ -32,4 +32,6 @@ public interface ClothDesignService {
     DesignPublicDTO toPublicDTO(ClothDesign design);
 
     Page<DesignPublicDTO> getAllByClothType(Pageable pageable, ClothType clothType);
+
+    Page<DesignPublicDTO> getPublicDesignsOfUser(UUID userId, Pageable pageable);
 }

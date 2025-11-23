@@ -20,6 +20,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import static bg.softuni.stylemint.config.ApiPaths.BASE;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -35,10 +37,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
 
         // Skip JWT validation за authentication endpoints
-        return path.equals("/api/v1/auth/login") ||
-                path.equals("/api/v1/auth/register") ||
-                path.equals("/api/v1/auth/refresh") ||
-                path.equals("/api/v1/auth/logout");
+        return path.equals(BASE + "/auth/login") ||
+                path.equals(BASE + "/auth/register") ||
+                path.equals(BASE + "/auth/refresh") ||
+                path.equals(BASE + "/auth/logout");
     }
 
     @Override

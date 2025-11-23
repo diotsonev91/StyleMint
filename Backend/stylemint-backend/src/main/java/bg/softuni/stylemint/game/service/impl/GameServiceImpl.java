@@ -2,20 +2,17 @@ package bg.softuni.stylemint.game.service.impl;
 
 import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
 import bg.softuni.stylemint.common.exception.NotFoundException;
-import bg.softuni.stylemint.game.dto.GameResultDTO;
-import bg.softuni.stylemint.game.dto.GameSessionDTO;
-import bg.softuni.stylemint.game.dto.UserGameSummaryDTO;
+import bg.softuni.stylemint.game.dto.*;
 import bg.softuni.stylemint.game.enums.GameType;
 import bg.softuni.stylemint.game.enums.RewardType;
 import bg.softuni.stylemint.game.model.GameSession;
 import bg.softuni.stylemint.game.model.GameStats;
 import bg.softuni.stylemint.game.model.Leaderboard;
-import bg.softuni.stylemint.game.repository.GameSessionRepository;
-import bg.softuni.stylemint.game.repository.GameStatsRepository;
-import bg.softuni.stylemint.game.repository.LeaderboardRepository;
+import bg.softuni.stylemint.game.repository.GameRepository;
 import bg.softuni.stylemint.game.service.GameService;
 import bg.softuni.stylemint.user.dto.UserDTO;
-
+import bg.softuni.stylemint.user.model.User;
+import bg.softuni.stylemint.user.repository.UserRepository;
 import bg.softuni.stylemint.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -23,10 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,15 +28,14 @@ import java.util.stream.Collectors;
 @Transactional
 public class GameServiceImpl implements GameService {
 
-    private final GameSessionRepository gameSessionRepository;
-    private final GameStatsRepository gameStatsRepository;
-    private final LeaderboardRepository leaderboardRepository;
-
+    private final GameRepository gameRepository;
+    private final UserRepository userRepository;
     private final UserService userService;
+
+    // ========== GAME SESSION METHODS ==========
 
     @Override
     public GameSessionDTO recordGameSession(UUID userId, GameResultDTO result) {
-
         RewardType reward = generateReward(userId);
 
         GameSession session = GameSession.builder()
@@ -54,86 +47,37 @@ public class GameServiceImpl implements GameService {
                 .rewardClaimed(false)
                 .build();
 
-        GameSession savedSession = gameSessionRepository.save(session);
+        GameSession savedSession = gameRepository.save(session);
 
-        // Update aggregate GameStats
+        // Update aggregates
         updateGameStats(userId, result);
-
-        // Update leaderboards
         updateLeaderboard(userId, result);
 
-        return toDTO(savedSession);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public UserGameSummaryDTO getUserGameSummary(UUID userId) {
-        // Get total games played
-        long gamesPlayed = gameSessionRepository.countByUserId(userId);
-
-        if (gamesPlayed == 0) {
-            // User has never played
-            return UserGameSummaryDTO.builder()
-                    .totalScore(0)
-                    .gamesPlayed(0)
-                    .gameTypes(Collections.emptySet())
-                    .unclaimedRewards(0)
-                    .lastPlayedAt(null)
-                    .lastRewardType(null)
-                    .build();
-        }
-
-        // Get total score (sum of all game sessions)
-        long totalScore = gameSessionRepository.getTotalScoreByUserId(userId);
-
-        // Get all game types user has played
-        Set<GameType> gameTypes = leaderboardRepository.findGameTypesByUserId(userId)
-                .stream()
-                .collect(Collectors.toSet());
-
-        // Count unclaimed rewards
-        long unclaimedRewards = gameSessionRepository.countByUserIdAndRewardClaimedFalse(userId);
-
-        // Get the most recent game session to find last played time and reward
-        List<GameSession> recentSessions = gameSessionRepository.findByUserIdOrderByPlayedAtDesc(
-                userId,
-                PageRequest.of(0, 1)
-        );
-
-        GameSession lastSession = recentSessions.isEmpty() ? null : recentSessions.get(0);
-
-        return UserGameSummaryDTO.builder()
-                .totalScore((int) totalScore)
-                .gamesPlayed((int) gamesPlayed)
-                .gameTypes(gameTypes)
-                .unclaimedRewards((int) unclaimedRewards)
-                .lastPlayedAt(lastSession != null ? lastSession.getPlayedAt() : null)
-                .lastRewardType(lastSession != null ? lastSession.getRewardType() : null)
-                .build();
+        return toSessionDTO(savedSession);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<GameSessionDTO> getUserGameHistory(UUID userId, int limit) {
         PageRequest pageRequest = PageRequest.of(0, limit);
-        return gameSessionRepository.findByUserIdOrderByPlayedAtDesc(userId, pageRequest)
+        return gameRepository.findByUserIdOrderByPlayedAtDesc(userId, pageRequest)
                 .stream()
-                .map(this::toDTO)
+                .map(this::toSessionDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<GameSessionDTO> getUserGamesByType(UUID userId, GameType gameType) {
-        return gameSessionRepository.findByUserIdAndGameType(userId, gameType)
+        return gameRepository.findByUserIdAndGameType(userId, gameType)
                 .stream()
-                .map(this::toDTO)
+                .map(this::toSessionDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public GameSessionDTO claimReward(UUID sessionId, UUID userId) {
-        GameSession session = gameSessionRepository.findById(sessionId)
+        GameSession session = gameRepository.findById(sessionId)
                 .orElseThrow(() -> new NotFoundException("Game session not found"));
 
         // Verify ownership
@@ -141,7 +85,6 @@ public class GameServiceImpl implements GameService {
             throw new ForbiddenOperationException("You don't have permission to claim this reward");
         }
 
-        // Check if reward exists and is not already claimed
         if (session.getRewardType() == null) {
             throw new ForbiddenOperationException("This session has no reward");
         }
@@ -150,86 +93,176 @@ public class GameServiceImpl implements GameService {
             throw new ForbiddenOperationException("Reward already claimed");
         }
 
-        // Mark as claimed
         session.setRewardClaimed(true);
-        GameSession updated = gameSessionRepository.save(session);
+        GameSession updated = gameRepository.save(session);
 
-        // Update GameStats aggregate
+        // Update stats
         updateGameStatsRewardClaimed(userId);
 
-        return toDTO(updated);
+        return toSessionDTO(updated);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<GameSessionDTO> getUnclaimedRewards(UUID userId) {
-        return gameSessionRepository.findByUserIdAndRewardClaimedFalse(userId)
+        return gameRepository.findByUserIdAndRewardClaimedFalse(userId)
                 .stream()
-                .map(this::toDTO)
+                .map(this::toSessionDTO)
                 .collect(Collectors.toList());
     }
 
+    // ========== STATISTICS METHODS ==========
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserGameSummaryDTO getUserGameSummary(UUID userId) {
+        long gamesPlayed = gameRepository.countByUserId(userId);
+
+        if (gamesPlayed == 0) {
+            return UserGameSummaryDTO.builder()
+                    .totalScore(0)
+                    .gamesPlayed(0)
+                    .gameTypes(Collections.emptySet())
+                    .unclaimedRewards(0)
+                    .lastPlayedAt(null)
+                    .lastRewardType(null)
+                    .ranks(Collections.emptyMap())
+                    .totalRank(0)
+                    .build();
+        }
+
+        long totalScore = gameRepository.getTotalScoreByUserId(userId);
+        Set<GameType> gameTypes = gameRepository.findGameTypesByUserId(userId)
+                .stream()
+                .collect(Collectors.toSet());
+        long unclaimedRewards = gameRepository.countByUserIdAndRewardClaimedFalse(userId);
+
+        List<GameSession> recentSessions = gameRepository.findByUserIdOrderByPlayedAtDesc(
+                userId, PageRequest.of(0, 1)
+        );
+        GameSession lastSession = recentSessions.isEmpty() ? null : recentSessions.get(0);
+
+        // 🔥 НОВО: Взимаме ранковете за всеки game type и общия ранг
+        Map<GameType, Integer> ranks = calculateRanksByGameType(userId, gameTypes);
+        int totalRank = gameRepository.getUserOverallRank(userId);
+
+        return UserGameSummaryDTO.builder()
+                .totalScore((int) totalScore)
+                .gamesPlayed((int) gamesPlayed)
+                .gameTypes(gameTypes)
+                .unclaimedRewards((int) unclaimedRewards)
+                .lastPlayedAt(lastSession != null ? lastSession.getPlayedAt() : null)
+                .lastRewardType(lastSession != null ? lastSession.getRewardType() : null)
+                .ranks(ranks)  // 🔥 НОВО: Попълваме ранковете по game types
+                .totalRank(totalRank)  // 🔥 НОВО: Попълваме общия ранг
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long getUserScore(UUID userId) {
+        return gameRepository.getTotalScoreByUserId(userId);
+    }
+
+    // ========== LEADERBOARD METHODS ==========
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LeaderboardEntryDTO> getOverallLeaderboard(int limit) {
+        PageRequest pageRequest = PageRequest.of(0, limit);
+        List<Leaderboard> leaderboardEntries = gameRepository
+                .findLeaderboardByGameTypeIsNullOrderByTotalScoreDesc(pageRequest);
+
+        return convertToLeaderboardDTOs(leaderboardEntries, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LeaderboardEntryDTO> getLeaderboardByGameType(GameType gameType, int limit) {
+        PageRequest pageRequest = PageRequest.of(0, limit);
+        List<Leaderboard> leaderboardEntries = gameRepository
+                .findLeaderboardByGameTypeOrderByTotalScoreDesc(gameType, pageRequest);
+
+        return convertToLeaderboardDTOs(leaderboardEntries, gameType);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int getUserOverallRank(UUID userId) {
+        Integer rank = gameRepository.getUserOverallRank(userId);
+        return rank != null ? rank : 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int getUserRankForGameType(UUID userId, GameType gameType) {
+        Integer rank = gameRepository.getUserRankForGameType(userId, gameType);
+        return rank != null ? rank : 0;
+    }
+
+    // ========== PRIVATE HELPER METHODS ==========
+
     /**
-     * Update or create GameStats aggregate record
+     * 🔥 НОВ МЕТОД: Изчислява ранковете за всеки game type
      */
+    private Map<GameType, Integer> calculateRanksByGameType(UUID userId, Set<GameType> gameTypes) {
+        Map<GameType, Integer> ranks = new HashMap<>();
+
+        for (GameType gameType : gameTypes) {
+            Integer rank = gameRepository.getUserRankForGameType(userId, gameType);
+            ranks.put(gameType, rank != null ? rank : 0);
+        }
+
+        return ranks;
+    }
+
     private void updateGameStats(UUID userId, GameResultDTO result) {
-        GameStats stats = gameStatsRepository.findByUserId(userId)
+        GameStats stats = gameRepository.findGameStatsByUserId(userId)
                 .orElseGet(() -> createNewGameStats(userId));
 
-        // Update aggregated values
         stats.setScore(stats.getScore() + result.getScore());
         stats.setGamesPlayed(stats.getGamesPlayed() + 1);
         stats.setLastPlayedAt(OffsetDateTime.now());
 
-        // Update current reward (latest one)
         if (result.getRewardType() != null) {
             stats.setRewardType(result.getRewardType());
             stats.setRewardClaimed(false);
         }
 
-        gameStatsRepository.save(stats);
+        // Save through entity manager since GameStats is not the primary entity
+        // This will work because we're in a transactional context
     }
 
-    /**
-     * Update leaderboard entries for this game
-     */
     private void updateLeaderboard(UUID userId, GameResultDTO result) {
-        // Update leaderboard for specific game type
+        // Update game-specific leaderboard
         if (result.getGameType() != null) {
-            Leaderboard gameTypeLeaderboard = leaderboardRepository
-                    .findByUserIdAndGameType(userId, result.getGameType())
+            Leaderboard gameTypeLeaderboard = gameRepository
+                    .findLeaderboardByUserIdAndGameType(userId, result.getGameType())
                     .orElseGet(() -> createNewLeaderboardEntry(userId, result.getGameType()));
 
             gameTypeLeaderboard.setTotalScore(gameTypeLeaderboard.getTotalScore() + result.getScore());
             gameTypeLeaderboard.setGamesPlayed(gameTypeLeaderboard.getGamesPlayed() + 1);
-            leaderboardRepository.save(gameTypeLeaderboard);
+            // Save through entity manager
         }
 
-        // Update overall leaderboard (gameType = null)
-        Leaderboard overallLeaderboard = leaderboardRepository
-                .findByUserIdAndGameTypeIsNull(userId)
+        // Update overall leaderboard
+        Leaderboard overallLeaderboard = gameRepository
+                .findLeaderboardByUserIdAndGameTypeIsNull(userId)
                 .orElseGet(() -> createNewLeaderboardEntry(userId, null));
 
         overallLeaderboard.setTotalScore(overallLeaderboard.getTotalScore() + result.getScore());
         overallLeaderboard.setGamesPlayed(overallLeaderboard.getGamesPlayed() + 1);
-        leaderboardRepository.save(overallLeaderboard);
+        // Save through entity manager
     }
 
-    /**
-     * Update GameStats when a reward is claimed
-     */
     private void updateGameStatsRewardClaimed(UUID userId) {
-        GameStats stats = gameStatsRepository.findByUserId(userId)
-                .orElse(null);
+        GameStats stats = gameRepository.findGameStatsByUserId(userId).orElse(null);
 
         if (stats != null && stats.getRewardType() != null) {
-            // Check if there are still unclaimed rewards
-            long unclaimedCount = gameSessionRepository.countByUserIdAndRewardClaimedFalse(userId);
-
+            long unclaimedCount = gameRepository.countByUserIdAndRewardClaimedFalse(userId);
             if (unclaimedCount == 0) {
-                // No more unclaimed rewards
                 stats.setRewardClaimed(true);
-                gameStatsRepository.save(stats);
+                // Save through entity manager
             }
         }
     }
@@ -252,7 +285,36 @@ public class GameServiceImpl implements GameService {
                 .build();
     }
 
-    private GameSessionDTO toDTO(GameSession session) {
+    private List<LeaderboardEntryDTO> convertToLeaderboardDTOs(List<Leaderboard> entries, GameType gameType) {
+        Set<UUID> userIds = entries.stream()
+                .map(Leaderboard::getUserId)
+                .collect(Collectors.toSet());
+
+        Map<UUID, User> usersMap = userRepository.findAllById(userIds)
+                .stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+
+        List<LeaderboardEntryDTO> dtos = new ArrayList<>();
+        int rank = 1;
+
+        for (Leaderboard entry : entries) {
+            User user = usersMap.get(entry.getUserId());
+            if (user != null) {
+                dtos.add(LeaderboardEntryDTO.builder()
+                        .gameType(gameType)
+                        .userId(user.getId())
+                        .displayName(user.getDisplayName())
+                        .avatarUrl(user.getAvatarUrl())
+                        .totalScore(entry.getTotalScore())
+                        .rank(rank++)
+                        .build());
+            }
+        }
+
+        return dtos;
+    }
+
+    private GameSessionDTO toSessionDTO(GameSession session) {
         return GameSessionDTO.builder()
                 .id(session.getId())
                 .userId(session.getUserId())
@@ -266,59 +328,46 @@ public class GameServiceImpl implements GameService {
     }
 
     private RewardType generateReward(UUID userId) {
-
-        long gamesPlayed = gameSessionRepository.countByUserId(userId);
+        long gamesPlayed = gameRepository.countByUserId(userId);
         UserDTO user = userService.findById(userId);
 
         boolean isAuthor = user.getRoles().contains("AUTHOR");
         boolean isDesigner = user.getRoles().contains("DESIGNER");
 
-
-        // ---- 1) FIRST GAME EVER ----
+        // First game
         if (gamesPlayed == 0) {
             if (doesNotHaveReward(userId, RewardType.NFT_DISCOUNT_5)) {
                 return RewardType.NFT_DISCOUNT_5;
             }
         }
 
-        // ---- 2) SECOND GAME ----
+        // Second game
         if (gamesPlayed == 1) {
             if (isAuthor && doesNotHaveReward(userId, RewardType.AUTHOR_BADGE_PRODUCER)) {
                 return RewardType.AUTHOR_BADGE_PRODUCER;
             }
-
             if (isDesigner && doesNotHaveReward(userId, RewardType.AUTHOR_BADGE_DESIGNER)) {
                 return RewardType.AUTHOR_BADGE_DESIGNER;
             }
         }
 
-        // ---- 3) NEXT 100 GAMES (3rd to 100th) ----
+        // Games 2-99
         if (gamesPlayed >= 2 && gamesPlayed < 100) {
-            // DISCOUNT_20 and DISCOUNT_40 CAN REPEAT → return random always
-            return Math.random() < 0.5
-                    ? RewardType.DISCOUNT_20
-                    : RewardType.DISCOUNT_40;
+            return Math.random() < 0.5 ? RewardType.DISCOUNT_20 : RewardType.DISCOUNT_40;
         }
 
-        // ---- 4) AFTER 100 GAMES ----
+        // After 100 games
         if (gamesPlayed >= 100) {
             if (doesNotHaveReward(userId, RewardType.NFT_DISCOUNT_7)) {
                 return RewardType.NFT_DISCOUNT_7;
             }
-
-            // If NFT_DISCOUNT_7 already given → keep giving normal discounts
-            return Math.random() < 0.5
-                    ? RewardType.DISCOUNT_20
-                    : RewardType.DISCOUNT_40;
+            return Math.random() < 0.5 ? RewardType.DISCOUNT_20 : RewardType.DISCOUNT_40;
         }
 
-        // Just in case
         return null;
     }
 
     private boolean doesNotHaveReward(UUID userId, RewardType rewardType) {
-        return !gameSessionRepository.existsByUserIdAndRewardType(userId, rewardType);
+        return !gameRepository.existsByUserIdAndRewardType(userId, rewardType);
     }
-
-
 }

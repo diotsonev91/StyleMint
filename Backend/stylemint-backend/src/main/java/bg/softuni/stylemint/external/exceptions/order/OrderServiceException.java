@@ -1,5 +1,5 @@
 // File: OrderServiceException.java
-package bg.softuni.stylemint.external.facade.order;
+package bg.softuni.stylemint.external.exceptions.order;
 
 public class OrderServiceException extends RuntimeException {
 

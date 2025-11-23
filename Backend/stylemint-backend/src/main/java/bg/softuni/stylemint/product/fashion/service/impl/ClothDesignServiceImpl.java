@@ -340,4 +340,16 @@ public class ClothDesignServiceImpl implements ClothDesignService {
         return clothDesignPage.map(this::toPublicDTO);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<DesignPublicDTO> getPublicDesignsOfUser(UUID userId, Pageable pageable) {
+        log.debug("Fetching public designs for user: {} with pageable: {}", userId, pageable);
+
+        Page<ClothDesign> publicDesigns = clothDesignRepository.findByUserIdAndIsPublicTrue(userId, pageable);
+
+        return publicDesigns.map(this::toPublicDTO);
+    }
+
+
+
 }

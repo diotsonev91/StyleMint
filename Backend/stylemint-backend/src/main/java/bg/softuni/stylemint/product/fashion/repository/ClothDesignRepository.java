@@ -143,4 +143,6 @@ public interface ClothDesignRepository extends JpaRepository<ClothDesign, UUID> 
     Page<ClothDesign> findByIsPublic(boolean isPublic, Pageable pageable);
 
     long countByUserIdAndIsPublic(UUID userId, boolean b);
+
+    Page<ClothDesign> findByUserIdAndIsPublicTrue(UUID userId, Pageable pageable);
 }

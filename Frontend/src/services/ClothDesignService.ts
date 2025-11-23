@@ -175,4 +175,15 @@ export const clothDesignService = {
             };
         }
     },
+    async getUserDesignsById(userId: string) {
+        try {
+            // Call the API to fetch designs by ClothType
+            return await clothDesignApi.getPublicDesignsOfUser(userId,0,20);
+        } catch (error: any) {
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message || 'Failed to fetch designs by cloth type',
+            };
+        }
+    }
 };

@@ -7,7 +7,6 @@ import bg.softuni.stylemint.game.dto.LeaderboardEntryDTO;
 import bg.softuni.stylemint.game.dto.UserGameSummaryDTO;
 import bg.softuni.stylemint.game.enums.GameType;
 import bg.softuni.stylemint.game.service.GameService;
-import bg.softuni.stylemint.game.service.GameStatsService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +28,7 @@ import static bg.softuni.stylemint.config.ApiPaths.BASE;
 public class GameController {
 
     private final GameService gameService;
-    private final GameStatsService gameStatsService;
+
 
     /**
      * Submit game result and create new session
@@ -56,7 +55,7 @@ public class GameController {
     @GetMapping("/score")
     public ResponseEntity<Long> getUserScore() {
         UUID userId = SecurityUtil.getCurrentUserId();
-        return ResponseEntity.ok(gameStatsService.getUserScore(userId));
+        return ResponseEntity.ok(gameService.getUserScore(userId));
     }
 
     /**
@@ -105,7 +104,7 @@ public class GameController {
     public ResponseEntity<List<LeaderboardEntryDTO>> getLeaderboardByGameType(
             @PathVariable GameType gameType,
             @RequestParam(defaultValue = "10") int limit) {
-        return ResponseEntity.ok(gameStatsService.getLeaderboardByGameType(gameType, limit));
+        return ResponseEntity.ok(gameService.getLeaderboardByGameType(gameType, limit));
     }
 
     /**
@@ -114,7 +113,7 @@ public class GameController {
     @GetMapping("/leaderboard/global")
     public ResponseEntity<List<LeaderboardEntryDTO>> getGlobalLeaderboard(
             @RequestParam(defaultValue = "10") int limit) {
-        return ResponseEntity.ok(gameStatsService.getOverallLeaderboard(limit));
+        return ResponseEntity.ok(gameService.getOverallLeaderboard(limit));
     }
 
     /**
@@ -142,7 +141,7 @@ public class GameController {
     public ResponseEntity<Map<String, Object>> getUserRank(
             @PathVariable GameType gameType) {
         UUID userId = SecurityUtil.getCurrentUserId();
-        int rank = gameStatsService.getUserRankForGameType(userId, gameType);
+        int rank = gameService.getUserRankForGameType(userId, gameType);
 
         return ResponseEntity.ok(Map.of(
                 "userId", userId,

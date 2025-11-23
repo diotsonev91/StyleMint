@@ -27,4 +27,7 @@ public class UserOrderSummaryDTO {
 
 
     private Double totalSpent;
+
+    @Builder.Default
+    private boolean serviceAvailable = true;
 }

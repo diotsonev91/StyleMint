@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.Set;
 
 @Data
@@ -21,4 +22,6 @@ public class UserGameSummaryDTO {
     private int unclaimedRewards;
     private OffsetDateTime lastPlayedAt;
     private RewardType lastRewardType;
+    private Map<GameType, Integer> ranks;
+    private int totalRank;
 }

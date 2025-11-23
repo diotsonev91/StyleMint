@@ -5,6 +5,7 @@ import bg.softuni.dtos.order.OrderItemDTO;
 import bg.softuni.dtos.order.UserOrderSummaryDTO;
 import bg.softuni.stylemint.external.client.order.OrderServiceClient;
 
+import bg.softuni.stylemint.external.exceptions.order.OrderServiceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

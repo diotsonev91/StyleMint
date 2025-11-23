@@ -181,6 +181,13 @@ export const clothDesignApi = {
         });
         return response.data;
     },
+
+    async getPublicDesignsOfUser(userId: string,  page: number = 0, size: number = 20) {
+        const response = await API.get(`/designs/user/${userId}/public/`, {
+            params: { page, size }
+        });
+        return response.data;
+    }
 };
 
 export interface UserDesignerSummaryDTO {

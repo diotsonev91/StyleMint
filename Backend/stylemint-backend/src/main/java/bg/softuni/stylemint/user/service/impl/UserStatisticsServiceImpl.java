@@ -2,9 +2,10 @@ package bg.softuni.stylemint.user.service.impl;
 
 import bg.softuni.dtos.order.UserOrderSummaryDTO;
 import bg.softuni.stylemint.common.exception.NotFoundException;
+import bg.softuni.stylemint.external.exceptions.order.OrderServiceException;
 import bg.softuni.stylemint.external.facade.order.OrderServiceFacade;
 import bg.softuni.stylemint.game.dto.UserGameSummaryDTO;
-import bg.softuni.stylemint.game.service.GameStatsService;
+import bg.softuni.stylemint.game.service.GameService;
 import bg.softuni.stylemint.product.audio.dto.ProducerStatsDTO;
 import bg.softuni.stylemint.product.audio.dto.UserAuthorSummaryDTO;
 import bg.softuni.stylemint.product.audio.service.AudioSampleService;
@@ -17,19 +18,20 @@ import bg.softuni.stylemint.user.enums.UserRole;
 import bg.softuni.stylemint.user.repository.UserRepository;
 import bg.softuni.stylemint.user.service.UserStatisticsService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class UserStatisticsServiceImpl implements UserStatisticsService {
 
     private final UserRepository userRepository;
@@ -37,7 +39,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     private final ClothDesignService clothDesignService;
     private final AudioSampleService audioSampleService;
     private final SamplePackService samplePackService;
-    private final GameStatsService gameStatsService;
+    private final GameService gameService;
 
     @Override
     public UserStatsDTO getUserStats(UUID userId) {
@@ -46,7 +48,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
         }
 
         // Get game statistics
-        UserGameSummaryDTO gameSummary = gameStatsService.getUserGameSummary(userId);
+        UserGameSummaryDTO gameSummary = gameService.getUserGameSummary(userId);
 
         // Get design statistics
         UserDesignerSummaryDTO designerSummary = clothDesignService.getUserDesignerSummary(userId);
@@ -61,7 +63,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
                 .build();
 
         // Get order statistics
-        UserOrderSummaryDTO orderSummary = orderServiceFacade.getUserOrderSummary(userId);
+        UserOrderSummaryDTO orderSummary = getOrderSummaryGracefully(userId);
 
         // Calculate created content statistics
         long totalDesigns = designerSummary.getTotalDesigns();
@@ -82,6 +84,33 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
                 .orders(orderSummary)
                 .created(createdStats)
                 .build();
+    }
+
+    private UserOrderSummaryDTO getOrderSummaryGracefully(UUID userId) {
+        try {
+            return orderServiceFacade.getUserOrderSummary(userId);
+        } catch (OrderServiceException ex) {
+            // Log the error but don't fail the entire request
+            log.warn("Order service unavailable for user {}: {}", userId, ex.getMessage());
+
+            // Return empty order summary instead of failing
+            return UserOrderSummaryDTO.builder()
+                    .totalOrders(0L)
+                    .totalSpent(0.0)
+                    .recentOrders(Collections.emptyList())
+                    .serviceAvailable(false)
+                    .build();
+        } catch (Exception ex) {
+            log.error("Unexpected error fetching order summary for user {}", userId, ex);
+
+            // Return empty order summary for any other error
+            return UserOrderSummaryDTO.builder()
+                    .totalOrders(0L)
+                    .totalSpent(0.0)
+                    .recentOrders(Collections.emptyList())
+                    .serviceAvailable(false)
+                    .build();
+        }
     }
 
     @Override
