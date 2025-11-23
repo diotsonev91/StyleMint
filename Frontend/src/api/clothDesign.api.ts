@@ -2,6 +2,7 @@
 import API from "./config";
 
 export interface DesignSummaryDTO {
+    isLikedByUser: boolean;
     id: string;
     label: string;
     clothType: string;
@@ -11,15 +12,28 @@ export interface DesignSummaryDTO {
     price?: number;
     bonusPoints: number;
     salesCount: number;
-    likesCount: number;
     createdAt: string;
 }
+export enum ClothType {
+    HOODIE = 'HOODIE',
+    CAP = 'CAP',
+    T_SHIRT_CLASSIC = 'T_SHIRT_CLASSIC',
+    T_SHIRT_SPORT = 'T_SHIRT_SPORT',
+    SHOE = 'SHOE',
+}
+
 
 // Extended version with full customization data
 export interface DesignDetailDTO extends DesignSummaryDTO {
     customizationData: CustomizationData;
     customDecalUrl?: string;
 }
+export interface DesignPublicDTO extends DesignSummaryDTO {
+    customizationData: CustomizationData;
+    customDecalUrl?: string;
+    likesCount: number;
+}
+
 
 export interface CustomizationData {
     selectedColor: string;
@@ -92,7 +106,7 @@ export const clothDesignApi = {
     /**
      * Get public designs (marketplace) - summary only
      */
-    async getPublicDesigns(page?: number, size?: number): Promise<ApiResponse<PaginatedResponse<DesignSummaryDTO>>> {
+    async getPublicDesigns(page?: number, size?: number): Promise<ApiResponse<PaginatedResponse<DesignPublicDTO>>> {
         const response = await API.get('/designs/public', {
             params: { page, size }
         });
@@ -156,6 +170,15 @@ export const clothDesignApi = {
      */
     async toggleLike(designId: string): Promise<ApiResponse> {
         const response = await API.post(`/designs/${designId}/like`);
+        return response.data;
+    },
+    /**
+     * Get designs by ClothType
+     */
+    async getDesignsByClothType(clothType: ClothType, page: number = 0, size: number = 20): Promise<ApiResponse<PaginatedResponse<DesignPublicDTO>>> {
+        const response = await API.get(`/designs/cloth-type/${clothType}`, {
+            params: { page, size }
+        });
         return response.data;
     },
 };

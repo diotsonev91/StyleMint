@@ -3,6 +3,7 @@ package bg.softuni.stylemint.product.fashion.web;
 import bg.softuni.stylemint.auth.security.SecurityUtil;
 import bg.softuni.stylemint.common.dto.ApiResponse;
 import bg.softuni.stylemint.product.fashion.dto.*;
+import bg.softuni.stylemint.product.fashion.enums.ClothType;
 import bg.softuni.stylemint.product.fashion.service.ClothDesignService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +28,9 @@ public class ClothDesignController {
     private final ClothDesignService clothDesignService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<DesignSummaryDTO>> createDesign(
+    public ResponseEntity<ApiResponse<DesignPublicDTO>> createDesign(
             @Valid @ModelAttribute DesignUploadRequestDTO request) {
-        UUID userId = SecurityUtil.getCurrentUserId();
-        DesignSummaryDTO design = clothDesignService.createDesign(userId, request);
+        DesignPublicDTO design = clothDesignService.createDesign(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -38,18 +38,17 @@ public class ClothDesignController {
     }
 
     @PutMapping("/{designId}")
-    public ResponseEntity<ApiResponse<DesignSummaryDTO>> updateDesign(
+    public ResponseEntity<ApiResponse<DesignPublicDTO>> updateDesign(
             @PathVariable UUID designId,
             @Valid @ModelAttribute DesignUploadRequestDTO request) {
-        UUID userId = SecurityUtil.getCurrentUserId();
-        DesignSummaryDTO design = clothDesignService.updateDesign(designId, userId, request);
+        DesignPublicDTO design = clothDesignService.updateDesign(designId, request);
         return ResponseEntity.ok(ApiResponse.success(design, "Design updated successfully"));
     }
 
     @DeleteMapping("/{designId}")
     public ResponseEntity<ApiResponse<Void>> deleteDesign(@PathVariable UUID designId) {
-        UUID userId = SecurityUtil.getCurrentUserId();
-        clothDesignService.deleteDesign(designId, userId);
+
+        clothDesignService.deleteDesign(designId);
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .body(ApiResponse.successMessage("Design deleted successfully"));
@@ -69,11 +68,11 @@ public class ClothDesignController {
     }
 
     @GetMapping("/public")
-    public ResponseEntity<ApiResponse<Page<DesignSummaryDTO>>> getPublicDesigns(
+    public ResponseEntity<ApiResponse<Page<DesignPublicDTO>>> getPublicDesigns(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<DesignSummaryDTO> designs = clothDesignService.getPublicDesigns(pageable);
+        Page<DesignPublicDTO> designs = clothDesignService.getPublicDesigns(pageable);
         return ResponseEntity.ok(ApiResponse.success(designs));
     }
 
@@ -90,4 +89,18 @@ public class ClothDesignController {
         UserDesignerSummaryDTO summary = clothDesignService.getUserDesignerSummary(userId);
         return ResponseEntity.ok(ApiResponse.success(summary));
     }
+
+    @GetMapping("/cloth-type/{clothType}")
+    public ResponseEntity<ApiResponse<Page<DesignPublicDTO>>> getDesignsByClothType(
+            @PathVariable ClothType clothType,  // Path parameter for ClothType
+            @RequestParam(defaultValue = "0") int page,  // Pagination parameter for page
+            @RequestParam(defaultValue = "20") int size) {  // Pagination parameter for size
+        Pageable pageable = PageRequest.of(page, size);  // Create Pageable from parameters
+
+        // Call the service function to get designs by ClothType
+        Page<DesignPublicDTO> designs = clothDesignService.getAllByClothType(pageable, clothType);
+
+        return ResponseEntity.ok(ApiResponse.success(designs));  // Return the result wrapped in ApiResponse
+    }
+
 }

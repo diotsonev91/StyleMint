@@ -1,6 +1,7 @@
 // Catalogue.tsx
 import { useState } from "react";
 import "./catalogue.css";
+import {PublicDesignsPage} from "./PublicDesignsPage";
 
 const products = [
   {
@@ -133,6 +134,10 @@ export default function Catalogue() {
           </div>
         ))}
       </div>
+        <p className="catalogue-subtitle">
+            Choose from ready-made designs by users:
+        </p>
+        <PublicDesignsPage/>
 
       {/* Modal */}
       {selectedProduct && (
@@ -232,5 +237,7 @@ export default function Catalogue() {
         </svg>
       </button>
     </div>
+
+
   );
 }

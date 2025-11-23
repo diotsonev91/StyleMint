@@ -1,11 +1,11 @@
 // clothDesignService.ts - Updated with proper ClothType handling
 import {
     clothDesignApi,
-    DesignSummaryDTO,
+    DesignPublicDTO,
     DesignDetailDTO,
     CustomizationData,
     ApiResponse,
-    PaginatedResponse
+    PaginatedResponse, ClothType,
 } from '../api/clothDesign.api';
 
 export const clothDesignService = {
@@ -15,7 +15,7 @@ export const clothDesignService = {
         label: string,
         isPublic: boolean = false,
         bonusPoints: number = 20
-    ): Promise<ApiResponse<DesignSummaryDTO>> {
+    ): Promise<ApiResponse<DesignDetailDTO>> {
         try {
             const formData = new FormData();
 
@@ -83,7 +83,7 @@ export const clothDesignService = {
         }
     },
 
-    async getPublicDesigns(page: number = 0, size: number = 20): Promise<ApiResponse<PaginatedResponse<DesignSummaryDTO>>> {
+    async getPublicDesigns(page: number = 0, size: number = 20): Promise<ApiResponse<PaginatedResponse<DesignPublicDTO>>> {
         try {
             return await clothDesignApi.getPublicDesigns(page, size);
         } catch (error: any) {
@@ -99,7 +99,7 @@ export const clothDesignService = {
         designId: string,
         state: any,
         label?: string
-    ): Promise<ApiResponse<DesignSummaryDTO>> {
+    ): Promise<ApiResponse<DesignDetailDTO>> {
         try {
             const formData = new FormData();
 
@@ -150,6 +150,28 @@ export const clothDesignService = {
             return {
                 success: false,
                 error: error.response?.data?.message || error.message || 'Failed to delete design',
+            };
+        }
+    },
+
+    async toggleLike(designId: string): Promise<ApiResponse> {
+        try{
+            return clothDesignApi.toggleLike(designId);
+        } catch(error: any) {
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message || 'Failed to toggle like',
+            };
+        }
+    },
+    async getDesignsByClothType(clothType: ClothType, page: number = 0, size: number = 20): Promise<ApiResponse<PaginatedResponse<DesignPublicDTO>>> {
+        try {
+            // Call the API to fetch designs by ClothType
+            return await clothDesignApi.getDesignsByClothType(clothType, page, size);
+        } catch (error: any) {
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message || 'Failed to fetch designs by cloth type',
             };
         }
     },

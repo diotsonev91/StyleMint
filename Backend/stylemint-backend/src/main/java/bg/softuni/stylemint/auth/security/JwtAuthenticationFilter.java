@@ -7,125 +7,117 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserDetailsService userDetailsService;
+
+    /**
+     * Определя кои endpoints да се skip-нат от JWT authentication
+     */
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getRequestURI();
+
+        // Skip JWT validation за authentication endpoints
+        return path.equals("/api/v1/auth/login") ||
+                path.equals("/api/v1/auth/register") ||
+                path.equals("/api/v1/auth/refresh") ||
+                path.equals("/api/v1/auth/logout");
+    }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain chain
+    ) throws ServletException, IOException {
 
-        String uri = request.getRequestURI();
-        System.out.println("\n🎯 JWT FILTER CALLED: " + uri);
+        try {
+            // 1. Extract JWT token
+            String token = extractToken(request);
 
-        if (uri.equals("/api/v1/auth/refresh")) {
-            System.out.println("⏭️  Skipping refresh endpoint");
-            chain.doFilter(request, response);
-            return;
-        }
-
-        String token = extractToken(request);
-        System.out.println("🎫 Token extracted: " + (token != null ? "YES" : "NO"));
-
-        if (token != null) {
-            boolean isValid = jwtTokenProvider.validateToken(token);
-            System.out.println("✅ Token valid: " + isValid);
-
-            if (isValid) {
-                try {
-                    UUID userId = jwtTokenProvider.extractUserId(token);
-                    String email = jwtTokenProvider.extractEmail(token);
-
-                    System.out.println("🆔 UserId from token: " + userId);
-                    System.out.println("📧 Email from token: " + email);
-
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-
-                    UsernamePasswordAuthenticationToken auth =
-                            new UsernamePasswordAuthenticationToken(
-                                    userId.toString(),     // principal = userId!
-                                    null,                  // credentials
-                                    userDetails.getAuthorities()
-                            );
-
-                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-
-
-                    System.out.println("🔐 ✅ AUTHENTICATION SET SUCCESSFULLY!");
-                    System.out.println("Authorities: " + userDetails.getAuthorities());
-
-                } catch (Exception e) {
-                    System.out.println("❌ ERROR setting authentication: " + e.getMessage());
-                    e.printStackTrace();
-                }
-            } else {
-                System.out.println("❌ Token is INVALID!");
+            // 2. Validate and authenticate
+            if (token != null && jwtTokenProvider.validateToken(token)) {
+                authenticateUser(token, request);
             }
-        } else {
-            System.out.println("❌ No token found!");
+
+        } catch (Exception ex) {
+            log.error("Cannot set user authentication: {}", ex.getMessage());
         }
 
+        // 3. Continue filter chain
         chain.doFilter(request, response);
     }
 
-
+    /**
+     * Извлича JWT token от request (cookie или Authorization header)
+     */
     private String extractToken(HttpServletRequest request) {
-        System.out.println("\n🔍 ========== EXTRACTING TOKEN ==========");
-
-        // 1. Try from Authorization header
+        // 1. Try from Authorization header first
         String authHeader = request.getHeader("Authorization");
-        System.out.println("Authorization header: " + authHeader);
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            System.out.println("✅ Found Bearer token in header");
             return authHeader.substring(7);
         }
 
         // 2. Try from cookie
         if (request.getCookies() != null) {
-            System.out.println("🍪 Total cookies: " + request.getCookies().length);
-
-            for (Cookie cookie : request.getCookies()) {
-                System.out.println("  Cookie: " + cookie.getName() + " = " +
-                        (cookie.getValue().length() > 30 ?
-                                cookie.getValue().substring(0, 30) + "..." :
-                                cookie.getValue()));
-            }
-
-            String token = Arrays.stream(request.getCookies())
-                    .filter(c -> "SM_ACCESS".equals(c.getName()))
+            return Arrays.stream(request.getCookies())
+                    .filter(cookie -> "SM_ACCESS".equals(cookie.getName()))
                     .map(Cookie::getValue)
                     .findFirst()
                     .orElse(null);
-
-            if (token != null) {
-                System.out.println("✅ Found SM_ACCESS cookie!");
-                System.out.println("Token length: " + token.length());
-                System.out.println("Token starts with: " + token.substring(0, Math.min(50, token.length())));
-                return token;
-            } else {
-                System.out.println("❌ SM_ACCESS cookie NOT FOUND!");
-            }
-        } else {
-            System.out.println("❌ NO COOKIES AT ALL!");
         }
 
-        System.out.println("========================================\n");
         return null;
+    }
+
+    /**
+     * Създава и set-ва authentication в SecurityContext
+     */
+    private void authenticateUser(String token, HttpServletRequest request) {
+        // Extract user info from token
+        UUID userId = jwtTokenProvider.extractUserId(token);
+        String email = jwtTokenProvider.extractEmail(token);
+        List<String> roles = jwtTokenProvider.extractRoles(token);
+
+        // Convert roles to Spring Security authorities
+        List<org.springframework.security.core.GrantedAuthority> authorities =
+                roles.stream()
+                        .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + role))
+                        .collect(java.util.stream.Collectors.toList());
+
+        // Create authentication token
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        userId.toString(),  // Principal (user ID)
+                        null,              // Credentials (не ни трябват след validation)
+                        authorities        // ✅ Authorities от roles
+                );
+
+        // Set request details
+        authentication.setDetails(
+                new WebAuthenticationDetailsSource().buildDetails(request)
+        );
+
+        // Set authentication in SecurityContext
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        log.debug("User authenticated: userId={}, email={}, roles={}", userId, email, roles);
     }
 }

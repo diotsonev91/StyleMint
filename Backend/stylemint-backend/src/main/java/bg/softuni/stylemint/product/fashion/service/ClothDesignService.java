@@ -2,6 +2,7 @@
 package bg.softuni.stylemint.product.fashion.service;
 
 import bg.softuni.stylemint.product.fashion.dto.*;
+import bg.softuni.stylemint.product.fashion.enums.ClothType;
 import bg.softuni.stylemint.product.fashion.model.ClothDesign;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,22 +13,23 @@ import java.util.UUID;
 public interface ClothDesignService {
     long countDesignsByUser(UUID userId);
 
-    DesignSummaryDTO createDesign(UUID userId, DesignUploadRequestDTO request);
+    DesignPublicDTO createDesign(DesignUploadRequestDTO request);
 
-    DesignSummaryDTO updateDesign(UUID designId, UUID userId, DesignUploadRequestDTO request);
+    DesignPublicDTO updateDesign(UUID userId, DesignUploadRequestDTO request);
 
-    void deleteDesign(UUID designId, UUID userId);
+    void deleteDesign(UUID designId);
 
-    // ПРЕМАХВАМЕ publish/unpublish методите - ползваме updateDesign
     DesignDetailDTO getDesignById(UUID designId);
 
     List<DesignDetailDTO> getUserDesigns(UUID userId);
 
-    Page<DesignSummaryDTO> getPublicDesigns(Pageable pageable);
+    Page<DesignPublicDTO> getPublicDesigns(Pageable pageable);
 
     UserDesignerSummaryDTO getUserDesignerSummary(UUID userId);
 
-    DesignSummaryDTO toSummaryDTO(ClothDesign design, long likesCount);
+    DesignPublicDTO toPublicDTO(ClothDesign design, long likesCount);
 
-    DesignSummaryDTO toSummaryDTO(ClothDesign design);
+    DesignPublicDTO toPublicDTO(ClothDesign design);
+
+    Page<DesignPublicDTO> getAllByClothType(Pageable pageable, ClothType clothType);
 }

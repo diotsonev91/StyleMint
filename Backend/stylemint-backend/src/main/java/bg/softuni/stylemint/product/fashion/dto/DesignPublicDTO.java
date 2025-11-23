@@ -3,6 +3,7 @@ package bg.softuni.stylemint.product.fashion.dto;
 
 import bg.softuni.stylemint.product.fashion.enums.ClothType;
 import bg.softuni.stylemint.product.fashion.enums.CustomizationType;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +16,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DesignSummaryDTO {
+public class DesignPublicDTO {
     private UUID id;
     private String label;
     private ClothType clothType;
@@ -27,4 +28,12 @@ public class DesignSummaryDTO {
     private Long salesCount;
     private Long likesCount;
     private OffsetDateTime createdAt;
+    private Boolean isLikedByUser;
+
+    // Full customization data (JSON object)
+    private JsonNode customizationData;
+
+    // Custom decal URL if exists
+    private String customDecalUrl;
+
 }

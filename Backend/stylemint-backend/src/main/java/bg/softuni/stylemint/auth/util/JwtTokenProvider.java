@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -34,35 +35,62 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateAccessToken(UUID userId, String email) {
-        return buildToken(userId, email, accessExpirationMs);
+    /**
+     * Generate access token with roles
+     */
+    public String generateAccessToken(UUID userId, String email, List<String> roles) {
+        return buildToken(userId, email, roles, accessExpirationMs);
     }
 
-    public String generateRefreshToken(UUID userId, String email) {
-        return buildToken(userId, email, refreshExpirationMs);
+    /**
+     * Generate refresh token with roles
+     */
+    public String generateRefreshToken(UUID userId, String email, List<String> roles) {
+        return buildToken(userId, email, roles, refreshExpirationMs);
     }
 
-    private String buildToken(UUID userId, String email, long validityMs) {
+    /**
+     * Build JWT token with user info and roles
+     */
+    private String buildToken(UUID userId, String email, List<String> roles, long validityMs) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + validityMs);
 
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("email", email)
+                .claim("roles", roles)  // ✅ Добавяме roles в token
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
                 .compact();
     }
 
+    /**
+     * Extract user ID from token
+     */
     public UUID extractUserId(String token) {
         return UUID.fromString(parseClaims(token).getSubject());
     }
 
+    /**
+     * Extract email from token
+     */
     public String extractEmail(String token) {
         return parseClaims(token).get("email", String.class);
     }
 
+    /**
+     * Extract roles from token
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> extractRoles(String token) {
+        return parseClaims(token).get("roles", List.class);
+    }
+
+    /**
+     * Validate token
+     */
     public boolean validateToken(String token) {
         try {
             parseClaims(token);
@@ -76,6 +104,9 @@ public class JwtTokenProvider {
         }
     }
 
+    /**
+     * Parse JWT claims
+     */
     private Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
@@ -83,5 +114,4 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload();
     }
-
 }

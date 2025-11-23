@@ -6,10 +6,12 @@ import java.util.UUID;
 
 public interface ClothLikeService {
 
-    void toggleLike(UUID userId, UUID designId);
+    void toggleLike(UUID designId);
 
     long getLikesCount(UUID designId);
 
     Map<UUID, Long> getLikesCountForDesigns(List<UUID> designIds);
 
+
+    boolean isLikedByUser(UUID id);
 }

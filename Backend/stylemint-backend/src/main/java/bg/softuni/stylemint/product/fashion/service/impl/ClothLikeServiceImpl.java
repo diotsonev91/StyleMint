@@ -1,5 +1,6 @@
 package bg.softuni.stylemint.product.fashion.service.impl;
 
+import bg.softuni.stylemint.auth.security.SecurityUtil;
 import bg.softuni.stylemint.product.fashion.model.ClothDesign;
 import bg.softuni.stylemint.product.fashion.model.ClothDesignLike;
 import bg.softuni.stylemint.product.fashion.repository.ClothDesignLikeRepository;
@@ -24,7 +25,8 @@ public class ClothLikeServiceImpl implements ClothLikeService {
     private final ClothDesignRepository clothRepository;
 
     @Override
-    public void toggleLike(UUID userId, UUID designId) {
+    public void toggleLike(UUID designId) {
+        UUID userId = SecurityUtil.getCurrentUserId();
         if (likeRepository.existsByUserIdAndClothDesignId(userId, designId)) {
             likeRepository.deleteByUserIdAndClothDesignId(userId, designId);
         } else {
@@ -53,5 +55,13 @@ public class ClothLikeServiceImpl implements ClothLikeService {
                         LikeCountProjection::getCount
                 ));
     }
+
+    @Override
+    public boolean isLikedByUser(UUID designId) {
+
+        UUID userId = SecurityUtil.getCurrentUserId();
+        return likeRepository.existsByUserIdAndClothDesignId(userId, designId);
+    }
+
 
 }

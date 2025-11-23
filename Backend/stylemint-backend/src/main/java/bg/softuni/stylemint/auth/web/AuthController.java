@@ -2,11 +2,9 @@ package bg.softuni.stylemint.auth.web;
 
 import bg.softuni.stylemint.auth.dto.*;
 import bg.softuni.stylemint.auth.exception.MissingTokenException;
-import bg.softuni.stylemint.auth.security.CustomUserDetails;
 import bg.softuni.stylemint.auth.service.AuthService;
 import bg.softuni.stylemint.auth.util.JwtTokenProvider;
 import bg.softuni.stylemint.user.dto.UserDTO;
-import bg.softuni.stylemint.user.model.User;
 import bg.softuni.stylemint.user.service.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import static bg.softuni.stylemint.config.ApiPaths.BASE;
@@ -44,7 +43,11 @@ public class AuthController {
         String accessToken = authService.login(dto);
         UserDTO user = userService.findByEmail(dto.getEmail());
 
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail());
+        // ✅ Extract roles from user
+        List<String> roles = extractUserRoles(user);
+
+        // Generate refresh token with roles
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail(), roles);
 
         ResponseCookie access = ResponseCookie.from("SM_ACCESS", accessToken)
                 .httpOnly(true)
@@ -95,22 +98,6 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response) {
 
-        System.out.println("\n🚪 ==================== LOGOUT DEBUG ====================");
-
-        // Log incoming cookies
-        System.out.println("📥 INCOMING COOKIES:");
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                System.out.println(String.format("   %s: value='%s...', domain='%s', path='%s'",
-                        cookie.getName(),
-                        cookie.getValue().length() > 20 ? cookie.getValue().substring(0, 20) : cookie.getValue(),
-                        cookie.getDomain(),
-                        cookie.getPath()));
-            }
-        } else {
-            System.out.println("   NO COOKIES!");
-        }
-
         // Create deletion cookies
         ResponseCookie clearAccess = ResponseCookie.from("SM_ACCESS", "")
                 .httpOnly(true)
@@ -130,24 +117,15 @@ public class AuthController {
                 .sameSite("Lax")
                 .build();
 
-        // Log outgoing headers
-        System.out.println("\n📤 OUTGOING Set-Cookie HEADERS:");
-        System.out.println("   ACCESS:  " + clearAccess.toString());
-        System.out.println("   REFRESH: " + clearRefresh.toString());
-
         // Set headers
         response.setHeader("Set-Cookie", clearAccess.toString());
         response.addHeader("Set-Cookie", clearRefresh.toString());
-
-        System.out.println("==================== LOGOUT DEBUG END ====================\n");
 
         return ResponseEntity.ok(new AuthResponseDTO("Logged out successfully"));
     }
 
     /**
      * Get current authenticated user
-     * This endpoint is used by the frontend to check authentication status
-     * and retrieve user information after login
      */
     @GetMapping("/me")
     public ResponseEntity<UserDTO> getCurrentUser() {
@@ -157,20 +135,16 @@ public class AuthController {
             return ResponseEntity.status(401).build();
         }
 
-
         String userIdStr = authentication.getName();
         UUID userId = UUID.fromString(userIdStr);
-
 
         UserDTO userDto = userService.findById(userId);
 
         return ResponseEntity.ok(userDto);
     }
 
-
     /**
      * Extracts refresh token from cookies
-     * @throws MissingTokenException if refresh token is not found
      */
     private String extractRefreshToken(HttpServletRequest request) {
         if (request.getCookies() == null) {
@@ -182,5 +156,20 @@ public class AuthController {
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElseThrow(() -> new MissingTokenException("Refresh token not found"));
+    }
+
+    /**
+     * Извлича roles от UserDTO
+     */
+    private List<String> extractUserRoles(UserDTO user) {
+        if (user.getRoles() == null || user.getRoles().isEmpty()) {
+            // Fallback to default role if no roles assigned
+            return List.of("USER");
+        }
+
+        // Convert UserRole enum to String list
+        return user.getRoles().stream()
+                .map(Enum::name)  // UserRole.ADMIN -> "ADMIN"
+                .toList();
     }
 }
