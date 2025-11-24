@@ -55,4 +55,24 @@ public class OrderServiceExceptionHandler {
                         request.getRequestURI()
                 ));
     }
+
+    // ========================================
+    // UNSUPPORTED PRODUCT TYPE
+    // ========================================
+
+    @ExceptionHandler(UnsupportedProductTypeException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedProductType(
+            UnsupportedProductTypeException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(
+                        "UnsupportedProductType",
+                        String.format("Product type '%s' is not supported. Valid types are: CLOTHES, SAMPLE, PACK",
+                                ex.getProductType()),
+                        HttpStatus.BAD_REQUEST.value(),
+                        request.getRequestURI()
+                ));
+    }
 }

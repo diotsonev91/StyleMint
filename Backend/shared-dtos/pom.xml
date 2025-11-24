@@ -4,7 +4,7 @@
 
 	<groupId>bg.softuni</groupId>
 	<artifactId>shared-dtos</artifactId>
-	<version>1.4.0</version>
+	<version>1.5.1</version>
 	<packaging>jar</packaging>
 
 	<name>shared-dtos</name>

@@ -3,7 +3,7 @@ package bg.softuni.stylemint.product.fashion.service.impl;
 
 import bg.softuni.stylemint.auth.security.SecurityUtil;
 import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
-import bg.softuni.stylemint.product.common.service.FileService;
+import bg.softuni.stylemint.external.claudinary.CloudinaryService;
 import bg.softuni.stylemint.product.fashion.dto.*;
 import bg.softuni.stylemint.product.fashion.enums.ClothType;
 import bg.softuni.stylemint.product.fashion.exceptions.*;
@@ -26,36 +26,33 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-
 @Transactional(readOnly = true)
 public class ClothDesignServiceImpl implements ClothDesignService {
 
     private final ClothDesignRepository clothDesignRepository;
-
     private final PriceCalculatorService<ClothDesign> clothPriceCalculator;
-
     private final ClothLikeService clothLikeService;
-
-    private final FileService fileService;
-
+    private final CloudinaryService cloudinaryService; // ← Променено от FileService към CloudinaryService
     private final ObjectMapper objectMapper;
-
     private final UserRolesService userRolesService;
-
-
 
     @Autowired
     public ClothDesignServiceImpl(ClothDesignRepository clothDesignRepository,
-                                  @Qualifier("fashionPriceCalculatorService") PriceCalculatorService<ClothDesign> clothPriceCalculator, ClothLikeService clothLikeService, FileService fileService, ObjectMapper objectMapper, UserRolesService userRolesService, SecurityUtil securityUtil) {
+                                  @Qualifier("fashionPriceCalculatorService") PriceCalculatorService<ClothDesign> clothPriceCalculator,
+                                  ClothLikeService clothLikeService,
+                                  CloudinaryService cloudinaryService, // ← Променен параметър
+                                  ObjectMapper objectMapper,
+                                  UserRolesService userRolesService) {
         this.clothDesignRepository = clothDesignRepository;
         this.clothPriceCalculator = clothPriceCalculator;
         this.clothLikeService = clothLikeService;
-        this.fileService = fileService;
+        this.cloudinaryService = cloudinaryService;
         this.objectMapper = objectMapper;
         this.userRolesService = userRolesService;
     }
@@ -83,7 +80,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
                     .salesCount(0L)
                     .build();
 
-            // Process custom decal BEFORE calculating price
+            // Process custom decal BEFORE calculating price - сега с Cloudinary
             if (request.getCustomDecalFile() != null && !request.getCustomDecalFile().isEmpty()) {
                 processCustomDecalFile(request.getCustomDecalFile(), design, currentUserId);
             }
@@ -141,7 +138,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
                 needsPriceRecalculation = true;
             }
 
-            // Process new custom decal if provided
+            // Process new custom decal if provided - сега с Cloudinary
             if (request.getCustomDecalFile() != null && !request.getCustomDecalFile().isEmpty()) {
                 processCustomDecalFile(request.getCustomDecalFile(), design, userId);
                 needsPriceRecalculation = true; // Custom decal affects price
@@ -167,19 +164,19 @@ public class ClothDesignServiceImpl implements ClothDesignService {
             log.info("Processing custom decal file: {} for design: {}",
                     customDecalFile.getOriginalFilename(), design.getId());
 
-            fileService.processFile(
-                    customDecalFile,
-                    "decals",               // категория
-                    userId,                 // user folder
-                    design.getCustomDecalPath(), // текущият път (стар файл)
-                    design::setCustomDecalPath   // setter за entity-то
-            );
+            // Използване на CloudinaryService вместо FileService
+            Map<String, Object> uploadResult = cloudinaryService.uploadImage(customDecalFile, userId);
+
+            String imageUrl = (String) uploadResult.get("url");
+            design.setCustomDecalPath(imageUrl); // Запазваме URL от Cloudinary
+
+            log.info("Successfully uploaded custom decal to Cloudinary: {}", imageUrl);
+
         } catch (Exception e) {
             log.error("Failed to process custom decal file", e);
             throw new ClothDesignValidationException("Failed to process custom decal: " + e.getMessage(), e);
         }
     }
-
 
     @Override
     @Transactional
@@ -194,8 +191,10 @@ public class ClothDesignServiceImpl implements ClothDesignService {
         }
 
         try {
-            // Delete custom decal file if exists
-            fileService.deleteFile(design.getCustomDecalPath());
+            // Delete custom decal file from Cloudinary if exists
+            if (design.getCustomDecalPath() != null && !design.getCustomDecalPath().isBlank()) {
+                cloudinaryService.deleteFile(design.getCustomDecalPath());
+            }
 
             // Delete the design from the database
             clothDesignRepository.delete(design);
@@ -286,7 +285,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
                 .createdAt(design.getCreatedAt())
                 .isLikedByUser(likedByUser)
                 .customizationData(customizationData)
-                .customDecalUrl(design.getCustomDecalPath())
+                .customDecalUrl(design.getCustomDecalPath()) // ← Вече е Cloudinary URL
                 .build();
     }
 
@@ -294,7 +293,6 @@ public class ClothDesignServiceImpl implements ClothDesignService {
         long likesCount = clothLikeService.getLikesCount(design.getId());
         return toPublicDTO(design, likesCount);
     }
-
 
     private String generatePreviewImageUrl(ClothDesign design) {
         return "/api/v1/designs/" + design.getId() + "/preview";
@@ -327,7 +325,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
                 .likesCount(likesCount)
                 .createdAt(design.getCreatedAt())
                 .customizationData(customizationData)
-                .customDecalUrl(design.getCustomDecalPath())
+                .customDecalUrl(design.getCustomDecalPath()) // ← Вече е Cloudinary URL
                 .build();
     }
 
@@ -335,7 +333,6 @@ public class ClothDesignServiceImpl implements ClothDesignService {
     public Page<DesignPublicDTO> getAllByClothType(Pageable pageable, ClothType clothType) {
 
         Page<ClothDesign> clothDesignPage = clothDesignRepository.findByClothType(clothType, pageable);
-
 
         return clothDesignPage.map(this::toPublicDTO);
     }
@@ -349,7 +346,4 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
         return publicDesigns.map(this::toPublicDTO);
     }
-
-
-
 }

@@ -1,42 +1,81 @@
+// FashionPriceCalculatorServiceImpl.java - UPDATED with Configuration Properties
 package bg.softuni.stylemint.product.fashion.service.impl;
 
-import bg.softuni.stylemint.product.common.service.PriceCalculatorService;
+import bg.softuni.stylemint.external.facade.nft.NftServiceFacade;
+import bg.softuni.stylemint.product.common.service.DiscountService;
+import bg.softuni.stylemint.product.common.service.impl.BasePriceCalculatorService;
+import bg.softuni.stylemint.product.fashion.config.FashionPriceProperties;
 import bg.softuni.stylemint.product.fashion.enums.ClothType;
 import bg.softuni.stylemint.product.fashion.model.ClothDesign;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
+/**
+ * Fashion Price Calculator with discount support
+ *
+ * Base prices are loaded from application-prices.yml
+ * Additional modifiers:
+ * - Bonus points multiplier
+ * - Custom decal premium (loaded from config)
+ * - NFT discounts (5% or 7%, permanent)
+ * - One-time discounts (20% or 40%, consumed after use)
+ */
+@Slf4j
 @Service("fashionPriceCalculatorService")
-public class FashionPriceCalculatorServiceImpl implements PriceCalculatorService<ClothDesign> {
+public class FashionPriceCalculatorServiceImpl extends BasePriceCalculatorService<ClothDesign> {
 
-    // Base prices by cloth type
-    private static final Map<ClothType, Double> BASE_PRICES = Map.of(
-            ClothType.T_SHIRT_SPORT, 29.99,
-            ClothType.T_SHIRT_CLASSIC, 24.99,
-            ClothType.HOODIE, 49.99,
-            ClothType.CAP, 19.99,
-            ClothType.SHOE, 89.99
-    );
+    private final FashionPriceProperties priceProperties;
 
-    private double calculateMultiplier(Integer bonusPoints) {
-        if (bonusPoints == null) return 1.0;
-        if (bonusPoints >= 100) return 1.3;
-        if (bonusPoints >= 50) return 1.15;
-        if (bonusPoints >= 20) return 1.0;
-        return 0.95;
+    public FashionPriceCalculatorServiceImpl(
+            NftServiceFacade nftServiceFacade,
+            DiscountService discountService,
+            FashionPriceProperties priceProperties) {
+        super(nftServiceFacade, discountService);
+        this.priceProperties = priceProperties;
     }
 
+    /**
+     * Calculate base price before discounts
+     *
+     * Formula: (BASE_PRICE * BONUS_MULTIPLIER) + CUSTOM_DECAL_PREMIUM
+     */
     @Override
-    public double calculatePrice(ClothDesign product) {
-        // Use ClothType to determine base price
-        double basePrice = BASE_PRICES.getOrDefault(product.getClothType(), 29.99);
-        Integer bonusPoints = product.getBonusPoints();
-        double multiplier = calculateMultiplier(bonusPoints);
+    protected double calculateBasePrice(ClothDesign product) {
+        // Get base price for cloth type from configuration
+        double basePrice = getBasePriceForClothType(product.getClothType());
 
-        // Add premium for custom decals
-        double customDecalPremium = (product.getCustomDecalPath() != null) ? 5.0 : 0.0;
+        // Apply bonus points multiplier from configuration
+        double multiplier = priceProperties.getMultiplierForPoints(product.getBonusPoints());
 
-        return (basePrice * multiplier) + customDecalPremium;
+        // Add premium for custom decals from configuration
+        double customDecalPremium = (product.getCustomDecalPath() != null)
+                ? priceProperties.getCustomDecalPremium()
+                : 0.0;
+
+        double calculatedPrice = (basePrice * multiplier) + customDecalPremium;
+
+        log.debug("Calculated base price for {}: base={}, multiplier={}, premium={}, total={}",
+                product.getClothType(),
+                basePrice,
+                multiplier,
+                customDecalPremium,
+                calculatedPrice);
+
+        return calculatedPrice;
+    }
+
+    /**
+     * Get base price for cloth type from configuration
+     *
+     * Maps ClothType enum to configuration key:
+     * - T_SHIRT_SPORT -> t-shirt-sport
+     * - T_SHIRT_CLASSIC -> t-shirt-classic
+     * - HOODIE -> hoodie
+     * - CAP -> cap
+     * - SHOE -> shoe
+     */
+    private double getBasePriceForClothType(ClothType clothType) {
+        String configKey = clothType.name().toLowerCase().replace("_", "-");
+        return priceProperties.getBasePrice(configKey);
     }
 }

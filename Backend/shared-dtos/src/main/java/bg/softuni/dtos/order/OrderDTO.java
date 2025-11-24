@@ -22,4 +22,5 @@ public class OrderDTO {
     private Double totalAmount;
     private OffsetDateTime createdAt;
     private List<OrderItemDTO> items;
+
 }

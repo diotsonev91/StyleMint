@@ -1,3 +1,4 @@
+// GameServiceImpl.java - UPDATED with DiscountService
 package bg.softuni.stylemint.game.service.impl;
 
 import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
@@ -10,11 +11,13 @@ import bg.softuni.stylemint.game.model.GameStats;
 import bg.softuni.stylemint.game.model.Leaderboard;
 import bg.softuni.stylemint.game.repository.GameRepository;
 import bg.softuni.stylemint.game.service.GameService;
+import bg.softuni.stylemint.product.common.service.DiscountService;
 import bg.softuni.stylemint.user.dto.UserDTO;
 import bg.softuni.stylemint.user.model.User;
 import bg.softuni.stylemint.user.repository.UserRepository;
 import bg.softuni.stylemint.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +26,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -31,6 +35,7 @@ public class GameServiceImpl implements GameService {
     private final GameRepository gameRepository;
     private final UserRepository userRepository;
     private final UserService userService;
+    private final DiscountService discountService; // ✅ NEW
 
     // ========== GAME SESSION METHODS ==========
 
@@ -93,6 +98,16 @@ public class GameServiceImpl implements GameService {
             throw new ForbiddenOperationException("Reward already claimed");
         }
 
+        // ✅ NEW: Handle discount rewards
+        if (isDiscountReward(session.getRewardType())) {
+            discountService.saveDiscount(userId, session.getRewardType());
+            log.info("✅ Saved {} discount for user {}", session.getRewardType(), userId);
+        }
+
+        // ✅ NFT rewards are handled elsewhere (NftServiceFacade)
+        // - NFT_DISCOUNT_5, NFT_DISCOUNT_7
+        // - AUTHOR_BADGE_PRODUCER, AUTHOR_BADGE_DESIGNER
+
         session.setRewardClaimed(true);
         GameSession updated = gameRepository.save(session);
 
@@ -142,7 +157,7 @@ public class GameServiceImpl implements GameService {
         );
         GameSession lastSession = recentSessions.isEmpty() ? null : recentSessions.get(0);
 
-        // 🔥 НОВО: Взимаме ранковете за всеки game type и общия ранг
+        // Get ranks for each game type and overall rank
         Map<GameType, Integer> ranks = calculateRanksByGameType(userId, gameTypes);
         int totalRank = gameRepository.getUserOverallRank(userId);
 
@@ -153,8 +168,8 @@ public class GameServiceImpl implements GameService {
                 .unclaimedRewards((int) unclaimedRewards)
                 .lastPlayedAt(lastSession != null ? lastSession.getPlayedAt() : null)
                 .lastRewardType(lastSession != null ? lastSession.getRewardType() : null)
-                .ranks(ranks)  // 🔥 НОВО: Попълваме ранковете по game types
-                .totalRank(totalRank)  // 🔥 НОВО: Попълваме общия ранг
+                .ranks(ranks)
+                .totalRank(totalRank)
                 .build();
     }
 
@@ -203,7 +218,7 @@ public class GameServiceImpl implements GameService {
     // ========== PRIVATE HELPER METHODS ==========
 
     /**
-     * 🔥 НОВ МЕТОД: Изчислява ранковете за всеки game type
+     * Calculate ranks for each game type
      */
     private Map<GameType, Integer> calculateRanksByGameType(UUID userId, Set<GameType> gameTypes) {
         Map<GameType, Integer> ranks = new HashMap<>();
@@ -228,9 +243,6 @@ public class GameServiceImpl implements GameService {
             stats.setRewardType(result.getRewardType());
             stats.setRewardClaimed(false);
         }
-
-        // Save through entity manager since GameStats is not the primary entity
-        // This will work because we're in a transactional context
     }
 
     private void updateLeaderboard(UUID userId, GameResultDTO result) {
@@ -242,7 +254,6 @@ public class GameServiceImpl implements GameService {
 
             gameTypeLeaderboard.setTotalScore(gameTypeLeaderboard.getTotalScore() + result.getScore());
             gameTypeLeaderboard.setGamesPlayed(gameTypeLeaderboard.getGamesPlayed() + 1);
-            // Save through entity manager
         }
 
         // Update overall leaderboard
@@ -252,7 +263,6 @@ public class GameServiceImpl implements GameService {
 
         overallLeaderboard.setTotalScore(overallLeaderboard.getTotalScore() + result.getScore());
         overallLeaderboard.setGamesPlayed(overallLeaderboard.getGamesPlayed() + 1);
-        // Save through entity manager
     }
 
     private void updateGameStatsRewardClaimed(UUID userId) {
@@ -262,7 +272,6 @@ public class GameServiceImpl implements GameService {
             long unclaimedCount = gameRepository.countByUserIdAndRewardClaimedFalse(userId);
             if (unclaimedCount == 0) {
                 stats.setRewardClaimed(true);
-                // Save through entity manager
             }
         }
     }
@@ -369,5 +378,12 @@ public class GameServiceImpl implements GameService {
 
     private boolean doesNotHaveReward(UUID userId, RewardType rewardType) {
         return !gameRepository.existsByUserIdAndRewardType(userId, rewardType);
+    }
+
+    /**
+     * ✅ NEW: Check if reward is a discount type
+     */
+    private boolean isDiscountReward(RewardType rewardType) {
+        return rewardType == RewardType.DISCOUNT_20 || rewardType == RewardType.DISCOUNT_40;
     }
 }

@@ -12,5 +12,6 @@ public class CreateOrderResponseDTO {
     private Double totalAmount;
     private String paymentUrl; // only for Stripe, null for cash
     private String status;
+    private Integer totalItems;
 }
 

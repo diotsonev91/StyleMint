@@ -21,6 +21,29 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 import static bg.softuni.stylemint.config.ApiPaths.BASE;
 
+/**
+ * Security Configuration for JWT-based authentication
+ *
+ * ⚠️ IMPORTANT: Understanding UserDetailsService usage
+ *
+ * Login Flow (USES UserDetailsService):
+ * 1. User sends email/password to /login
+ * 2. AuthenticationManager → DaoAuthenticationProvider → UserDetailsService
+ * 3. UserDetailsService loads user from database
+ * 4. DaoAuthenticationProvider validates password
+ * 5. JWT token is generated and returned
+ *
+ * Regular Request Flow (DOES NOT use UserDetailsService):
+ * 1. User sends JWT token in Authorization header
+ * 2. JwtAuthenticationFilter validates token
+ * 3. Authentication is set from JWT claims (NO database query)
+ * 4. Request proceeds to controller
+ *
+ * Summary:
+ * - UserDetailsService is ONLY used for /login endpoint
+ * - All other endpoints use JWT validation (no UserDetailsService)
+ * - This is the standard Spring Security + JWT pattern
+ */
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
@@ -47,6 +70,7 @@ public class SecurityConfig {
                         // ✅ Authenticated endpoints
                         .requestMatchers(BASE + "/auth/me").authenticated()
 
+                        // ✅ All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
@@ -56,20 +80,27 @@ public class SecurityConfig {
                             response.getWriter().write("{\"error\":\"Unauthorized\"}");
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            // ✅ Handle insufficient permissions (403)
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.setContentType("application/json");
                             response.getWriter().write("{\"error\":\"Forbidden - Insufficient permissions\"}");
                         })
                 )
-                .authenticationProvider(authenticationProvider())  // ✅ Add authentication provider
+                // ✅ JWT filter runs before Spring Security's default authentication
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
     /**
-     * Authentication Provider за login с email/password
-     * Използва се САМО при login, след това JWT token-ът се грижи за authentication
+     * Authentication Provider for login with email/password
+     *
+     * This is ONLY used for the /login endpoint to:
+     * 1. Load user from database via UserDetailsService
+     * 2. Validate password with BCryptPasswordEncoder
+     *
+     * After login, JWT tokens are used and this provider is NOT invoked.
+     *
+     * Note: Spring Security automatically uses this provider when AuthenticationManager
+     * is called in AuthServiceImpl.login()
      */
     @Bean
     public AuthenticationProvider authenticationProvider() {
@@ -84,6 +115,10 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * AuthenticationManager is used ONLY in AuthServiceImpl.login()
+     * to authenticate user credentials before generating JWT token
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
