@@ -1,10 +1,19 @@
-// CartPage.tsx - Extended for clothes, samples, and packs
+// CartPage.tsx - CORRECTED with proper imports
 import { useSnapshot } from "valtio";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { cartState, CartItemState } from "../../state";
-import { clearCart, getClothesItems, getSampleItems, getPackItems, removeItem } from "../../services/cartService";
-import { calculateTotalPrice, getTotalItemCount } from "../../services/orderService";
+import { cartState, CartItemState } from "../../state/CartItemState";
+import {
+    clearCart,
+    getClothesItems,
+    getSampleItems,
+    getPackItems,
+    removeItem,
+    getTotalItemCount,
+    getTotals
+} from "../../services/cartService";
+import { orderService } from "../../services/orderService";
+import { useAuth } from "../../hooks/useAuth";
 
 import "./CartPage.css";
 import {ClothesCartRow} from "../../components/three/cart/ClothsCartRow";
@@ -13,20 +22,59 @@ import {SampleCartRow} from "../../components/sounds/cart/SampleCartRow";
 export function CartPage() {
     const snap = useSnapshot(cartState);
     const navigate = useNavigate();
+    const { user } = useAuth();
 
+    const [orderPreview, setOrderPreview] = useState<number | null>(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
+
+    // Get client-side totals (estimates)
+    const clientTotals = getTotals();
     const totalItems = getTotalItemCount();
-    const totalPrice = calculateTotalPrice();
 
     // Group items by type for organized display
     const clothesItems = getClothesItems();
     const sampleItems = getSampleItems();
     const packItems = getPackItems();
 
+    // Load server-side price preview with discounts
+    useEffect(() => {
+        if (snap.items.length > 0 && user) {
+            loadPricePreview();
+        }
+    }, [snap.items.length, user]);
+
+    const loadPricePreview = async () => {
+        if (!user) return;
+
+        try {
+            setPreviewLoading(true);
+
+            // 🔥 FIX: Convert readonly snapshot array → mutable array
+            const mutableItems = [...snap.items];
+
+            const preview = await orderService.previewOrderTotal(mutableItems, user.id);
+            setOrderPreview(preview.totalAmount);
+        } catch (error) {
+            console.error('Failed to preview order:', error);
+            setOrderPreview(clientTotals.total);
+        } finally {
+            setPreviewLoading(false);
+        }
+    };
+
+
     const handleContinueToDetails = () => {
         if (snap.items.length === 0) {
             alert("Your cart is empty!");
             return;
         }
+
+        if (!user) {
+            alert("Please log in to checkout");
+            navigate("/login");
+            return;
+        }
+
         navigate("/checkout/details");
     };
 
@@ -121,51 +169,84 @@ export function CartPage() {
                         <div className="cart-summary-card">
                             <h2 className="summary-title">Order Summary</h2>
 
-                            {/* Breakdown by type */}
-                            {clothesItems.length > 0 && (
-                                <div className="summary-row">
-                                    <span className="summary-label">Clothing ({clothesItems.reduce((sum, item) => sum + (item.quantity || 1), 0)} items):</span>
-                                    <span className="summary-value">
-                    ${(clothesItems.reduce((sum, item) => sum + 29.99 * (item.quantity || 1), 0)).toFixed(2)}
-                  </span>
+                            {/* Show server-side preview if available */}
+                            {previewLoading ? (
+                                <div className="preview-loading">
+                                    <div className="spinner"></div>
+                                    <p>Calculating total with discounts...</p>
                                 </div>
-                            )}
+                            ) : orderPreview !== null ? (
+                                <>
+                                    <div className="summary-row">
+                                        <span className="summary-label">Subtotal:</span>
+                                        <span className="summary-value">€{orderPreview.toFixed(2)}</span>
+                                    </div>
+                                    <p className="discount-note">* Your active discounts have been applied</p>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Fallback: Show client-side estimates */}
+                                    {clothesItems.length > 0 && (
+                                        <div className="summary-row">
+                                            <span className="summary-label">
+                                                Clothing ({clothesItems.reduce((sum, item) => sum + (item.quantity || 1), 0)} items):
+                                            </span>
+                                            <span className="summary-value">
+                                                €{(clothesItems.reduce((sum, item) => sum + 29.99 * (item.quantity || 1), 0)).toFixed(2)}
+                                            </span>
+                                        </div>
+                                    )}
 
-                            {sampleItems.length > 0 && (
-                                <div className="summary-row">
-                                    <span className="summary-label">Samples ({sampleItems.length}):</span>
-                                    <span className="summary-value">
-                    ${(sampleItems.reduce((sum, item) => sum + item.price, 0)).toFixed(2)}
-                  </span>
-                                </div>
-                            )}
+                                    {sampleItems.length > 0 && (
+                                        <div className="summary-row">
+                                            <span className="summary-label">Samples ({sampleItems.length}):</span>
+                                            <span className="summary-value">
+                                                €{(sampleItems.reduce((sum, item) => sum + item.price, 0)).toFixed(2)}
+                                            </span>
+                                        </div>
+                                    )}
 
-                            {packItems.length > 0 && (
-                                <div className="summary-row">
-                                    <span className="summary-label">Packs ({packItems.length}):</span>
-                                    <span className="summary-value">
-                    ${(packItems.reduce((sum, item) => sum + item.price, 0)).toFixed(2)}
-                  </span>
-                                </div>
-                            )}
+                                    {packItems.length > 0 && (
+                                        <div className="summary-row">
+                                            <span className="summary-label">Packs ({packItems.length}):</span>
+                                            <span className="summary-value">
+                                                €{(packItems.reduce((sum, item) => sum + item.price, 0)).toFixed(2)}
+                                            </span>
+                                        </div>
+                                    )}
 
-                            <div className="summary-row">
-                                <span className="summary-label">Shipping:</span>
-                                <span className="summary-value">Calculated at checkout</span>
-                            </div>
+                                    <div className="summary-row">
+                                        <span className="summary-label">Shipping:</span>
+                                        <span className="summary-value">Calculated at checkout</span>
+                                    </div>
+                                </>
+                            )}
 
                             <div className="summary-divider" />
 
                             <div className="summary-row summary-total">
                                 <span className="summary-label">Total ({totalItems} items):</span>
-                                <span className="summary-value">${totalPrice.toFixed(2)}</span>
+                                <span className="summary-value">
+                                    €{(orderPreview !== null ? orderPreview : clientTotals.total).toFixed(2)}
+                                </span>
                             </div>
+
+                            {!user && (
+                                <div className="login-required-note">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Please log in to see final prices with discounts
+                                </div>
+                            )}
 
                             <button
                                 onClick={handleContinueToDetails}
                                 className="checkout-button"
+                                disabled={!user}
                             >
-                                Continue to Order Details
+                                {user ? 'Continue to Checkout' : 'Log In to Checkout'}
                             </button>
 
                             <div className="secure-checkout-badge">
@@ -270,7 +351,7 @@ function PackCartRow({ item }: { item: CartItemState & { type: 'pack' } }) {
                 </div>
 
                 <div className="pack-price-section">
-                    <div className="item-price">${item.price.toFixed(2)}</div>
+                    <div className="item-price">€{item.price.toFixed(2)}</div>
                     <div className="digital-badge">Digital Download</div>
                 </div>
             </div>

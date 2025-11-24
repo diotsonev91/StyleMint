@@ -5,7 +5,7 @@ import {
     DesignDetailDTO,
     CustomizationData,
     ApiResponse,
-    PaginatedResponse, ClothType,
+    PaginatedResponse, ClothType, DesignSummaryDTO,
 } from '../api/clothDesign.api';
 
 export const clothDesignService = {
@@ -15,7 +15,7 @@ export const clothDesignService = {
         label: string,
         isPublic: boolean = false,
         bonusPoints: number = 20
-    ): Promise<ApiResponse<DesignDetailDTO>> {
+    ): Promise<ApiResponse<DesignSummaryDTO>> {
         try {
             const formData = new FormData();
 
@@ -99,7 +99,7 @@ export const clothDesignService = {
         designId: string,
         state: any,
         label?: string
-    ): Promise<ApiResponse<DesignDetailDTO>> {
+    ): Promise<ApiResponse<DesignSummaryDTO>> {
         try {
             const formData = new FormData();
 
