@@ -146,21 +146,27 @@ export function PublicDesignsPage() {
      * Helper function to convert DesignPublicDTO to CartItem format
      */
     const designToCartItem = (design: DesignPublicDTO, tempRotation: number = 0) => {
-        const customization = design.customizationData
+        const customization = design.customizationData;
 
         return {
             id: design.id,
             type: "clothes" as const,
+
             selectedColor: customization.selectedColor || "#ffffff",
-            selectedDecal: customization.selectedDecal || null,
+            selectedDecal: customization.selectedDecal || "none",
 
             selected_type: design.clothType.toLowerCase() as any,
             decalPosition: customization.decalPosition as [number, number, number] | null,
+
             rotationY: tempRotation,
             ripples: [],
             quantity: 1,
+
+            hasCustomDecal: customization.hasCustomDecal ?? false,
+            customDecalUrl: design.customDecalUrl ?? null,
         };
     };
+
 
     if (loading && page === 0) {
         return (

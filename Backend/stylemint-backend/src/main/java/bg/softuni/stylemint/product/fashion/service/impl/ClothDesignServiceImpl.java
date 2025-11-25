@@ -103,14 +103,14 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
     @Override
     @Transactional
-    public DesignPublicDTO updateDesign(UUID userId, DesignUploadRequestDTO request) {
+    public DesignPublicDTO updateDesign(UUID designId, DesignUploadRequestDTO request) {
 
         UUID currentUserId = SecurityUtil.getCurrentUserId();
 
-        ClothDesign design = clothDesignRepository.findById(currentUserId)
-                .orElseThrow(() -> new ClothDesignNotFoundException(currentUserId));
+        ClothDesign design = clothDesignRepository.findById(designId)
+                .orElseThrow(() -> new ClothDesignNotFoundException(designId));
 
-        if (!design.getUserId().equals(userId)) {
+        if (!design.getUserId().equals(currentUserId)) {
             throw new ForbiddenOperationException("Not authorized to update this design");
         }
 
@@ -138,13 +138,11 @@ public class ClothDesignServiceImpl implements ClothDesignService {
                 needsPriceRecalculation = true;
             }
 
-            // Process new custom decal if provided - сега с Cloudinary
             if (request.getCustomDecalFile() != null && !request.getCustomDecalFile().isEmpty()) {
-                processCustomDecalFile(request.getCustomDecalFile(), design, userId);
-                needsPriceRecalculation = true; // Custom decal affects price
+                processCustomDecalFile(request.getCustomDecalFile(), design, currentUserId);
+                needsPriceRecalculation = true;
             }
 
-            // Recalculate price if needed
             if (needsPriceRecalculation) {
                 double newPrice = clothPriceCalculator.calculatePrice(design);
                 design.setPrice(newPrice);
@@ -152,12 +150,13 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
             ClothDesign updatedDesign = clothDesignRepository.save(design);
             return toPublicDTO(updatedDesign);
-        }
-        catch (Exception e) {
+
+        } catch (Exception e) {
             log.error("Failed to update cloth design", e);
             throw new ClothDesignProcessingException("Failed to update design: " + e.getMessage(), e);
         }
     }
+
 
     private void processCustomDecalFile(MultipartFile customDecalFile, ClothDesign design, UUID userId) {
         try {

@@ -67,9 +67,13 @@ export function Shirt({
 
  // ... inside Shirt component:
 
-const texturePath = usedDecal === 'custom' && snap.customDecal 
-  ? snap.customDecal.previewUrl 
-  : `/images/${usedDecal}_thumb.png`;
+    const texturePath =
+        usedDecal === "custom"
+            ? (cartItem?.customDecalUrl ??
+                snap.customDecal?.previewUrl ??
+                "/images/custom_thumb.png")
+            : `/images/${usedDecal}_thumb.png`;
+
 
 const texture = useTexture(texturePath);
 texture.anisotropy = 16;

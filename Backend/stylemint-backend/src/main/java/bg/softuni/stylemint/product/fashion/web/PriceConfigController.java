@@ -15,18 +15,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static bg.softuni.stylemint.config.ApiPaths.BASE;
+
 /**
  * REST Controller for price configuration
  *
  * Provides frontend with base prices, multipliers, and discount information
  *
  * Endpoints:
- * - GET /api/prices/config - Full price configuration
- * - GET /api/prices/base - Base prices only
+ * - GET /api/v1/prices/config - Full price configuration
+ * - GET /api/v1/prices/base - Base prices only
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/prices")
+@RequestMapping(BASE +"/prices")
 @RequiredArgsConstructor
 public class PriceConfigController {
 

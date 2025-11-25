@@ -8,7 +8,7 @@ export interface DesignSummaryDTO {
     clothType: string;
     customizationType: string;
     previewImageUrl?: string;
-    isPublic: boolean;
+    public: boolean;
     price?: number;
     bonusPoints: number;
     salesCount: number;

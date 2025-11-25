@@ -235,26 +235,36 @@ export interface UserOrderSummaryDTO {
  * Map frontend CartItemState to backend OrderItemRequest
  */
 export function mapCartItemToOrderItem(item: CartItemState): OrderItemRequest {
+
     switch (item.type) {
+
         case 'clothes': {
             const clothesItem = item as ClothesCartItem;
+
             return {
                 productType: 'CLOTHES',
-                productId: clothesItem.id,
+                productId: clothesItem.id, // IMPORTANT: This must be designId, not random cart UUID
                 quantity: clothesItem.quantity || 1,
+
+                // ⭐ FULL CUSTOMIZATION JSON ⭐
                 customizationJson: JSON.stringify({
                     color: clothesItem.selectedColor,
                     decal: clothesItem.selectedDecal,
                     clothType: clothesItem.selected_type,
                     decalPosition: clothesItem.decalPosition,
                     rotationY: clothesItem.rotationY,
-                    ripples: clothesItem.ripples
+                    ripples: clothesItem.ripples,
+
+                    // ⭐ NEW FIELDS ⭐
+                    hasCustomDecal: clothesItem.hasCustomDecal ?? false,
+                    customDecalUrl: clothesItem.customDecalUrl ?? null
                 })
             };
         }
 
         case 'sample': {
             const sampleItem = item as SampleCartItem;
+
             return {
                 productType: 'SAMPLE',
                 productId: sampleItem.id,
@@ -265,6 +275,7 @@ export function mapCartItemToOrderItem(item: CartItemState): OrderItemRequest {
 
         case 'pack': {
             const packItem = item as PackCartItem;
+
             return {
                 productType: 'PACK',
                 productId: packItem.id,
@@ -277,6 +288,7 @@ export function mapCartItemToOrderItem(item: CartItemState): OrderItemRequest {
             throw new Error(`Unknown cart item type: ${(item as any).type}`);
     }
 }
+
 
 /**
  * Validate order has required delivery address for clothes

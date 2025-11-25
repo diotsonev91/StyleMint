@@ -3,6 +3,7 @@ import { cartState, state } from "../state";
 import type { ClothesCartItem, SampleCartItem, PackCartItem, CartItemState } from "../state/CartItemState";
 import type { AudioSample, SamplePack } from "../types";
 import { subscribe } from "valtio";
+import {DesignDetailDTO} from "../api/clothDesign.api";
 
 const CART_STORAGE_KEY = "sample-marketplace-cart";
 
@@ -46,22 +47,41 @@ if (typeof window !== "undefined") {
 /**
  * Add clothes to cart
  */
-export async function addClothToCart() {
+export async function addClothToCart(design: DesignDetailDTO) {
+
+    // 1) Извличаме customization от backend
+    const customization = design.customizationData;
+
+    // 2) КРАЙНО ВАЖНО:
+    // ако има custom decal от backend → override с него
+    // ако потребителят в редактора е качил нов → override със state.customDecal
+    const customDecalUrl =
+        state.customDecal?.previewUrl ??
+        design.customDecalUrl ??
+        null;
+
     const item: ClothesCartItem = {
-        id: crypto.randomUUID(),
+        id: design.id,
         type: "clothes",
-        selectedColor: state.selectedColor,
-        selectedDecal: state.selectedDecal,
-        selected_type: state.selected_type,
-        decalPosition: state.decalPosition,
-        rotationY: state.rotationY,
-        ripples: state.ripples.slice(),
+        selectedColor: customization.selectedColor,
+        selectedDecal: customization.selectedDecal,
+        selected_type: design.clothType.toLowerCase(),
+
+        decalPosition: customization.decalPosition,
+        rotationY: customization.rotationY,
+        ripples: [],
         quantity: 1,
+
+        // ⭐⭐ ВАЖНО — добавяме и двете ⭐⭐
+        hasCustomDecal: !!customDecalUrl,
+        customDecalUrl: customDecalUrl,
     };
 
     cartState.items.push(item);
-    console.log('✅ Added clothes to cart');
+    return item;
 }
+
+
 
 /**
  * Add sample to cart (once, qty=1)

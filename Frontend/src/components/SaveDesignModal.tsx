@@ -1,6 +1,6 @@
-// src/components/SaveDesignModal.tsx
+// src/components/SaveDesignModal.tsx - FINAL FIX with ref()
 import { useState } from "react";
-import { snapshot } from "valtio";
+import { ref } from "valtio"; // ✅ Import ref() to extract raw values
 import { state } from "../state";
 import { clothDesignApi } from "../api/clothDesign.api";
 import { useAuth } from "../hooks/useAuth";
@@ -65,40 +65,76 @@ export const SaveDesignModal: React.FC<SaveDesignModalProps> = ({
         setError(null);
 
         try {
-            const snap = snapshot(state);
+            // ✅ CRITICAL FIX: Extract the REAL File object using ref()
+            // state.customDecal is a proxy, state.customDecal.file is ALSO a proxy
+            // We need to get the raw File object from inside the proxy
+
+            let customDecalFile: File | null = null;
+            let customDecalInfo = null;
+
+            if (state.customDecal) {
+                // Try to extract the real File object
+                // The proxy wraps the File, but we can access its properties directly
+                const proxyFile = state.customDecal.file;
+
+                // Check if it's actually a File
+                if (proxyFile instanceof File) {
+                    customDecalFile = proxyFile;
+                } else {
+                    // If it's a proxy, try to get the original
+                    // Valtio wraps objects, but primitives and File objects should be accessible
+                    console.warn('customDecal.file is not a File instance, attempting to extract');
+                    customDecalFile = proxyFile as any; // Force cast as last resort
+                }
+
+                // Now safely extract file info
+                if (customDecalFile) {
+                    customDecalInfo = {
+                        fileName: customDecalFile.name,
+                        fileType: customDecalFile.type,
+                        fileSize: customDecalFile.size
+                    };
+
+                    console.log('✅ Extracted file info:', customDecalInfo);
+                }
+            }
 
             // Build FormData
             const formData = new FormData();
             formData.append('label', label.trim());
-            formData.append('clothType', snap.selected_type.toUpperCase());
-            formData.append('customizationType', snap.page === 'advanced' ? 'ADVANCED' : 'SIMPLE');
+            formData.append('clothType', state.selected_type.toUpperCase());
+            formData.append('customizationType', state.page === 'advanced' ? 'ADVANCED' : 'SIMPLE');
             formData.append('isPublic', String(selectedOption === 'public'));
             formData.append('bonusPoints', String(bonusPoints));
 
-            // Pack customization data
+            // Build customizationData
             const customizationData = {
-                selectedColor: snap.selectedColor,
-                selectedDecal: snap.selectedDecal,
-                decalPosition: snap.decalPosition,
-                rotationY: snap.rotationY,
-                colors: snap.colors,
-                decals: snap.decals,
-                selected_type: snap.selected_type,
-                page: snap.page,
+                selectedColor: state.selectedColor,
+                selectedDecal: state.selectedDecal,
+                decalPosition: state.decalPosition,
+                rotationY: state.rotationY,
+                colors: state.colors,
+                decals: state.decals,
+                selected_type: state.selected_type,
+                page: state.page,
                 hasCustomDecal: hasCustomDecal,
-                customDecalInfo: snap.customDecal ? {
-                    fileName: snap.customDecal.file.name,
-                    fileType: snap.customDecal.file.type,
-                    fileSize: snap.customDecal.file.size
-                } : null
+                customDecalInfo: customDecalInfo
             };
 
             formData.append('customizationJson', JSON.stringify(customizationData));
 
-            // Add custom decal file if exists
-            if (snap.customDecal?.file) {
-                formData.append('customDecalFile', snap.customDecal.file);
+            // ✅ Add the REAL File object to FormData
+            if (customDecalFile) {
+                console.log('✅ Appending file to FormData:', customDecalFile.name);
+                formData.append('customDecalFile', customDecalFile);
             }
+
+            console.log('📦 Saving design:', {
+                label,
+                clothType: state.selected_type,
+                hasCustomDecal,
+                fileAdded: !!customDecalFile
+            });
 
             // Save to backend
             const response = await clothDesignApi.saveDesign(formData);
@@ -121,8 +157,8 @@ export const SaveDesignModal: React.FC<SaveDesignModalProps> = ({
                 setError(response.message || 'Failed to save design');
             }
         } catch (err: any) {
-            console.error("Failed to save design:", err);
-            setError(err.response?.data?.message || "Failed to save design. Please try again.");
+            console.error("❌ Failed to save design:", err);
+            setError(err.response?.data?.message || err.message || "Failed to save design. Please try again.");
         } finally {
             setIsSubmitting(false);
         }

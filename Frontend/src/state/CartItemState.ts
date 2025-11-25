@@ -14,17 +14,22 @@ export type ClothesCartItem = BaseCartItem & {
     readonly selectedDecal: string;
     readonly selected_type: string;
 
-    // Valtio snapshot ALWAYS returns readonly tuple.
     readonly decalPosition: readonly [number, number, number] | null;
 
     readonly rotationY: number;
 
-    // Valtio returns readonly arrays and readonly tuples internally.
     readonly ripples: readonly {
         readonly id: number;
         readonly pos: readonly [number, number, number];
     }[];
+
+    // ⭐ NEW: Cloudinary decal from backend
+    readonly customDecalUrl?: string;
+
+    // ⭐ OPTIONAL flag (useful for rendering logic)
+    readonly hasCustomDecal?: boolean;
 };
+
 
 // Sample-specific cart item
 export type SampleCartItem = BaseCartItem & {

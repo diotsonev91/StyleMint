@@ -8,6 +8,6 @@ import bg.softuni.stylemint.orderservice.order.model.OrderItem;
 import java.util.List;
 
 public interface PaymentService {
-    PaymentResult initiatePayment(Order order, List<OrderItem> items);
+    PaymentResult initiatePayment(Order order, List<OrderItem> items, String frontendUrl);
     void validatePaymentMethod(CreateOrderRequestDTO request);
 }

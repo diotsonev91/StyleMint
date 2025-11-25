@@ -15,7 +15,7 @@ export function ClothesCartRow({ item }: ClothesCartRowProps) {
     const quantity = item.quantity || 1;
     const itemTotal = 29.99 * quantity;
 
-    // Check if this item was created in advanced mode
+    // Check if this item was created in advanced moderfbgtn
     const isAdvancedMode = !!item.decalPosition;
 
     useEffect(() => {
@@ -36,11 +36,6 @@ export function ClothesCartRow({ item }: ClothesCartRowProps) {
             <button onClick={_removeItem} className="remove-button" title="Remove item">
                 ✕
             </button>
-
-            {/* Mode Badge */}
-            <div className="mode-badge">
-                {isAdvancedMode ? "🎨 Advanced" : "✨ Easy"}
-            </div>
 
             {/* Preview */}
             <ClothItemPreview

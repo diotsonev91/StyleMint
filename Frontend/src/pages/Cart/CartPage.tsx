@@ -41,7 +41,8 @@ export function CartPage() {
         if (snap.items.length > 0 && user) {
             loadPricePreview();
         }
-    }, [snap.items.length, user]);
+        console.log(snap)
+    }, [snap, user]);
 
     const loadPricePreview = async () => {
         if (!user) return;

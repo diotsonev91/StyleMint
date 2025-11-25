@@ -243,10 +243,14 @@ export function EditClothDesignPage() {
                                         ripples: [],
                                         quantity: 1,
                                         type: "clothes",
+
+                                        hasCustomDecal: design.customizationData.hasCustomDecal ?? false,
+                                        customDecalUrl: design.customDecalUrl ?? null,
                                     }}
                                     rotationYOverride={rotationY}
                                 />
                             )}
+
                             {design.clothType === "CAP" && (
                                 <Cap
                                     advanced={isAdvanced}
@@ -260,10 +264,14 @@ export function EditClothDesignPage() {
                                         ripples: [],
                                         quantity: 1,
                                         type: "clothes",
+
+                                        hasCustomDecal: design.customizationData.hasCustomDecal ?? false,
+                                        customDecalUrl: design.customDecalUrl ?? null,
                                     }}
                                     rotationYOverride={rotationY}
                                 />
                             )}
+
                             {design.clothType === "T_SHIRT_SPORT" && (
                                 <Shirt
                                     variant="sport"
@@ -278,10 +286,14 @@ export function EditClothDesignPage() {
                                         ripples: [],
                                         quantity: 1,
                                         type: "clothes",
+
+                                        hasCustomDecal: design.customizationData.hasCustomDecal ?? false,
+                                        customDecalUrl: design.customDecalUrl ?? null,
                                     }}
                                     rotationYOverride={rotationY}
                                 />
                             )}
+
                             {design.clothType === "T_SHIRT_CLASSIC" && (
                                 <Shirt
                                     variant="classic"
@@ -296,10 +308,14 @@ export function EditClothDesignPage() {
                                         ripples: [],
                                         quantity: 1,
                                         type: "clothes",
+
+                                        hasCustomDecal: design.customizationData.hasCustomDecal ?? false,
+                                        customDecalUrl: design.customDecalUrl ?? null,
                                     }}
                                     rotationYOverride={rotationY}
                                 />
                             )}
+
                             {design.clothType === "SHOE" && (
                                 <Shoe
                                     advanced={isAdvanced}
@@ -313,11 +329,15 @@ export function EditClothDesignPage() {
                                         ripples: [],
                                         quantity: 1,
                                         type: "clothes",
+
+                                        hasCustomDecal: design.customizationData.hasCustomDecal ?? false,
+                                        customDecalUrl: design.customDecalUrl ?? null,
                                     }}
                                     rotationYOverride={rotationY}
                                 />
                             )}
                         </Center>
+
                     </Canvas>
                 </div>
 

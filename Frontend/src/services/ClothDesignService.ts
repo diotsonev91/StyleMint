@@ -94,7 +94,11 @@ export const clothDesignService = {
         }
     },
 
-    // UPDATE
+// clothDesignService.ts - REPLACE the duplicate updateDesign function
+
+    /**
+     * Update existing design with proper error handling
+     */
     async updateDesign(
         designId: string,
         state: any,
@@ -110,6 +114,13 @@ export const clothDesignService = {
             if (clothType) formData.append("clothType", clothType);
             if (state.page) formData.append("customizationType", state.page === "advanced" ? "ADVANCED" : "BASIC");
 
+            // SAFE customDecalInfo access
+            const customDecalInfo = state.customDecal?.file ? {
+                fileName: state.customDecal.file.name || 'custom_design',
+                fileType: state.customDecal.file.type || 'image/*',
+                fileSize: state.customDecal.file.size || 0
+            } : null;
+
             const customizationData: CustomizationData = {
                 selectedColor: state.selectedColor,
                 selectedDecal: state.selectedDecal,
@@ -120,21 +131,21 @@ export const clothDesignService = {
                 selected_type: state.selected_type,
                 page: state.page,
                 hasCustomDecal: !!state.customDecal,
-                customDecalInfo: state.customDecal ? {
-                    fileName: state.customDecal.file.name,
-                    fileType: state.customDecal.file.type,
-                    fileSize: state.customDecal.file.size
-                } : null
+                customDecalInfo
             };
 
             formData.append("customizationJson", JSON.stringify(customizationData));
 
-            if (state.customDecal?.file) {
+            // SAFE file append
+            if (state.customDecal?.file && state.customDecal.file instanceof File) {
                 formData.append("customDecalFile", state.customDecal.file);
             }
 
+            console.log('🔄 Updating design with ID:', designId); // Debug log
+
             return await clothDesignApi.updateDesign(designId, formData);
         } catch (error: any) {
+            console.error('❌ Update design error:', error);
             return {
                 success: false,
                 error: error.response?.data?.message || error.message || 'Failed to update design',

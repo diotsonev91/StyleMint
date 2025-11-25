@@ -52,14 +52,12 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public PaymentResult initiatePayment(Order order, List<OrderItem> items) {
+    public PaymentResult initiatePayment(Order order, List<OrderItem> items, String frontendUrl) {
 
         boolean hasClothes = items.stream()
                 .anyMatch(i -> i.getProductType() == ProductType.CLOTHES);
 
         if (order.getPaymentMethod() == PaymentMethod.CASH) {
-
-
             return new PaymentResult(
                     true,   // is cash
                     hasClothes,
@@ -67,18 +65,28 @@ public class PaymentServiceImpl implements PaymentService {
             );
         }
 
-        // STRIPE
-        String url = stripeService.createCheckoutSession(
+        // ⭐⭐⭐ STRIPE - Use dynamic frontendUrl parameter ⭐⭐⭐
+
+        // Build success and cancel URLs with orderId
+        String successUrl = frontendUrl + "/checkout/success?orderId=" + order.getId();
+        String cancelUrl = frontendUrl + "/checkout/cancel?orderId=" + order.getId();
+
+        log.info("🔗 Creating Stripe session with URLs:");
+        log.info("   Success: {}", successUrl);
+        log.info("   Cancel: {}", cancelUrl);
+
+        // Create Stripe checkout session with dynamic URLs
+        String stripeCheckoutUrl = stripeService.createCheckoutSession(
                 order.getTotalAmount(),
                 order.getId(),
-                "https://stylemint.com/payment/success?orderId=" + order.getId(),
-                "https://stylemint.com/payment/cancel?orderId=" + order.getId()
+                successUrl,  // ⭐ Dynamic success URL
+                cancelUrl    // ⭐ Dynamic cancel URL
         );
 
         return new PaymentResult(
-                false,
-                hasClothes,
-                url
+                false,      // not cash (Stripe)
+                hasClothes, // should deliver clothes?
+                stripeCheckoutUrl  // Stripe checkout URL
         );
     }
 }

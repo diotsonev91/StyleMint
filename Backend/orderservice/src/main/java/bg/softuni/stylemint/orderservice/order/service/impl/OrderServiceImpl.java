@@ -23,6 +23,7 @@ import bg.softuni.stylemint.orderservice.payment.service.PaymentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -48,6 +49,8 @@ public class OrderServiceImpl implements OrderService {
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Value("${frontend.url:http://localhost:5173}")
+    private String frontendUrl;
     // ============================================================
     // CREATE ORDER
     // ============================================================
@@ -90,8 +93,9 @@ public class OrderServiceImpl implements OrderService {
 
         orderItemRepository.saveAll(items);
 
+        // ⭐⭐⭐ CHANGE: Pass frontendUrl to PaymentService ⭐⭐⭐
         // 5) Delegate payment logic to PaymentService
-        PaymentResult result = paymentService.initiatePayment(savedOrder, items);
+        PaymentResult result = paymentService.initiatePayment(savedOrder, items, frontendUrl);
 
 
         if (result.shouldDeliverClothes()) {
@@ -106,8 +110,15 @@ public class OrderServiceImpl implements OrderService {
 
 
         // ============================================================
-        // STRIPE FLOW
+        // STRIPE FLOW - Add logging
         // ============================================================
+        log.info("✅ Order created: {}", savedOrder.getId());
+        log.info("💳 Payment URL: {}", result.paymentUrl());
+        if (result.paymentUrl() != null) {
+            log.info("📍 Success URL: {}/checkout/success?orderId={}", frontendUrl, savedOrder.getId());
+            log.info("📍 Cancel URL: {}/checkout/cancel?orderId={}", frontendUrl, savedOrder.getId());
+        }
+
         return CreateOrderResponseDTO.builder()
                 .orderId(savedOrder.getId())
                 .totalAmount(totalAmount)

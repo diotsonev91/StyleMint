@@ -30,6 +30,15 @@ function isClothesCartItem(item: CartItemState | undefined): item is ClothesCart
   return !!item && 'selectedColor' in item && 'selectedDecal' in item;
 }
 
+function resolveTexturePath(selectedDecal: string, cartItem?: any) {
+    if (cartItem?.customDecalUrl) {
+        return cartItem.customDecalUrl; // PRIORITY ALWAYS
+    }
+
+    return `/images/${selectedDecal}_thumb.png`;
+}
+
+
 export const ThreeCanvas = ({
   position = [-1, 0, 2.5],
   fov = 25,
@@ -44,8 +53,7 @@ export const ThreeCanvas = ({
   ? (cartItem as ClothesCartItem)?.selected_type 
   : snap.selected_type;
 
-
-  return (
+    return (
       <Canvas
           shadows
           eventSource={document.getElementById("root")!}
@@ -134,8 +142,12 @@ if (isInsideCart && cartItem) {
 
   const isClassic = variant === "classic";
 
-  const texture = useTexture(`/images/${selectedDecal}_thumb.png`);
-  texture.anisotropy = 16;
+    const texturePath = resolveTexturePath(selectedDecal, cartItem);
+    const texture = useTexture(texturePath) as THREE.Texture;
+
+
+
+    texture.anisotropy = 16;
   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.colorSpace = THREE.SRGBColorSpace
 
@@ -210,7 +222,8 @@ const selectedDecal = isInsideCart && isClothesCartItem(cartItem)
   ? cartItem.selectedDecal
   : snap.selectedDecal;
 
-  const texture = useTexture(`/images/${selectedDecal}_thumb.png`);
+    const texturePath = resolveTexturePath(selectedDecal, cartItem);
+    const texture = useTexture(texturePath) as THREE.Texture;
   texture.anisotropy = 16;
    texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.colorSpace = THREE.SRGBColorSpace
@@ -275,7 +288,8 @@ const selectedDecal = isInsideCart && isClothesCartItem(cartItem)
   ? cartItem.selectedDecal
   : snap.selectedDecal;
 
-  const texture = useTexture(`/images/${selectedDecal}_thumb.png`);
+    const texturePath = resolveTexturePath(selectedDecal, cartItem);
+    const texture = useTexture(texturePath) as THREE.Texture;
   texture.anisotropy = 16;
     texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.colorSpace = THREE.SRGBColorSpace
@@ -336,7 +350,8 @@ const selectedDecal = isInsideCart && isClothesCartItem(cartItem)
   ? cartItem.selectedDecal
   : snap.selectedDecal;
 
-  const texture = useTexture(`/images/${selectedDecal}_thumb.png`);
+    const texturePath = resolveTexturePath(selectedDecal, cartItem);
+    const texture = useTexture(texturePath) as THREE.Texture;
   texture.anisotropy = 16;
   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.colorSpace = THREE.SRGBColorSpace

@@ -6,6 +6,8 @@ import { clothDesignService } from "../../services/clothDesignService";
 import { DesignDetailDTO } from "../../api/clothDesign.api";
 import "./MyClothDesignsPage.css";
 import { ClothItemPreview } from "../../components/three/previews/ClothItemPreview";
+import { state } from "../../state"; // ⭐ Import state
+import { addClothToCart } from "../../services/cartService";
 
 interface MyClothDesignsPageProps {
     userId?: string; // ✅ Optional - defaults to current user
@@ -93,9 +95,36 @@ export function MyClothDesignsPage({
     };
 
     const handleAddToCart = async (design: DesignDetailDTO) => {
-        // TODO: Implement add to cart functionality
-        alert("Add to cart functionality coming soon!");
+        const customization = design.customizationData;
+
+        // Load design into Valtio state (required before addClothToCart)
+        state.selectedColor = customization.selectedColor;
+        state.selectedDecal = customization.selectedDecal;
+        state.selected_type = design.clothType.toLowerCase();
+        state.decalPosition = customization.decalPosition;
+        state.rotationY = customization.rotationY;
+
+        // ALSO important:
+        state.decals = customization.decals;
+        state.colors = customization.colors;
+        console.log(design)
+        // 🔥 ADD THIS: Map backend custom decal → editor state customDecal
+        if (customization.hasCustomDecal && design.customDecalUrl) {
+            state.customDecal = {
+                file: null,              // No file on edit-from-server
+                previewUrl: design.customDecalUrl
+            };
+        } else {
+            state.customDecal = null;
+        }
+
+        // Now create cart item
+        await addClothToCart(design);
+
+        alert(`Added ${design.clothType} to cart`);
     };
+
+
 
     const openPreview = (design: DesignDetailDTO) => {
         if (!design.customizationData) {
@@ -209,9 +238,12 @@ export function MyClothDesignsPage({
                             <div key={design.id} className="design-card">
                                 {/* Mode Badge */}
                                 <div className="mode-badge">
+                                    <div className="status-design">
                                     {isAdvancedMode ? "🎨 Advanced" : "✨ Easy"}
+                                    <h2> {design.public && "public"}</h2>
+                                    <h4> {!design.public && "private"}</h4>
+                                    </div>
                                 </div>
-
                                 {/* Preview */}
                                 <div
                                     className="design-preview"
@@ -229,7 +261,12 @@ export function MyClothDesignsPage({
                                             rotationY: customization.rotationY ?? 0,
                                             ripples: [],
                                             quantity: 1,
+
+                                            // ⭐⭐ FIX: custom decal support ⭐⭐
+                                            hasCustomDecal: customization.hasCustomDecal ?? false,
+                                            customDecalUrl: design.customDecalUrl ?? null,
                                         }}
+
                                         tempRotationY={customization.rotationY ?? 0}
                                     />
                                     <div className="preview-overlay">
@@ -258,6 +295,15 @@ export function MyClothDesignsPage({
                                                 <span className="detail-value">{customization.selectedColor}</span>
                                             </div>
                                         </div>
+                                        {design.price &&
+                                            <>
+                                            <div className="detail-row"></div>
+                                        <div>
+                                            <span className="detail-label">Price: </span>
+                                            <span className="detail-value">{design.price.toFixed(2)} $</span>
+                                        </div>
+                                            </>
+                                        }
                                         {isAdvancedMode && customization.decalPosition && (
                                             <div className="detail-row">
                                                 <span className="detail-label">Mode:</span>
@@ -352,6 +398,10 @@ export function MyClothDesignsPage({
                                     rotationY: rotationY,
                                     ripples: [],
                                     quantity: 1,
+
+                                    // ⭐⭐ FIX ⭐⭐
+                                    hasCustomDecal: selectedDesign.customizationData.hasCustomDecal ?? false,
+                                    customDecalUrl: selectedDesign.customDecalUrl ?? null,
                                 }}
                                 tempRotationY={rotationY}
                             />

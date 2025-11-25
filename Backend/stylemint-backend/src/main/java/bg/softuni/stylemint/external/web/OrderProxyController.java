@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+import static bg.softuni.stylemint.config.ApiPaths.BASE;
+
 /**
  * Proxy Controller for Order Microservice with Price Calculation
  *
@@ -39,7 +41,7 @@ import java.util.UUID;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping(BASE + "/orders")
 @RequiredArgsConstructor
 public class OrderProxyController {
 

@@ -6,69 +6,79 @@ import * as THREE from "three";
 import { easing } from "maath";
 import type { ClothesCartItem } from "../../../state";
 import { useState } from "react";
+
 type HoodieProps = {
-  advanced?: boolean;
-  cartItem?: ClothesCartItem;
-  rotationYOverride?: number;
+    advanced?: boolean;
+    cartItem?: ClothesCartItem;
+    rotationYOverride?: number;
 };
 
 export function Hoodie({ advanced, cartItem, rotationYOverride }: HoodieProps) {
-  const { nodes, materials } = useGLTF("/models/hoodie_test.glb") as any;
+    const { nodes, materials } = useGLTF("/models/hoodie_test.glb") as any;
 
-  // ----------- PICK SOURCE (cart/static vs editor) -----------
-  const snap = useSnapshot(state);
-  const usedColor = cartItem ? cartItem.selectedColor : snap.selectedColor;
-  const usedDecal  = cartItem ? cartItem.selectedDecal : snap.selectedDecal;
-  const usedPos = cartItem
-      ? cartItem.decalPosition ?? [-0.0,0.1,-0.15]
-      : snap.decalPosition ?? [-0.0,0.1,-0.15];
+    // ----------- PICK SOURCE (cart/static vs editor) -----------
+    const snap = useSnapshot(state);
+    const usedColor = cartItem ? cartItem.selectedColor : snap.selectedColor;
+    const usedDecal = cartItem ? cartItem.selectedDecal : snap.selectedDecal;
 
-  // rotation: in cart = local override; in editor = global state
-  const usedRotY = cartItem
-      ? (rotationYOverride ?? cartItem.rotationY)
-      : snap.rotationY;
+    const usedPos = cartItem
+        ? cartItem.decalPosition ?? [-0.0, 0.1, -0.15]
+        : snap.decalPosition ?? [-0.0, 0.1, -0.15];
 
-  // ----------- MATERIAL ISOLATION (NO SHARING!!) -----------
-  const baseMat = materials["Material238904.005"];
-  // clone once per item instance
-  const [localMat] = useState(() => baseMat.clone());
+    const usedRotY = cartItem
+        ? (rotationYOverride ?? cartItem.rotationY)
+        : snap.rotationY;
 
-  // ----------- APPLY STATIC COLOR if cart; DAMP if live mode -----------
-  useFrame((_,d)=>{
-    const target = new THREE.Color(usedColor);
-    // In cart → STATIC (jump, no blending)
-    if (cartItem) {
-      localMat.color.copy(target);
+    // ----------- MATERIAL ISOLATION -----------
+    const baseMat = materials["Material238904.005"];
+    const [localMat] = useState(() => baseMat.clone());
+
+    // ----------- COLOR UPDATE -----------
+    useFrame((_, d) => {
+        const target = new THREE.Color(usedColor);
+
+        if (cartItem) {
+            localMat.color.copy(target); // static
+        } else {
+            easing.dampC(localMat.color, target, 0.25, d); // smooth
+        }
+    });
+
+    // ----------- DECAL TEXTURE LOGIC (FULL FIXED) -----------
+    let texturePath: string;
+
+    if (usedDecal === "custom") {
+        if (cartItem?.customDecalUrl) {
+            texturePath = cartItem.customDecalUrl;
+        } else if (snap.customDecal?.previewUrl) {
+            texturePath = snap.customDecal.previewUrl;
+        } else {
+            console.warn("⚠ custom decal selected but no URL available");
+            texturePath = "/images/default_fallback.png"; // must exist in public/images
+        }
     } else {
-      easing.dampC(localMat.color, target, 0.25, d);
+        texturePath = `/images/${usedDecal}_thumb.png`;
     }
-  });
 
- // ... inside Hoodie component:
+    const texture = useTexture(texturePath);
+    texture.anisotropy = 16;
 
-const texturePath = usedDecal === 'custom' && snap.customDecal 
-  ? snap.customDecal.previewUrl 
-  : `/images/${usedDecal}_thumb.png`;
-
-const texture = useTexture(texturePath);
-texture.anisotropy = 16;
-
-  return(
-    <group
-      rotation={[Math.PI/2, 0, (usedRotY*Math.PI)/180]}
-      scale={0.78}
-      position={[0.3,0.09,0]}
-    >
-      <mesh geometry={nodes.Object_2.geometry} material={localMat}>
-        <Decal
-          position={usedPos}
-          rotation={[-Math.PI/1.7, -Math.PI*0.2, 0]}
-          scale={0.12}
-          map={texture}
-          depthTest
-          depthWrite={false}
-        />
-      </mesh>
-    </group>
-  );
+    return (
+        <group
+            rotation={[Math.PI / 2, 0, (usedRotY * Math.PI) / 180]}
+            scale={0.78}
+            position={[0.3, 0.09, 0]}
+        >
+            <mesh geometry={nodes.Object_2.geometry} material={localMat}>
+                <Decal
+                    position={usedPos}
+                    rotation={[-Math.PI / 1.7, -Math.PI * 0.2, 0]}
+                    scale={0.12}
+                    map={texture}
+                    depthTest
+                    depthWrite={false}
+                />
+            </mesh>
+        </group>
+    );
 }

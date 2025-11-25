@@ -4,6 +4,7 @@ import "./catalogue.css";
 import { PublicDesignsPage } from "./PublicDesignsPage";
 import {priceService} from "../../services/priceService";
 import {ClothType} from "../../api/price.api";
+import { useNavigate } from "react-router-dom";
 
 
 // Map catalogue categories to ClothType enum
@@ -19,6 +20,26 @@ export default function Catalogue() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [priceError, setPriceError] = useState(null);
+    const navigate = useNavigate(); // Add navigation hook
+
+    // Add this function to handle customization
+    const handleCustomize = (product) => {
+        // Map product clothType to the format expected by the overlay
+        const clothTypeMap = {
+            "T_SHIRT_CLASSIC": "t_shirt_classic",
+            "T_SHIRT_SPORT": "t_shirt_sport",
+            "HOODIE": "hoodie",
+            "CAP": "cap",
+            "SHOE": "shoe"
+        };
+
+        const selectedType = clothTypeMap[product.clothType];
+
+        // Navigate to customize page with the selected type
+        navigate('/customize', {
+            state: { selectedType: selectedType }
+        });
+    };
 
     // Load products with real prices from backend
     useEffect(() => {
@@ -227,7 +248,9 @@ export default function Catalogue() {
 
                             {/* Action Buttons */}
                             <div className="product-actions">
-                                <button className="customize-btn">
+                                <button className="customize-btn"
+                                        onClick={() => handleCustomize(item)}
+                                >
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                     </svg>
@@ -328,7 +351,9 @@ export default function Catalogue() {
                                 </div>
 
                                 <div className="modal-actions">
-                                    <button className="modal-customize-btn">
+                                    <button className="modal-customize-btn"
+                                            onClick={() => handleCustomize(selectedProduct)}
+                                    >
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                         </svg>
