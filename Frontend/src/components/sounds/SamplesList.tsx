@@ -7,6 +7,8 @@ import SampleItem from './SampleItem';
 import { useNavigate } from 'react-router-dom';
 import './SamplesList.css';
 import {AudioSample} from "../../types";
+import {audioSampleService} from "../../services/audioSampleService";
+import {sample} from "three/src/Three.TSL";
 
 interface SamplesListProps {
   samples: AudioSample[];
@@ -39,10 +41,43 @@ const SamplesList: React.FC<SamplesListProps> = ({ samples, onLoadMore }) => {
     );
   });
 
-  const handleDownload = (sampleId: string) => {
-    console.log('Download sample:', sampleId);
-    // Implement download logic
-  };
+    const handleDownload = async (sampleId: string) => {
+        try {
+
+
+            const result = await audioSampleService.downloadSample(sampleId);
+
+            if (result.success) {
+                // Success feedback
+                if (result.isOwner) {
+                    console.log('✅ Downloaded own sample');
+                } else if (result.hasLicense) {
+                    console.log('✅ Downloaded purchased sample');
+                }
+
+                // Optional: Show success toast
+                // toast.success('Sample downloaded successfully!');
+
+            } else {
+                // Error feedback
+                console.error('❌ Download failed:', result.error);
+
+                // Show error to user
+                alert(result.error || 'Failed to download sample');
+
+                // If user doesn't have license, suggest purchase
+                if (result.error?.includes('purchase')) {
+                    // Optional: Redirect to purchase page or show buy modal
+                    console.log('💰 User needs to purchase sample');
+                }
+            }
+
+        } catch (error) {
+            console.error('Download error:', error);
+            alert('Failed to download sample. Please try again.');
+        }
+    };
+
 
   const handleLike = (sampleId: string) => {
     console.log('Like sample:', sampleId);

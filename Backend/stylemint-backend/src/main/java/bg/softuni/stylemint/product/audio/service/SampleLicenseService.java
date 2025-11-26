@@ -16,15 +16,11 @@ public interface SampleLicenseService {
      */
     void processOrderFulfillment(UUID orderId, UUID userId);
 
-    /**
-     * Checks whether a user has a valid license for a given audio sample.
-     *
-     * @param userId   ID of the user.
-     * @param sampleId ID of the audio sample.
-     * @return true if the user owns a license for this sample.
-     */
-    boolean canDownloadSample(UUID userId, UUID sampleId);
 
+    void validateDownloadPermission(UUID userId, UUID sampleId);
+
+
+    void validateDownloadPermissionPack(UUID userId, UUID packId);
     /**
      * Retrieves all audio samples licensed to the given user.
      *

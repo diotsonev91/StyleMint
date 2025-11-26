@@ -4,6 +4,7 @@ import type { ClothesCartItem, SampleCartItem, PackCartItem, CartItemState } fro
 import type { AudioSample, SamplePack } from "../types";
 import { subscribe } from "valtio";
 import {DesignDetailDTO} from "../api/clothDesign.api";
+import { v4 as uuidv4 } from 'uuid';
 
 const CART_STORAGE_KEY = "sample-marketplace-cart";
 
@@ -45,42 +46,78 @@ if (typeof window !== "undefined") {
 // ========================================
 
 /**
- * Add clothes to cart
+ * ⭐⭐⭐ Add clothes to cart - TWO MODES ⭐⭐⭐
+ *
+ * Mode 1: From saved design (design parameter provided)
+ * Mode 2: From basic editor (no design, use current state)
  */
-export async function addClothToCart(design: DesignDetailDTO) {
+export async function addClothToCart(design?: DesignDetailDTO) {
 
-    // 1) Извличаме customization от backend
-    const customization = design.customizationData;
+    // ⭐ MODE 1: Adding from saved design
+    if (design) {
+        console.log("📦 Adding saved design to cart:", design.id);
 
-    // 2) КРАЙНО ВАЖНО:
-    // ако има custom decal от backend → override с него
-    // ако потребителят в редактора е качил нов → override със state.customDecal
-    const customDecalUrl =
-        state.customDecal?.previewUrl ??
-        design.customDecalUrl ??
-        null;
+        const customization = design.customizationData;
 
-    const item: ClothesCartItem = {
-        id: design.id,
-        type: "clothes",
-        selectedColor: customization.selectedColor,
-        selectedDecal: customization.selectedDecal,
-        selected_type: design.clothType.toLowerCase(),
+        // Custom decal priority: state.customDecal > design.customDecalUrl
+        const customDecalUrl =
+            state.customDecal?.previewUrl ??
+            design.customDecalUrl ??
+            null;
 
-        decalPosition: customization.decalPosition,
-        rotationY: customization.rotationY,
-        ripples: [],
-        quantity: 1,
+        const item: ClothesCartItem = {
+            id: design.id, // Use design ID
+            type: "clothes",
+            selectedColor: customization.selectedColor,
+            selectedDecal: customization.selectedDecal,
+            selected_type: design.clothType.toLowerCase(),
+            decalPosition: customization.decalPosition,
+            rotationY: customization.rotationY,
+            ripples: [],
+            quantity: 1,
+            hasCustomDecal: !!customDecalUrl,
+            customDecalUrl: customDecalUrl,
+        };
 
-        // ⭐⭐ ВАЖНО — добавяме и двете ⭐⭐
-        hasCustomDecal: !!customDecalUrl,
-        customDecalUrl: customDecalUrl,
-    };
+        cartState.items.push(item);
+        console.log("✅ Added saved design to cart");
+        return item;
+    }
 
-    cartState.items.push(item);
-    return item;
+    // ⭐ MODE 2: Adding from basic editor (no saved design)
+    else {
+        console.log("📦 Adding basic customization to cart");
+        console.log("   Color:", state.selectedColor);
+        console.log("   Decal:", state.selectedDecal);
+        console.log("   Type:", state.selected_type);
+
+        // Validate basic requirements
+        if (!state.selectedColor || !state.selectedDecal || !state.selected_type) {
+            throw new Error("Please select color, decal, and type before adding to cart");
+        }
+
+        // Custom decal from current state
+        const customDecalUrl = state.customDecal?.previewUrl ?? null;
+
+        const item: ClothesCartItem = {
+            id: uuidv4(), // ⭐ Generate unique ID for cart item
+            type: "clothes",
+            selectedColor: state.selectedColor,
+            selectedDecal: state.selectedDecal,
+            selected_type: state.selected_type,
+            decalPosition: state.decalPosition,
+            rotationY: state.rotationY,
+            ripples: state.ripples,
+            quantity: 1,
+            hasCustomDecal: !!customDecalUrl,
+            customDecalUrl: customDecalUrl,
+        };
+
+        cartState.items.push(item);
+        console.log("✅ Added basic customization to cart");
+        return item;
+    }
 }
-
 
 
 /**
@@ -121,40 +158,6 @@ export function addPackToCart(packData: Omit<PackCartItem, "type" | "quantity">,
     };
     cartState.items.push(packItem);
     console.log(`✅ Added pack ${packData.name} to cart`);
-
-    // Add all samples from the pack
-    if (samples && samples.length > 0) {
-        let addedCount = 0;
-        samples.forEach((sample) => {
-            // Only add if not already in cart
-            const sampleExists = cartState.items.some(
-                (i) => i.id === sample.id && i.type === "sample"
-            );
-
-            if (!sampleExists) {
-                const sampleItem: SampleCartItem = {
-                    id: sample.id,
-                    type: "sample",
-                    name: sample.name,
-                    price: sample.price,
-                    artist: sample.artist,
-                    coverImage: undefined,
-                    genre: sample.genre,
-                    bpm: sample.bpm,
-                    key: sample.key,
-                    duration: sample.duration,
-                    url: sample.audioUrl,
-                    tags: [],
-                    quantity: 1,
-                };
-                cartState.items.push(sampleItem);
-                addedCount++;
-            }
-        });
-        console.log(`✅ Added ${addedCount}/${samples.length} samples from pack to cart`);
-    } else {
-        console.warn(`⚠️ Pack ${packData.name} has no samples to add`);
-    }
 }
 
 /**

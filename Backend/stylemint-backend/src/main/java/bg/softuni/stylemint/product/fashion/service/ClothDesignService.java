@@ -13,7 +13,7 @@ import java.util.UUID;
 public interface ClothDesignService {
     long countDesignsByUser(UUID userId);
 
-    DesignPublicDTO createDesign(DesignUploadRequestDTO request);
+    DesignPublicDTO createDesign(DesignUploadRequestDTO request, Boolean autosave);
 
     public DesignPublicDTO updateDesign(UUID designId, DesignUploadRequestDTO request);
 

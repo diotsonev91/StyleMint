@@ -57,7 +57,7 @@ export type PackCartItem = BaseCartItem & {
     readonly genres?: readonly string[];
     readonly tags?: readonly string[];
     readonly sampleCount?: number;
-    readonly samples?: readonly {
+    readonly samples?: readonly { //TODO remove those here
         readonly id: string;
         readonly name: string;
         readonly bpm?: number;

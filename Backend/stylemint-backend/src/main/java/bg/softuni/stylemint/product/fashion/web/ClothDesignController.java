@@ -30,7 +30,7 @@ public class ClothDesignController {
     @PostMapping
     public ResponseEntity<ApiResponse<DesignPublicDTO>> createDesign(
             @Valid @ModelAttribute DesignUploadRequestDTO request) {
-        DesignPublicDTO design = clothDesignService.createDesign(request);
+        DesignPublicDTO design = clothDesignService.createDesign(request, false);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -101,6 +101,35 @@ public class ClothDesignController {
         Page<DesignPublicDTO> designs = clothDesignService.getAllByClothType(pageable, clothType);
 
         return ResponseEntity.ok(ApiResponse.success(designs));  // Return the result wrapped in ApiResponse
+    }
+
+    @PostMapping("/auto-save-for-cart")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<DesignPublicDTO>> autoSaveForCart(
+            @ModelAttribute DesignUploadRequestDTO request) {
+
+        UUID userId = SecurityUtil.getCurrentUserId();
+
+        // Set default values for temporary design
+        if (request.getLabel() == null || request.getLabel().isBlank()) {
+            request.setLabel("My Design " + System.currentTimeMillis());
+        }
+
+        if (request.getIsPublic() == null) {
+            request.setIsPublic(false);
+        }
+
+        if (request.getBonusPoints() == null) {
+            request.setBonusPoints(0);
+        }
+
+        // Create the design
+        DesignPublicDTO savedDesign = clothDesignService.createDesign(request, true);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                savedDesign,
+                "Design saved for cart"
+        ));
     }
 
 }

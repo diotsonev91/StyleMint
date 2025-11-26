@@ -56,5 +56,9 @@ export const sampleApi = {
 
     async getSamplesByBpm(minBpm: number, maxBpm: number) {
         return API.get(`${SAMPLE_BASE}/bpm?minBpm=${minBpm}&maxBpm=${maxBpm}`);
+    },
+
+    async downloadSample(sampleId: string) {
+        return API.get(`${SAMPLE_BASE}/${sampleId}/download`);
     }
 };

@@ -16,7 +16,7 @@ const SamplePackDetailledPage: React.FC = () => {
   const [samplePack, setSamplePack] = useState<SamplePack | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+    const [isDownloading, setIsDownloading] = useState(false);
   // ✅ Fetch pack from API by ID
   useEffect(() => {
     const fetchPack = async () => {
@@ -85,12 +85,46 @@ const SamplePackDetailledPage: React.FC = () => {
     alert(`Added "${samplePack.title}" to cart!`);
   };
 
-  const handleDownloadPreview = () => {
-    if (!samplePack) return;
-    
-    console.log('Download preview:', samplePack.id);
-    alert('Downloading preview... (This would call your API endpoint)');
-  };
+
+
+// ⭐⭐⭐ Download pack as ZIP (RECOMMENDED) ⭐⭐⭐
+    const handleDownloadPreview = async () => {
+        if (!samplePack || !packId) return;
+
+        try {
+            console.log(`📦 Downloading pack "${samplePack.title}" as ZIP...`);
+            setIsDownloading(true);
+
+            // ⭐ Call ZIP download method
+            const result = await audioPackService.downloadPackAsZip(packId);
+
+            if (result.success) {
+                // Success!
+                console.log(`✅ Pack downloaded as ZIP!`);
+
+                alert(
+                    `✅ Successfully downloaded "${samplePack.title}"!\n` +
+                    `All ${samplePack.sampleCount} samples are in the ZIP file.`
+                );
+
+            } else {
+                // Error - user not authorized or download failed
+                console.error('❌ Download failed:', result.error);
+
+                alert(
+                    result.error ||
+                    'Failed to download pack. You may need to purchase it first.'
+                );
+            }
+
+        } catch (error) {
+            console.error('❌ Download error:', error);
+            alert('An unexpected error occurred while downloading the pack.');
+
+        } finally {
+            setIsDownloading(false);
+        }
+    };
 
   const handleShare = () => {
     if (!samplePack) return;
@@ -154,12 +188,13 @@ const SamplePackDetailledPage: React.FC = () => {
           <div className="content-grid">
             {/* Left Sidebar - Pack Info */}
             <aside className="sidebar">
-              <PackInfo
-                pack={samplePack}
-                onAddToCart={handleAddToCart}
-                onDownloadPreview={handleDownloadPreview}
-                onShare={handleShare}
-              />
+                <PackInfo
+                    pack={samplePack}
+                    onAddToCart={handleAddToCart}
+                    onDownloadPreview={handleDownloadPreview}
+                    onShare={handleShare}
+                    isDownloading={isDownloading} // ⭐ NEW
+                />
             </aside>
 
             {/* Main Content Area */}

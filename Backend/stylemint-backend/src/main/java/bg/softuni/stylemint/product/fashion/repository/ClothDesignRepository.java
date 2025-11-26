@@ -29,6 +29,11 @@ public interface ClothDesignRepository extends JpaRepository<ClothDesign, UUID> 
      */
     List<ClothDesign> findByUserIdOrderByCreatedAtDesc(UUID userId);
 
+
+    List<ClothDesign> findByUserIdAndAutoSavedIsFalseOrAutoSavedIsNullOrderByCreatedAtDesc(UUID userId);
+
+    List<ClothDesign> findByAutoSavedTrueAndCreatedAtBefore(OffsetDateTime before);
+
     /**
      * Find designs by cloth type
      */

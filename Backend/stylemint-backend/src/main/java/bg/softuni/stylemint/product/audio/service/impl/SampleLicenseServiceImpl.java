@@ -3,6 +3,7 @@ package bg.softuni.stylemint.product.audio.service.impl;
 
 import bg.softuni.dtos.enums.payment.ProductType;
 import bg.softuni.dtos.order.OrderItemDTO;
+import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
 import bg.softuni.stylemint.common.exception.NotFoundException;
 
 import bg.softuni.stylemint.external.facade.order.OrderServiceFacade;
@@ -92,9 +93,35 @@ public class SampleLicenseServiceImpl implements SampleLicenseService {
         log.info("Granted pack licenses for user: {}, pack: {}, samples: {}", userId, packId, packSamples.size());
     }
 
-    public boolean canDownloadSample(UUID userId, UUID sampleId) {
-        return licenseRepository.existsByUserIdAndAudioSampleId(userId, sampleId);
+
+    @Override
+    public void validateDownloadPermission(UUID userId, UUID sampleId) {
+
+        // 1) Проверка дали sample изобщо съществува
+        AudioSample sample = audioSampleRepository.findById(sampleId)
+                .orElseThrow(() ->
+                        new NotFoundException("Sample with ID " + sampleId + " does not exist.")
+                );
+
+        // 2) Проверка дали user е собственик
+        boolean isOwner = sample.getAuthorId().equals(userId);
+
+        if (isOwner) {
+            return; // Собственик → винаги може да сваля
+        }
+
+        // 3) Проверка дали user има лиценз (купил е)
+        boolean hasLicense = licenseRepository.existsByUserIdAndAudioSampleId(userId, sampleId);
+
+        if (!hasLicense) {
+            throw new ForbiddenOperationException("You must purchase this sample before downloading it.");
+        }
+
+        // През тази точка минават само:
+        // ✔ потребители, които са купили sample-а
+        // ✔ или собствениците му
     }
+
 
     public List<AudioSampleDTO> getUserSampleLibrary(UUID userId) {
         List<AudioSample> samples = licenseRepository.findAudioSamplesByUserId(userId);
@@ -107,6 +134,53 @@ public class SampleLicenseServiceImpl implements SampleLicenseService {
         List<AudioSample> packSamples = audioSampleRepository.findByPackId(packId);
         return packSamples.stream()
                 .anyMatch(sample -> licenseRepository.existsByUserIdAndAudioSampleId(userId, sample.getId()));
+    }
+
+    // ADD TO SampleLicenseServiceImpl.java
+
+    /**
+     * Validate if user can download entire pack
+     * User can download if:
+     * 1. User is the pack author (owner)
+     * 2. User has purchased the pack (has licenses for all samples in pack)
+     */
+    @Override
+    public void validateDownloadPermissionPack(UUID userId, UUID packId) {
+
+        // 1) Check if pack exists
+        // (Assuming you have SamplePackRepository injected)
+        // SamplePack pack = samplePackRepository.findById(packId)
+        //     .orElseThrow(() -> new NotFoundException("Pack with ID " + packId + " does not exist."));
+
+        // 2) Get all samples in this pack
+        List<AudioSample> packSamples = audioSampleRepository.findByPackId(packId);
+
+        if (packSamples.isEmpty()) {
+            throw new NotFoundException("Pack with ID " + packId + " has no samples.");
+        }
+
+        // 3) Check if user is the author of ANY sample in pack (= pack owner)
+        // All samples in a pack have the same author, so check first sample
+        UUID packAuthorId = packSamples.get(0).getAuthorId();
+        boolean isOwner = packAuthorId.equals(userId);
+
+        if (isOwner) {
+            log.info("✅ User {} is owner of pack {}", userId, packId);
+            return; // Owner can always download
+        }
+
+        // 4) Check if user has license for ALL samples in pack
+        boolean hasAllLicenses = packSamples.stream()
+                .allMatch(sample -> licenseRepository.existsByUserIdAndAudioSampleId(userId, sample.getId()));
+
+        if (!hasAllLicenses) {
+            throw new ForbiddenOperationException(
+                    "You must purchase this pack before downloading it. " +
+                            "Some samples are not licensed."
+            );
+        }
+
+        log.info("✅ User {} has licenses for all samples in pack {}", userId, packId);
     }
 
     public List<SampleLicense> getUserLicenses(UUID userId) {

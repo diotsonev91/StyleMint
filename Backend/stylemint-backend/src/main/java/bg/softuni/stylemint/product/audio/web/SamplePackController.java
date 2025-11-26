@@ -4,13 +4,19 @@ import bg.softuni.stylemint.auth.security.SecurityUtil;
 import bg.softuni.stylemint.common.dto.ApiResponse;
 import bg.softuni.stylemint.product.audio.dto.*;
 import bg.softuni.stylemint.product.audio.enums.Genre;
+import bg.softuni.stylemint.product.audio.model.AudioSample;
+import bg.softuni.stylemint.product.audio.service.SampleLicenseService;
 import bg.softuni.stylemint.product.audio.service.SamplePackService;
+import bg.softuni.stylemint.product.audio.service.impl.ZipService;
+import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +33,8 @@ import static bg.softuni.stylemint.config.ApiPaths.BASE;
 public class SamplePackController {
 
     private final SamplePackService samplePackService;
+    private final SampleLicenseService sampleLicenseService;
+    private final ZipService zipService;
 
     // ================ CRUD Operations ================
 
@@ -285,4 +293,77 @@ public class SamplePackController {
         ProducerStatsDTO stats = samplePackService.getProducerStats(authorId);
         return ResponseEntity.ok(stats);
     }
+
+    /**
+     * Download entire pack with all samples
+     * GET /api/v1/audio/packs/{packId}/download
+     *
+     * Only authorized if:
+     * - User is pack author (owner)
+     * - User has purchased pack (has licenses for all samples)
+     */
+    @GetMapping("/{packId}/download")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<PackDownloadResponse>> downloadPack(@PathVariable UUID packId) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+
+        // Validate permission
+        sampleLicenseService.validateDownloadPermissionPack(userId, packId);
+
+        // Get pack with samples
+        SamplePackDetailDTO packDetail = samplePackService.getPackWithSamples(packId);
+
+        // ⭐ ВАЖНО: Extract pack and samples first
+        SamplePackDTO pack = packDetail.getPack();
+        List<AudioSampleDTO> samples = packDetail.getSamples();
+
+        // Map samples to download info
+        List<SampleDownloadInfo> sampleDownloads = samples.stream()
+                .map(sample -> new SampleDownloadInfo(
+                        sample.getId(),
+                        sample.getName(),
+                        sample.getAudioUrl()
+                ))
+                .toList();
+
+        // Check owner
+        boolean isOwner = pack.getAuthorId().equals(userId);
+
+        // Build response using pack object
+        PackDownloadResponse response = new PackDownloadResponse(
+                pack.getId(),
+                pack.getTitle(),
+                pack.getCoverImage(),
+                sampleDownloads,
+                isOwner,
+                !isOwner
+        );
+
+        return ResponseEntity.ok(ApiResponse.success(response, "Pack download authorized"));
+    }
+
+    @GetMapping("/{packId}/download-zip")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ByteArrayResource> downloadPackAsZip(@PathVariable UUID packId) throws Exception {
+        UUID userId = SecurityUtil.getCurrentUserId();
+
+        // 1) Validate download permission
+        sampleLicenseService.validateDownloadPermissionPack(userId, packId);
+
+        // 2) Load pack + samples
+        SamplePackDetailDTO packDetail = samplePackService.getPackWithSamples(packId);
+
+        // 3) Create ZIP
+        ZipResult zip = zipService.createPackZip(packDetail);
+
+        // 4) Return response
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zip.getFileName() + "\"")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentLength(zip.getBytes().length)
+                .body(new ByteArrayResource(zip.getBytes()));
+
+    }
+
+
 }

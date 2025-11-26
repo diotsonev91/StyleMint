@@ -2,6 +2,7 @@
 import API from '../api/config';
 import { UploadSampleDto, UpdateSampleMetaDataDto, ApiResponse } from '../api/upload.api';
 import { sampleUploadService } from './sampleUploadService';
+import {sampleApi} from "../api/sample.api";
 
 /**
  * Audio Sample Service - complete sample CRUD operations
@@ -242,6 +243,79 @@ async unboundSampleFromPack(packId: string, sampleId: string): Promise<ApiRespon
       };
     }
   },
+
+    /**
+     * Download sample - checks authorization (owner or license holder)
+     */
+    async downloadSample(sampleId: string): Promise<{
+        success: boolean;
+        downloadUrl?: string;
+        fileName?: string;
+        isOwner?: boolean;
+        hasLicense?: boolean;
+        error?: string;
+    }> {
+        try {
+            const response = await sampleApi.downloadSample(sampleId);
+
+            console.log('Download response:', response.data);
+
+            // ⭐ FIX: Handle both response formats ⭐
+            let downloadData;
+
+            // Check if wrapped in ApiResponse { success: true, data: {...} }
+            if (response.data.success !== undefined) {
+                downloadData = response.data.data;
+            }
+            // Or direct response { downloadUrl, fileName, ... }
+            else {
+                downloadData = response.data;
+            }
+
+            const { downloadUrl, fileName, isOwner, hasLicense } = downloadData;
+
+            if (!downloadUrl) {
+                throw new Error('No download URL received');
+            }
+
+            console.log('✅ Authorized to download:', { isOwner, hasLicense });
+
+            // Trigger actual download
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = fileName || `sample-${sampleId}.wav`;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            console.log('✅ Download started');
+
+            return {
+                success: true,
+                downloadUrl,
+                fileName,
+                isOwner,
+                hasLicense
+            };
+
+        } catch (error: any) {
+            console.error('Download sample error:', error);
+
+            // Handle 403 Forbidden
+            if (error.response?.status === 403) {
+                return {
+                    success: false,
+                    error: 'You need to purchase this sample before downloading it'
+                };
+            }
+
+            return {
+                success: false,
+                error: error.response?.data?.error || error.message || 'Download failed'
+            };
+        }
+    },
 
   // Validation (re-export from upload service)
   validateSampleFile: sampleUploadService.validateSampleFile,

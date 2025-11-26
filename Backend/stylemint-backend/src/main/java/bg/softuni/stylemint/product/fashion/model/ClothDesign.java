@@ -44,4 +44,7 @@ public class ClothDesign extends BaseProduct {
     @Column(name = "custom_decal_path")
     private String customDecalPath;
 
+    private Boolean autoSaved;
+
+
 }

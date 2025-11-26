@@ -288,7 +288,7 @@ public class SamplePackManagementServiceImpl implements SamplePackManagementServ
                 uploadReq.setGenre(genre);
                 uploadReq.setInstrumentGroup(sample.getInstrumentGroup());
                 uploadReq.setSampleType(sample.getSampleType());
-                uploadReq.setPrice(BigDecimal.valueOf(-1));
+                uploadReq.setPrice(BigDecimal.ZERO);
                 uploadReq.setTags(sample.getTags());
 
                 // === 2. Качваме семпъла - вече е в базата със salesCount = 0L ===

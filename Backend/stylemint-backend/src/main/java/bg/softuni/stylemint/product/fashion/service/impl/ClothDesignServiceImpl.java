@@ -64,7 +64,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
     @Override
     @Transactional
-    public DesignPublicDTO createDesign(DesignUploadRequestDTO request) {
+    public DesignPublicDTO createDesign(DesignUploadRequestDTO request, Boolean autosave) {
 
         UUID currentUserId = SecurityUtil.getCurrentUserId();
 
@@ -88,7 +88,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
             // NOW calculate price (will include custom decal premium if exists)
             double calculatedPrice = clothPriceCalculator.calculatePrice(design);
             design.setPrice(calculatedPrice);
-
+            design.setAutoSaved(autosave);
             ClothDesign savedDesign = clothDesignRepository.save(design);
 
             userRolesService.addRoleToUser(currentUserId, UserRole.DESIGNER);
@@ -221,11 +221,13 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
     @Override
     public List<DesignDetailDTO> getUserDesigns(UUID userId) {
-        return clothDesignRepository.findByUserIdOrderByCreatedAtDesc(userId)
+        return clothDesignRepository
+                .findByUserIdAndAutoSavedIsFalseOrAutoSavedIsNullOrderByCreatedAtDesc(userId)
                 .stream()
-                .map(this::toDetailDTO)  // Changed from toPublicDTO
+                .map(this::toDetailDTO)
                 .collect(Collectors.toList());
     }
+
 
     @Override
     public Page<DesignPublicDTO> getPublicDesigns(Pageable pageable) {

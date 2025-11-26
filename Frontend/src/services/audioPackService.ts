@@ -6,6 +6,25 @@ import { packUploadService } from './packUploadService';
 import { packUpdateService } from './packUpdateService'; // Import new service
 import { audioSampleService } from './audioSampleService';
 import { updateApi } from '../api/update.api';
+import {packApi} from "../api/pack.api";
+
+// TODO fix the mess here its too bad to have multiple apis for pack (you use both sample api and pack api
+
+export interface SampleDownloadInfo {
+    sampleId: string;
+    fileName: string;
+    downloadUrl: string;
+}
+
+export interface PackDownloadResponse {
+    packId: string;
+    packTitle: string;
+    packCoverImage: string;
+    samples: SampleDownloadInfo[];
+    isOwner: boolean;
+    hasLicense: boolean;
+}
+
 /**
  * Audio Pack Service - complete pack CRUD operations
  */
@@ -406,5 +425,185 @@ export const audioPackService = {
   // Add update-specific validation methods
   validateUpdateData: packUpdateService.validateUpdateData,
   hasSampleChanges: packUpdateService.hasSampleChanges,
-  generateUpdateSummary: packUpdateService.generateUpdateSummary
+  generateUpdateSummary: packUpdateService.generateUpdateSummary,
+
+        /**
+         * Download entire pack with all samples
+         * Only authorized for:
+         * - Pack owner
+         * - Users who purchased the pack
+         */
+        async downloadPack(packId: string): Promise<{
+            success: boolean;
+            packData?: PackDownloadResponse;
+            error?: string;
+        }> {
+            try {
+                const response = await packApi.downloadPack(packId);
+
+                console.log('📦 Download pack response:', response.data);
+
+                // Handle ApiResponse format
+                const packData = response.data.success
+                    ? response.data.data
+                    : response.data;
+
+                if (!packData || !packData.samples || packData.samples.length === 0) {
+                    throw new Error('No samples in pack');
+                }
+
+                console.log(`✅ Authorized to download pack: ${packData.packTitle}`);
+                console.log(`📦 ${packData.samples.length} samples to download`);
+
+                // Download all samples sequentially
+                let successCount = 0;
+                let failCount = 0;
+
+                for (let i = 0; i < packData.samples.length; i++) {
+                    const sample = packData.samples[i];
+
+                    try {
+                        console.log(`⬇️ Downloading ${i + 1}/${packData.samples.length}: ${sample.fileName}...`);
+
+                        // ⭐ Download WITHOUT opening new tab
+                        await this.downloadSingleSample(sample);
+
+                        successCount++;
+                        console.log(`✅ Downloaded: ${sample.fileName} (${successCount}/${packData.samples.length})`);
+
+                        // Small delay between downloads to avoid browser blocking
+                        if (i < packData.samples.length - 1) {
+                            await new Promise(resolve => setTimeout(resolve, 800)); // 800ms delay
+                        }
+
+                    } catch (error) {
+                        console.error(`❌ Failed to download: ${sample.fileName}`, error);
+                        failCount++;
+                    }
+                }
+
+                console.log(`📊 Download complete: ${successCount} succeeded, ${failCount} failed`);
+
+                if (successCount === 0) {
+                    throw new Error('All downloads failed');
+                }
+
+                return {
+                    success: true,
+                    packData: {
+                        ...packData,
+                        samples: packData.samples // Return full pack data
+                    }
+                };
+
+            } catch (error: any) {
+                console.error('❌ Download pack error:', error);
+
+                // Handle 403 Forbidden
+                if (error.response?.status === 403) {
+                    return {
+                        success: false,
+                        error: 'You need to purchase this pack before downloading it'
+                    };
+                }
+
+                return {
+                    success: false,
+                    error: error.response?.data?.error || error.message || 'Download failed'
+                };
+            }
+        },
+
+    /**
+     * Download a single sample WITHOUT opening new tab
+     * Uses fetch + blob for proper downloads
+     */
+    async downloadSingleSample(sample: SampleDownloadInfo): Promise<void> {
+        try {
+            // ⭐ Option 1: Direct link download (simple, works for most cases)
+            const link = document.createElement('a');
+            link.href = sample.downloadUrl;
+            link.download = sample.fileName || `sample-${sample.sampleId}.wav`;
+            // ⭐ NO target="_blank" - downloads in same tab
+            link.style.display = 'none';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Small delay to ensure browser processes the download
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+        } catch (error) {
+            console.error(`Failed to download ${sample.fileName}:`, error);
+            throw error;
+        }
+    },
+
+
+    /**
+     * ⭐⭐⭐ Download entire pack as ZIP file (RECOMMENDED) ⭐⭐⭐
+     * Single download, all samples in one ZIP
+     */
+    async downloadPackAsZip(packId: string): Promise<{
+        success: boolean;
+        error?: string;
+    }> {
+        try {
+            console.log('📦 Downloading pack as ZIP...');
+
+            // Get ZIP blob from backend
+            const response = await packApi.downloadPackAsZip(packId);
+
+            // Extract filename from Content-Disposition header if available
+            const contentDisposition = response.headers['content-disposition'];
+            let fileName = `pack-${packId}.zip`;
+
+            if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                if (fileNameMatch && fileNameMatch[1]) {
+                    fileName = fileNameMatch[1];
+                }
+            }
+
+            console.log(`📦 ZIP file: ${fileName}`);
+
+            // Create blob URL and trigger download
+            const blob = new Blob([response.data], { type: 'application/zip' });
+            const blobUrl = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = fileName;
+            link.style.display = 'none';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Cleanup
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+
+            console.log('✅ ZIP download started successfully');
+
+            return { success: true };
+
+        } catch (error: any) {
+            console.error('❌ ZIP download error:', error);
+
+            // Handle 403 Forbidden
+            if (error.response?.status === 403) {
+                return {
+                    success: false,
+                    error: 'You need to purchase this pack before downloading it'
+                };
+            }
+
+            return {
+                success: false,
+                error: error.response?.data?.error || error.message || 'Download failed'
+            };
+        }
+    },
+
 };
