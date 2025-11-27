@@ -89,6 +89,15 @@ export const cartApi = {
         return API.get(`${ORDER_BASE}/${orderId}/items`);
     },
 
+
+    /**
+     * Get price for a single item (clothes / sample / pack)
+     * Calls backend /orders/price-item
+     */
+    async getItemPrice(item: OrderItemRequest) {
+        return API.post(`${ORDER_BASE}/price-item`, item);
+    },
+
     /**
      * Get user's order summary
      */

@@ -1,10 +1,11 @@
 // ClothesCartRow.tsx
 import { useState, useEffect } from "react";
 import { CartItemState } from "../../../state";
-import { updateItemQuantity, removeItem } from "../../../services/cartService";
+import {updateItemQuantity, removeItem, fetchItemPrice} from "../../../services/cartService";
 import { ThreeCanvas } from "../../../components/three/ThreeCanvas";
 import { ThreeCanvasAdvanced } from "../../../components/three/ThreeCanvasAdvanced";
 import {ClothItemPreview} from "../previews/ClothItemPreview";
+
 
 interface ClothesCartRowProps {
     item: CartItemState & { type: 'clothes' };
@@ -13,10 +14,42 @@ interface ClothesCartRowProps {
 export function ClothesCartRow({ item }: ClothesCartRowProps) {
     const [rot, setRot] = useState<number>(item.rotationY ?? 0);
     const quantity = item.quantity || 1;
-    const itemTotal = 29.99 * quantity;
+    const [itemPrice, setItemPrice] = useState<number>(0);
+
 
     // Check if this item was created in advanced moderfbgtn
     const isAdvancedMode = !!item.decalPosition;
+
+    useEffect(() => {
+        let mounted = true;
+
+        async function loadPrice() {
+            const price = await fetchItemPrice(item);
+            if (mounted) setItemPrice(price);
+        }
+
+        loadPrice();
+
+        return () => { mounted = false; };
+    }, [item.id]);
+
+    useEffect(() => {
+        let mounted = true;
+
+        async function loadPrice() {
+            const unitPrice = await fetchItemPrice(item);
+            if (mounted) {
+                setItemPrice(unitPrice * (item.quantity || 1));
+            }
+        }
+
+        loadPrice();
+
+        return () => { mounted = false; };
+    }, [item.quantity, item.id]);
+
+
+
 
     useEffect(() => {
         setRot(item.rotationY ?? 0);
@@ -87,7 +120,7 @@ export function ClothesCartRow({ item }: ClothesCartRowProps) {
                             +
                         </button>
                     </div>
-                    <div className="item-price">${itemTotal.toFixed(2)}</div>
+                    <div className="item-price">€{itemPrice.toFixed(2)}</div>
                 </div>
 
                 <div className="rotation-section">

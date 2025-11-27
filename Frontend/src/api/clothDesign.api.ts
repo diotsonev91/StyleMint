@@ -187,7 +187,13 @@ export const clothDesignApi = {
             params: { page, size }
         });
         return response.data;
-    }
+    },
+    async autoSaveDesign(formData: FormData) {
+        return API.post("/designs/auto-save-for-cart", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+    },
+
 };
 
 export interface UserDesignerSummaryDTO {

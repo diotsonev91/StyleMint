@@ -355,6 +355,14 @@ public class OrderProxyController {
         }
     }
 
+    @PostMapping("/price-item")
+    public ResponseEntity<Double> getItemPrice(@RequestBody OrderItemRequestDTO item) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+        double price = orderPriceService.calculateItemPricePublic(userId, item);
+        return ResponseEntity.ok(price);
+    }
+
+
     // ========================================
     // HEALTH CHECK
     // ========================================

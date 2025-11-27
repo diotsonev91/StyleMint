@@ -61,4 +61,6 @@ public interface OrderPriceService {
      * @return Preview total with discounts
      */
     double previewOrderTotal(UUID userId, List<OrderItemRequestDTO> items);
+
+    double calculateItemPricePublic(UUID userId, OrderItemRequestDTO item);
 }

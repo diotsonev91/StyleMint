@@ -1,6 +1,7 @@
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import { useNavigate } from "react-router-dom";
 import "./CheckoutDetails.css";
+import {hasDigitalItems} from "../../services/cartService";
 
 export type OrderDetails = {
   email: string;
@@ -33,10 +34,20 @@ export function CheckoutDetails() {
 
   const [errors, setErrors] = useState<Partial<OrderDetails>>({});
 
-  const validateForm = (): boolean => {
+    const digitalInCart = hasDigitalItems();
+
+// Force switch to Stripe if digital items exist
+    useEffect(() => {
+        if (digitalInCart && formData.paymentMethod === "cash") {
+            setFormData((prev) => ({ ...prev, paymentMethod: "stripe" }));
+        }
+    }, [digitalInCart]);
+
+
+    const validateForm = (): boolean => {
     const newErrors: Partial<OrderDetails> = {};
 
-    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Valid email is required";
     }
     if (!formData.fullName.trim()) {
@@ -268,25 +279,35 @@ export function CheckoutDetails() {
                 </div>
               </label>
 
-              <label className={`payment-option ${formData.paymentMethod === 'cash' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="cash"
-                  checked={formData.paymentMethod === 'cash'}
-                  onChange={handleInputChange}
-                  className="payment-radio"
-                />
-                <div className="payment-option-content">
-                  <div className="payment-option-header">
-                    <span className="payment-icon">💵</span>
-                    <span className="payment-title">Cash on Delivery</span>
-                  </div>
-                  <p className="payment-description">
-                    Pay with cash when your order is delivered.
-                  </p>
-                </div>
-              </label>
+                <label
+                    className={`payment-option ${
+                        formData.paymentMethod === 'cash' ? 'selected' : ''
+                    } ${digitalInCart ? 'disabled' : ''}`}
+                >
+                    <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="cash"
+                        checked={formData.paymentMethod === 'cash'}
+                        onChange={handleInputChange}
+                        disabled={digitalInCart}
+                    />
+
+                    <div className="payment-option-content">
+                        <div className="payment-option-header">
+                            <span className="payment-icon">💵</span>
+                            <span className="payment-title">Cash on Delivery</span>
+                        </div>
+
+                        <p className="payment-description">
+                            {digitalInCart
+                                ? "Unavailable because your cart contains digital items"
+                                : "Pay with cash upon delivery."}
+                        </p>
+                    </div>
+                </label>
+
+
             </div>
           </div>
 

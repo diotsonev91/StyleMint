@@ -138,6 +138,11 @@ public class OrderPriceServiceImpl implements OrderPriceService {
         };
     }
 
+    public double calculateItemPricePublic(UUID userId, OrderItemRequestDTO item) {
+        return calculateItemPrice(userId, item);
+    }
+
+
 
     /**
      * Calculate clothes price (fashion items)

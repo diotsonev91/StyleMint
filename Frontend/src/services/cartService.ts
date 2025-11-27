@@ -4,7 +4,12 @@ import type { ClothesCartItem, SampleCartItem, PackCartItem, CartItemState } fro
 import type { AudioSample, SamplePack } from "../types";
 import { subscribe } from "valtio";
 import {DesignDetailDTO} from "../api/clothDesign.api";
-import { v4 as uuidv4 } from 'uuid';
+import { clothDesignApi } from "../api/clothDesign.api";
+
+
+
+
+import {cartApi, mapCartItemToOrderItem} from "../api/cart.api";
 
 const CART_STORAGE_KEY = "sample-marketplace-cart";
 
@@ -32,6 +37,26 @@ export function saveToStorage(): void {
         // ignore
     }
 }
+
+/**
+ * Fetch price for a single cart item (server-side accurate)
+ */
+export async function fetchItemPrice(item: CartItemState): Promise<number> {
+    try {
+        const orderItem = mapCartItemToOrderItem(item);
+        const response = await cartApi.getItemPrice(orderItem);
+        const price = response.data;
+
+        // 🔥 Save price directly inside the item
+        (item as any).price = price;
+
+        return price;
+    } catch (err) {
+        console.error("❌ Failed to load price for item", item, err);
+        return 0;
+    }
+}
+
 
 // Auto-load on import + auto-save on change
 if (typeof window !== "undefined") {
@@ -84,41 +109,60 @@ export async function addClothToCart(design?: DesignDetailDTO) {
         return item;
     }
 
-    // ⭐ MODE 2: Adding from basic editor (no saved design)
-    else {
-        console.log("📦 Adding basic customization to cart");
-        console.log("   Color:", state.selectedColor);
-        console.log("   Decal:", state.selectedDecal);
-        console.log("   Type:", state.selected_type);
+    // ============================
+    // MODE 2: Basic Editor (AUTO-SAVE)
+    // ============================
+    console.log("📦 Adding basic customization to cart (AUTO-SAVE enabled)");
 
-        // Validate basic requirements
-        if (!state.selectedColor || !state.selectedDecal || !state.selected_type) {
-            throw new Error("Please select color, decal, and type before adding to cart");
-        }
-
-        // Custom decal from current state
-        const customDecalUrl = state.customDecal?.previewUrl ?? null;
-
-        const item: ClothesCartItem = {
-            id: uuidv4(), // ⭐ Generate unique ID for cart item
-            type: "clothes",
-            selectedColor: state.selectedColor,
-            selectedDecal: state.selectedDecal,
-            selected_type: state.selected_type,
-            decalPosition: state.decalPosition,
-            rotationY: state.rotationY,
-            ripples: state.ripples,
-            quantity: 1,
-            hasCustomDecal: !!customDecalUrl,
-            customDecalUrl: customDecalUrl,
-        };
-
-        cartState.items.push(item);
-        console.log("✅ Added basic customization to cart");
-        return item;
+    // Validate
+    if (!state.selectedColor || !state.selectedDecal || !state.selected_type) {
+        throw new Error("Please select color, decal, and type before adding to cart");
     }
-}
 
+    // 🔥 Create FormData for backend (same as createDesign)
+    const formData = new FormData();
+    formData.append("label", "My Design " + Date.now());
+    formData.append("clothType", state.selected_type.toUpperCase());
+    formData.append("customizationType", "SIMPLE");
+
+    // FULL JSON
+    formData.append("customizationJson", JSON.stringify({
+        selectedColor: state.selectedColor,
+        selectedDecal: state.selectedDecal,
+        decalPosition: state.decalPosition,
+        rotationY: state.rotationY,
+        ripples: state.ripples,
+    }));
+
+    // Custom decal file
+    if (state.customDecal?.file) {
+        formData.append("customDecalFile", state.customDecal.file);
+    }
+
+    // 🔥 CALL BACKEND
+    const response = await clothDesignApi.autoSaveDesign(formData);
+    const saved = response.data.data;
+
+    // BACKEND RETURNS REAL designId
+    const item: ClothesCartItem = {
+        id: saved.id,
+        type: "clothes",
+        selectedColor: state.selectedColor,
+        selectedDecal: state.selectedDecal,
+        selected_type: state.selected_type,
+        decalPosition: state.decalPosition,
+        rotationY: state.rotationY,
+        ripples: state.ripples,
+        quantity: 1,
+        hasCustomDecal: !!saved.customDecalUrl,
+        customDecalUrl: saved.customDecalUrl,
+    };
+
+    cartState.items.push(item);
+    console.log("✅ AUTO-SAVED and added to cart", saved.id);
+
+    return item;
+}
 
 /**
  * Add sample to cart (once, qty=1)
