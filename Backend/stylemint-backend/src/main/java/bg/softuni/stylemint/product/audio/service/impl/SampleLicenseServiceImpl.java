@@ -183,6 +183,17 @@ public class SampleLicenseServiceImpl implements SampleLicenseService {
         log.info("✅ User {} has licenses for all samples in pack {}", userId, packId);
     }
 
+    @Override
+    public void createLicenseForPaidItem(UUID userId, OrderItemDTO item) {
+        if (item.getProductType() == ProductType.SAMPLE) {
+            grantSampleLicense(userId, item.getProductId(), item.getItemId());
+        }
+        else if (item.getProductType() == ProductType.PACK) {
+            grantPackSampleLicenses(userId, item.getProductId(), item.getItemId());
+        }
+    }
+
+
     public List<SampleLicense> getUserLicenses(UUID userId) {
         return licenseRepository.findByUserId(userId);
     }

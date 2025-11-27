@@ -29,8 +29,16 @@ public interface ClothDesignRepository extends JpaRepository<ClothDesign, UUID> 
      */
     List<ClothDesign> findByUserIdOrderByCreatedAtDesc(UUID userId);
 
+    @Query("""
+    SELECT d 
+    FROM ClothDesign d 
+    WHERE d.userId = :userId 
+      AND (d.autoSaved = FALSE OR d.autoSaved IS NULL)
+    ORDER BY d.createdAt DESC
+    """)
+    List<ClothDesign> findUserNonAutosaveDesigns(@Param("userId") UUID userId);
 
-    List<ClothDesign> findByUserIdAndAutoSavedIsFalseOrAutoSavedIsNullOrderByCreatedAtDesc(UUID userId);
+
 
     List<ClothDesign> findByAutoSavedTrueAndCreatedAtBefore(OffsetDateTime before);
 

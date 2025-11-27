@@ -244,8 +244,10 @@ export function EditClothDesignPage() {
                                         quantity: 1,
                                         type: "clothes",
 
-                                        hasCustomDecal: design.customizationData.hasCustomDecal ?? false,
-                                        customDecalUrl: design.customDecalUrl ?? null,
+                                        hasCustomDecal: !!(customDecal || design.customizationData.hasCustomDecal),
+                                        customDecalUrl: customDecal
+                                            ? customDecal.previewUrl
+                                            : design.customDecalUrl ?? null,
                                     }}
                                     rotationYOverride={rotationY}
                                 />
@@ -265,8 +267,10 @@ export function EditClothDesignPage() {
                                         quantity: 1,
                                         type: "clothes",
 
-                                        hasCustomDecal: design.customizationData.hasCustomDecal ?? false,
-                                        customDecalUrl: design.customDecalUrl ?? null,
+                                        hasCustomDecal: !!(customDecal || design.customizationData.hasCustomDecal),
+                                        customDecalUrl: customDecal
+                                            ? customDecal.previewUrl
+                                            : design.customDecalUrl ?? null,
                                     }}
                                     rotationYOverride={rotationY}
                                 />
@@ -287,8 +291,10 @@ export function EditClothDesignPage() {
                                         quantity: 1,
                                         type: "clothes",
 
-                                        hasCustomDecal: design.customizationData.hasCustomDecal ?? false,
-                                        customDecalUrl: design.customDecalUrl ?? null,
+                                        hasCustomDecal: !!(customDecal || design.customizationData.hasCustomDecal),
+                                        customDecalUrl: customDecal
+                                            ? customDecal.previewUrl
+                                            : design.customDecalUrl ?? null,
                                     }}
                                     rotationYOverride={rotationY}
                                 />
@@ -309,8 +315,10 @@ export function EditClothDesignPage() {
                                         quantity: 1,
                                         type: "clothes",
 
-                                        hasCustomDecal: design.customizationData.hasCustomDecal ?? false,
-                                        customDecalUrl: design.customDecalUrl ?? null,
+                                        hasCustomDecal: !!(customDecal || design.customizationData.hasCustomDecal),
+                                        customDecalUrl: customDecal
+                                            ? customDecal.previewUrl
+                                            : design.customDecalUrl ?? null,
                                     }}
                                     rotationYOverride={rotationY}
                                 />
@@ -330,8 +338,10 @@ export function EditClothDesignPage() {
                                         quantity: 1,
                                         type: "clothes",
 
-                                        hasCustomDecal: design.customizationData.hasCustomDecal ?? false,
-                                        customDecalUrl: design.customDecalUrl ?? null,
+                                        hasCustomDecal: !!(customDecal || design.customizationData.hasCustomDecal),
+                                        customDecalUrl: customDecal
+                                            ? customDecal.previewUrl
+                                            : design.customDecalUrl ?? null,
                                     }}
                                     rotationYOverride={rotationY}
                                 />

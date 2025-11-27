@@ -1,6 +1,7 @@
 package bg.softuni.stylemint.product.audio.service;
 
 
+import bg.softuni.dtos.order.OrderItemDTO;
 import bg.softuni.stylemint.product.audio.dto.AudioSampleDTO;
 
 
@@ -28,4 +29,7 @@ public interface SampleLicenseService {
      * @return List of licensed AudioSample entities.
      */
     List<AudioSampleDTO> getUserSampleLibrary(UUID userId);
+
+    void createLicenseForPaidItem(UUID userId, OrderItemDTO item);
+
 }

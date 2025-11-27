@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 )
 public interface MainApiClient {
 
-    @PostMapping("/api/orders/payment-success")
+    @PostMapping("/api/v1/orders/payment-success")
     void notifyOrderPaid(@RequestBody OrderPaidRequest request);
 }
 

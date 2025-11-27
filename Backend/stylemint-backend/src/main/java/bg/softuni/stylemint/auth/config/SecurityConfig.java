@@ -64,6 +64,7 @@ public class SecurityConfig {
                                 BASE + "/auth/register",
                                 BASE + "/auth/login",
                                 BASE + "/auth/refresh",
+                                BASE + "/orders/payment-success",
                                 BASE + "/auth/logout"
                         ).permitAll()
 

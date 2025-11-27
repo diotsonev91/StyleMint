@@ -221,8 +221,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
     @Override
     public List<DesignDetailDTO> getUserDesigns(UUID userId) {
-        return clothDesignRepository
-                .findByUserIdAndAutoSavedIsFalseOrAutoSavedIsNullOrderByCreatedAtDesc(userId)
+        return clothDesignRepository.findUserNonAutosaveDesigns(userId)
                 .stream()
                 .map(this::toDetailDTO)
                 .collect(Collectors.toList());
