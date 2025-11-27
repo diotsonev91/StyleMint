@@ -5,6 +5,7 @@ import bg.softuni.stylemint.product.common.model.BaseProduct;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.UpdateTimestamp;
 
 
 import java.time.OffsetDateTime;
@@ -64,6 +65,23 @@ public class SamplePack extends BaseProduct {
 
     @Column(name = "release_date")
     private OffsetDateTime releaseDate;
+
+    @UpdateTimestamp
+    private OffsetDateTime updatedAt;
+
+    private boolean archived = false;
+
+    private OffsetDateTime archivedAt;
+
+    public void addSample(AudioSample sample) {
+        samples.add(sample);
+        sample.setPack(this);
+    }
+
+    public void removeSample(AudioSample sample) {
+        samples.remove(sample);
+        sample.setPack(null);
+    }
 
 
 }

@@ -120,4 +120,6 @@ public interface SamplePackService {
 
     // In SamplePackService interface - ADD THIS METHOD
     boolean validatePackOwnership(UUID packId, UUID authorId);
+
+    void archiveAllByAuthor(UUID targetUserId);
 }

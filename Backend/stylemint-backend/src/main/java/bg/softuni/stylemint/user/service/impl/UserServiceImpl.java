@@ -15,6 +15,8 @@ import bg.softuni.stylemint.user.repository.UserRepository;
 import bg.softuni.stylemint.user.service.UserService;
 import bg.softuni.stylemint.user.service.util.UserMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -71,6 +74,7 @@ public class UserServiceImpl implements UserService {
                 .email(email)
                 .displayName(displayName)
                 .password(passwordEncoder.encode(rawPassword))
+                .systemUser(false)
                 .roles(Set.of(UserRole.CUSTOMER))
                 .createdAt(now)
                 .updatedAt(now)
@@ -103,18 +107,51 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void deleteUser(UUID id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
+    @Transactional
+    public void deleteUser(UUID targetUserId, UUID currentUserId) {
 
-        if (!canDeleteUser(id)) {
-            throw new ForbiddenOperationException(
-                    "User cannot be deleted because they have associated data."
-            );
+        User target = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new NotFoundException("User not found: " + targetUserId));
+
+        User current = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new NotFoundException("Current user not found"));
+
+        // 1) Check permissions *********************************************
+
+        // Case A: User deletes themself
+        boolean isSelfDelete = targetUserId.equals(currentUserId);
+
+        // Case B: Admin deletes someone else
+        boolean isAdmin = current.getRoles().contains(UserRole.ADMIN);
+
+        if (!isSelfDelete && !isAdmin) {
+            throw new ForbiddenOperationException("You cannot delete another user's account.");
         }
 
-        userRepository.delete(user);
+        // Prevent deleting system user
+        if (target.isSystemUser()) {
+            throw new ForbiddenOperationException("System user cannot be deleted.");
+        }
+
+        // Prevent deleting admin unless it's self-delete
+        if (target.getRoles().contains(UserRole.ADMIN) && !isSelfDelete) {
+            throw new ForbiddenOperationException("Admins cannot delete other admins.");
+        }
+
+
+        // 2) Soft delete content *********************************************
+        clothDesignService.archiveDesignsByUser(targetUserId);
+        audioSampleService.archiveAllByAuthor(targetUserId);
+        samplePackService.archiveAllByAuthor(targetUserId);
+
+        // 3) Soft delete user ***********************************************
+        target.setDeleted(true);
+        target.setDeletedAt(OffsetDateTime.now());
+        userRepository.save(target);
+
+        log.info("🔒 User {} deleted by {}", targetUserId, currentUserId);
     }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -134,13 +171,30 @@ public class UserServiceImpl implements UserService {
         return userRepository.getUserById(userId);
     }
 
-    private boolean canDeleteUser(UUID userId) {
-        // Use OrderServiceFacade instead of OrderService
-        Long orderCount = orderServiceFacade.countOrdersByUser(userId);
 
-        return orderCount == 0
-                && clothDesignService.countDesignsByUser(userId) == 0
-                && audioSampleService.countSamplesByAuthor(userId) == 0
-                && samplePackService.countPacksByAuthor(userId) == 0;
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void adminDeleteUser(UUID targetUserId) {
+
+        User target = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        // ❌ Root admin is untouchable
+        if (target.isSystemUser()) {
+            throw new ForbiddenOperationException("Root admin cannot be deleted.");
+        }
+
+        // Archive all user-related content
+        clothDesignService.archiveDesignsByUser(targetUserId);
+        audioSampleService.archiveAllByAuthor(targetUserId);
+        samplePackService.archiveAllByAuthor(targetUserId);
+
+        target.setDeleted(true);
+        target.setDeletedAt(OffsetDateTime.now());
+        userRepository.save(target);
+
+        log.info("❌ Admin deleted user {}", targetUserId);
     }
+
 }

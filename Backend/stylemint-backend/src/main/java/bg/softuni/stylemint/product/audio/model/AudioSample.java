@@ -5,8 +5,11 @@ import bg.softuni.stylemint.product.common.model.BaseProduct;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -77,4 +80,15 @@ public class AudioSample extends BaseProduct {
     @Builder.Default
     private Boolean isFree = false;
 
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private OffsetDateTime createdAt;
+
+    @UpdateTimestamp
+    private OffsetDateTime updatedAt;
+
+    private boolean archived = false;
+
+    private OffsetDateTime archivedAt;
 }

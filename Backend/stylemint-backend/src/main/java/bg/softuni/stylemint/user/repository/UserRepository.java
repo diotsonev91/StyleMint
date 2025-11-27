@@ -91,4 +91,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     List<User> findByCreatedAtBetween(OffsetDateTime startDate, OffsetDateTime endDate);
 
     User getUserById(UUID id);
+
+    boolean existsByRolesContaining(UserRole userRole);
 }

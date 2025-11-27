@@ -5,7 +5,7 @@ import bg.softuni.stylemint.common.dto.ApiResponse;
 import bg.softuni.stylemint.product.audio.dto.*;
 import bg.softuni.stylemint.product.audio.enums.*;
 import bg.softuni.stylemint.product.audio.service.AudioSampleService;
-import bg.softuni.stylemint.product.audio.service.SampleLicenseService;
+import bg.softuni.stylemint.product.audio.service.DigitalLicenseService;
 import bg.softuni.stylemint.product.audio.service.SamplePackBindingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ public class AudioSampleController {
 
     private final AudioSampleService audioSampleService;
     private final SamplePackBindingService samplePackBindingService;
-    private final SampleLicenseService sampleLicenseService;
+    private final DigitalLicenseService sampleLicenseService;
     // ================ CRUD Operations ================
 
     /**
@@ -298,7 +298,7 @@ public class AudioSampleController {
     public ResponseEntity<SampleDownloadResponse> downloadSample(@PathVariable UUID sampleId) {
         UUID userId = SecurityUtil.getCurrentUserId();
 
-        sampleLicenseService.validateDownloadPermission(userId, sampleId);
+        sampleLicenseService.validateDownloadPermissionSample(userId, sampleId);
 
         AudioSampleDTO sample = audioSampleService.getSampleById(sampleId);
 

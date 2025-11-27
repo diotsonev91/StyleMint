@@ -16,9 +16,11 @@ public interface UserService {
 
     UserDTO updateUser(UUID id, User user);
 
-    void deleteUser(UUID id);
+    void deleteUser(UUID id, UUID currentUserId);
 
     List<UserDTO> searchUsers(String query);
 
     User getUserById(UUID userId);
+
+    void adminDeleteUser(UUID targetUserId);
 }

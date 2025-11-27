@@ -32,6 +32,11 @@ public interface SamplePackRepository extends JpaRepository<SamplePack, UUID> {
     @Query("SELECT p FROM SamplePack p JOIN p.genres g WHERE g = :genre")
     List<SamplePack> findByGenresContaining(@Param("genre") Genre genre);
 
+
+    @Query("select p from SamplePack p join fetch p.samples where p.id = :packId")
+    SamplePack fetchPackWithSamples(UUID packId);
+
+
     /**
      * Find packs by price range
      */

@@ -4,6 +4,8 @@ package bg.softuni.stylemint.product.audio.model;
 import bg.softuni.stylemint.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -29,10 +31,20 @@ public class SampleLicense {
     @JoinColumn(name = "audio_sample_id", nullable = false)
     private AudioSample audioSample;
 
-    // Only store the order item ID as reference, not the entity
     @Column(name = "order_item_id", nullable = false)
     private UUID orderItemId;
 
     @Column(name = "purchased_at", nullable = false)
     private OffsetDateTime purchasedAt;
+
+    private boolean archived;
+    private OffsetDateTime archivedAt;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private OffsetDateTime createdAt;
+
+    @UpdateTimestamp
+    private OffsetDateTime updatedAt;
+
 }

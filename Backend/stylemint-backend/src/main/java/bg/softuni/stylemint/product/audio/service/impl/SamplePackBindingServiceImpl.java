@@ -17,28 +17,25 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SamplePackBindingServiceImpl implements SamplePackBindingService {
 
     private final AudioSampleRepository audioSampleRepository;
     private final SamplePackRepository samplePackRepository;
-
     private final SamplePackStatisticsService samplePackStatisticsService;
 
     @Override
     @Transactional
     public void bindSampleToPack(UUID sampleId, UUID packId, UUID authorId) {
-        // Get sample entity
+
         AudioSample sample = audioSampleRepository.findById(sampleId)
                 .orElseThrow(() -> new NotFoundException("Sample not found"));
 
-        // Get pack entity - fetch fresh from DB to ensure managed state
         SamplePack pack = samplePackRepository.findById(packId)
                 .orElseThrow(() -> new NotFoundException("Pack not found"));
 
-        // Authorization checks
         if (!sample.getAuthorId().equals(authorId)) {
             throw new ForbiddenOperationException("Unauthorized to bind this sample");
         }
@@ -47,11 +44,9 @@ public class SamplePackBindingServiceImpl implements SamplePackBindingService {
             throw new ForbiddenOperationException("Unauthorized to modify this pack");
         }
 
-        // Set the relationship
-        sample.setPack(pack);
+        pack.addSample(sample);
 
-        // Save and flush to ensure immediate persistence
-        audioSampleRepository.saveAndFlush(sample);
+        samplePackRepository.save(pack);
 
         log.info("Bound sample '{}' (ID: {}) to pack '{}' (ID: {})",
                 sample.getName(), sampleId, pack.getTitle(), packId);
@@ -65,29 +60,28 @@ public class SamplePackBindingServiceImpl implements SamplePackBindingService {
         log.info("Successfully bound all {} samples to pack", sampleIds.size());
     }
 
-
     @Override
     @Transactional
-    public void unbindSampleFromPack(UUID sampleId,UUID packId, UUID authorId) {
-        // Get sample entity
+    public void unbindSampleFromPack(UUID sampleId, UUID packId, UUID authorId) {
+
         AudioSample sample = audioSampleRepository.findById(sampleId)
                 .orElseThrow(() -> new NotFoundException("Sample not found"));
+
+        SamplePack pack = samplePackRepository.findById(packId)
+                .orElseThrow(() -> new NotFoundException("Pack not found"));
 
         if (!sample.getAuthorId().equals(authorId)) {
             throw new ForbiddenOperationException("Unauthorized to unbind this sample");
         }
 
+        pack.removeSample(sample);
 
-        // Remove pack reference
-        sample.setPack(null);
-        audioSampleRepository.save(sample);
+        samplePackRepository.save(pack);
 
-        //recalculate pack count
-        SamplePack pack = samplePackRepository.findById(packId)
-                .orElseThrow(() -> new NotFoundException("Pack not found"));
+        // Recalculate statistics
         samplePackStatisticsService.recalculatePackStatistics(pack);
         samplePackRepository.save(pack);
 
-        log.info("Unbound sample '{}' from its pack", sample.getName());
+        log.info("Unbound sample '{}' from pack '{}'", sample.getName(), packId);
     }
 }

@@ -346,4 +346,9 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
         return publicDesigns.map(this::toPublicDTO);
     }
+
+    @Override
+    public void archiveDesignsByUser(UUID targetUserId) {
+
+    }
 }

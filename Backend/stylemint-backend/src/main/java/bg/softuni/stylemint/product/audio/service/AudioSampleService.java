@@ -189,5 +189,5 @@ public interface AudioSampleService {
     List<AudioSampleDTO> getStandaloneSamplesByAuthor(UUID authorId);
 
 
-
+    void archiveAllByAuthor(UUID targetUserId);
 }

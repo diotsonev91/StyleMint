@@ -358,6 +358,11 @@ public class AudioSampleServiceImpl implements AudioSampleService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public void archiveAllByAuthor(UUID targetUserId) {
+
+    }
+
     // ================ Helper Methods ================
     private void validateAudioFile(MultipartFile file) {
         String contentType = file.getContentType();

@@ -52,4 +52,13 @@ public class User {
     @Column(name = "roles", length = 32, nullable = false)
     private Set<UserRole> roles = new HashSet<>();
 
+    @Column(name = "system_user", nullable = false)
+    private boolean systemUser = false;
+
+    @Column(name = "deleted", nullable = false)
+    private boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private OffsetDateTime deletedAt;
+
 }

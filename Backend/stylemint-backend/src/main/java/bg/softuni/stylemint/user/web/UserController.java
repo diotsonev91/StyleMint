@@ -1,5 +1,6 @@
 package bg.softuni.stylemint.user.web;
 
+import bg.softuni.stylemint.auth.security.SecurityUtil;
 import bg.softuni.stylemint.user.dto.UserDTO;
 import bg.softuni.stylemint.user.model.User;
 import bg.softuni.stylemint.user.service.UserService;
@@ -64,10 +65,12 @@ public class UserController {
      * Delete user
      * Only accessible by admins
      */
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
-        userService.deleteUser(id);
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable UUID userId
+    ) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        userService.deleteUser(userId, currentUserId);
         return ResponseEntity.noContent().build();
     }
 }

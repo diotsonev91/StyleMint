@@ -6,7 +6,7 @@ import bg.softuni.stylemint.external.dto.OrderPreviewResponse;
 import bg.softuni.stylemint.external.facade.order.OrderServiceFacade;
 import bg.softuni.stylemint.external.service.order.OrderPriceService;
 import bg.softuni.stylemint.external.service.order.OrderProxyService;
-import bg.softuni.stylemint.product.audio.service.SampleLicenseService;
+import bg.softuni.stylemint.product.audio.service.DigitalLicenseService;
 import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
 import bg.softuni.stylemint.common.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class OrderProxyServiceImpl implements OrderProxyService {
 
     private final OrderServiceFacade orderServiceFacade;
     private final OrderPriceService orderPriceService;
-    private final SampleLicenseService sampleLicenseService;
+    private final DigitalLicenseService sampleLicenseService;
 
     // ====================================================
     // CREATE ORDER

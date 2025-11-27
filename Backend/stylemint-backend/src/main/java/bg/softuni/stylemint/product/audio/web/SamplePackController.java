@@ -4,11 +4,9 @@ import bg.softuni.stylemint.auth.security.SecurityUtil;
 import bg.softuni.stylemint.common.dto.ApiResponse;
 import bg.softuni.stylemint.product.audio.dto.*;
 import bg.softuni.stylemint.product.audio.enums.Genre;
-import bg.softuni.stylemint.product.audio.model.AudioSample;
-import bg.softuni.stylemint.product.audio.service.SampleLicenseService;
+import bg.softuni.stylemint.product.audio.service.DigitalLicenseService;
 import bg.softuni.stylemint.product.audio.service.SamplePackService;
 import bg.softuni.stylemint.product.audio.service.impl.ZipService;
-import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
@@ -33,7 +31,7 @@ import static bg.softuni.stylemint.config.ApiPaths.BASE;
 public class SamplePackController {
 
     private final SamplePackService samplePackService;
-    private final SampleLicenseService sampleLicenseService;
+    private final DigitalLicenseService sampleLicenseService;
     private final ZipService zipService;
 
     // ================ CRUD Operations ================

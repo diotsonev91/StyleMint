@@ -8,7 +8,7 @@ import bg.softuni.stylemint.product.audio.dto.AudioSampleDTO;
 import java.util.List;
 import java.util.UUID;
 
-public interface SampleLicenseService {
+public interface DigitalLicenseService {
 
     /**
      * Processes order fulfillment and grants sample licenses
@@ -18,7 +18,7 @@ public interface SampleLicenseService {
     void processOrderFulfillment(UUID orderId, UUID userId);
 
 
-    void validateDownloadPermission(UUID userId, UUID sampleId);
+    void validateDownloadPermissionSample(UUID userId, UUID sampleId);
 
 
     void validateDownloadPermissionPack(UUID userId, UUID packId);
@@ -32,4 +32,7 @@ public interface SampleLicenseService {
 
     void createLicenseForPaidItem(UUID userId, OrderItemDTO item);
 
+    void deleteSampleLicense(UUID userId, UUID sampleId);
+
+    void deletePackLicense(UUID userId, UUID packId);
 }

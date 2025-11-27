@@ -270,6 +270,10 @@ public class SamplePackServiceImpl implements SamplePackService {
         return samplePackRepository.existsByIdAndAuthorId(packId, authorId);
     }
 
+    @Override
+    public void archiveAllByAuthor(UUID targetUserId) {
+
+    }
 
 
 }
