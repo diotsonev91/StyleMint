@@ -1,5 +1,6 @@
 package bg.softuni.stylemint.product.audio.repository;
 
+import aj.org.objectweb.asm.commons.Remapper;
 import bg.softuni.stylemint.product.audio.model.SamplePack;
 import bg.softuni.stylemint.product.audio.enums.Genre;
 import org.springframework.data.domain.Page;
@@ -9,28 +10,24 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface SamplePackRepository extends JpaRepository<SamplePack, UUID> {
 
 
-    List<SamplePack> findByAuthorId(UUID authorId);
+    List<SamplePack> findByAuthorIdAndArchivedFalse(UUID authorId);
 
 
-    List<SamplePack> findByArtist(String artist);
 
-
-    List<SamplePack> findByTitleContainingIgnoreCase(String title);
+    List<SamplePack> findByTitleContainingIgnoreCaseAndArchivedFalse(String title);
 
     /**
-     * Find packs containing a specific genre
+     * Find packs containing a specific genre and not archived
      */
-    @Query("SELECT p FROM SamplePack p JOIN p.genres g WHERE g = :genre")
-    List<SamplePack> findByGenresContaining(@Param("genre") Genre genre);
+    @Query("SELECT p FROM SamplePack p JOIN p.genres g WHERE g = :genre AND p.archived = false")
+    List<SamplePack> findByGenresContainingAndArchivedFalse(@Param("genre") Genre genre);
 
 
     @Query("select p from SamplePack p join fetch p.samples where p.id = :packId")
@@ -38,54 +35,25 @@ public interface SamplePackRepository extends JpaRepository<SamplePack, UUID> {
 
 
     /**
-     * Find packs by price range
-     */
-    List<SamplePack> findByPriceBetween(Double minPrice, Double maxPrice);
-
-    /**
-     * Find packs by rating range
-     */
-    List<SamplePack> findByRatingGreaterThanEqual(Double minRating);
-
-    /**
-     * Find packs released after date
-     */
-    List<SamplePack> findByReleaseDateAfter(OffsetDateTime date);
-
-    /**
-     * Find packs by sample count range
-     */
-    List<SamplePack> findBySampleCountBetween(Integer minCount, Integer maxCount);
-
-    /**
      * Count packs by author
      */
     long countByAuthorId(UUID authorId);
 
-    /**
-     * Check if author has packs
-     */
-    boolean existsByAuthorId(UUID authorId);
 
-    /**
-     * Find top rated packs
-     */
-    List<SamplePack> findTop10ByOrderByRatingDesc();
+    @Query("SELECT p FROM SamplePack p WHERE p.archived = false ORDER BY p.rating DESC")
+    List<SamplePack> findTop10ByOrderByRatingDescAndArchivedFalse();
 
-    /**
-     * Find most downloaded packs
-     */
-    List<SamplePack> findTop10ByOrderByDownloadsDesc();
+    @Query("SELECT p FROM SamplePack p WHERE p.archived = false ORDER BY p.downloads DESC")
+    List<SamplePack> findTop10ByOrderByDownloadsDescAndArchivedFalse();
 
-    /**
-     * Find latest packs
-     */
-    List<SamplePack> findTop10ByOrderByReleaseDateDesc();
+    @Query("SELECT p FROM SamplePack p WHERE p.archived = false ORDER BY p.releaseDate DESC")
+    List<SamplePack> findTop10ByOrderByReleaseDateDescAndArchivedFalse();
+
 
     /**
      * Paginated search by artist
      */
-    Page<SamplePack> findByArtist(String artist, Pageable pageable);
+    Page<SamplePack> findByArtistAndArchivedFalse(String artist, Pageable pageable);
 
     /**
      * Custom query: Search packs with multiple filters
@@ -125,4 +93,8 @@ public interface SamplePackRepository extends JpaRepository<SamplePack, UUID> {
 
 
     boolean existsByIdAndAuthorId(UUID packId, UUID authorId);
+
+    Page<SamplePack>  findByArchivedFalse(Pageable pageable);
+
+    List<SamplePack> findByArchivedTrue();
 }

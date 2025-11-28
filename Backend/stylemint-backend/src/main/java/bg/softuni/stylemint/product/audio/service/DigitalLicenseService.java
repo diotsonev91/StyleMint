@@ -10,13 +10,6 @@ import java.util.UUID;
 
 public interface DigitalLicenseService {
 
-    /**
-     * Processes order fulfillment and grants sample licenses
-     * to the purchasing user for all eligible items.
-     *
-     */
-    void processOrderFulfillment(UUID orderId, UUID userId);
-
 
     void validateDownloadPermissionSample(UUID userId, UUID sampleId);
 

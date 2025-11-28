@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,7 +39,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
     private final ClothDesignRepository clothDesignRepository;
     private final PriceCalculatorService<ClothDesign> clothPriceCalculator;
     private final ClothLikeService clothLikeService;
-    private final CloudinaryService cloudinaryService; // ← Променено от FileService към CloudinaryService
+    private final CloudinaryService cloudinaryService;
     private final ObjectMapper objectMapper;
     private final UserRolesService userRolesService;
 
@@ -46,7 +47,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
     public ClothDesignServiceImpl(ClothDesignRepository clothDesignRepository,
                                   @Qualifier("fashionPriceCalculatorService") PriceCalculatorService<ClothDesign> clothPriceCalculator,
                                   ClothLikeService clothLikeService,
-                                  CloudinaryService cloudinaryService, // ← Променен параметър
+                                  CloudinaryService cloudinaryService,
                                   ObjectMapper objectMapper,
                                   UserRolesService userRolesService) {
         this.clothDesignRepository = clothDesignRepository;
@@ -163,11 +164,10 @@ public class ClothDesignServiceImpl implements ClothDesignService {
             log.info("Processing custom decal file: {} for design: {}",
                     customDecalFile.getOriginalFilename(), design.getId());
 
-            // Използване на CloudinaryService вместо FileService
             Map<String, Object> uploadResult = cloudinaryService.uploadImage(customDecalFile, userId);
 
             String imageUrl = (String) uploadResult.get("url");
-            design.setCustomDecalPath(imageUrl); // Запазваме URL от Cloudinary
+            design.setCustomDecalPath(imageUrl);
 
             log.info("Successfully uploaded custom decal to Cloudinary: {}", imageUrl);
 
@@ -190,18 +190,16 @@ public class ClothDesignServiceImpl implements ClothDesignService {
         }
 
         try {
-            // Delete custom decal file from Cloudinary if exists
             if (design.getCustomDecalPath() != null && !design.getCustomDecalPath().isBlank()) {
                 cloudinaryService.deleteFile(design.getCustomDecalPath());
             }
 
-            // Delete the design from the database
             clothDesignRepository.delete(design);
 
-            // Check if the user still has any designs left
             long remainingDesigns = clothDesignRepository.countByUserId(userId);
 
-            // If no designs left, remove DESIGNER role
+            clothLikeService.deleteAllLikesForDesign(design.getId());
+
             if (remainingDesigns == 0) {
                 userRolesService.removeRoleFromUser(userId, UserRole.DESIGNER);
                 log.info("User {} no longer has designs, DESIGNER role removed.", userId);
@@ -348,7 +346,63 @@ public class ClothDesignServiceImpl implements ClothDesignService {
     }
 
     @Override
-    public void archiveDesignsByUser(UUID targetUserId) {
+    @Transactional
+    public void deleteDesignsByUser(UUID targetUserId) {
 
+        List<ClothDesign> designs = clothDesignRepository.findByUserId(targetUserId);
+
+        if (designs.isEmpty()) {
+            log.info("No designs to delete for user {}", targetUserId);
+            return;
+        }
+
+        log.info("User {} → deleting {} cloth designs", targetUserId, designs.size());
+
+        for (ClothDesign design : designs) {
+
+            if (design.getCustomDecalPath() != null && !design.getCustomDecalPath().isBlank()) {
+                try {
+                    cloudinaryService.deleteFile(design.getCustomDecalPath());
+                } catch (Exception e) {
+                    log.warn("Failed to delete decal for design {}: {}", design.getId(), e.getMessage());
+                }
+            }
+
+            clothLikeService.deleteAllLikesForDesign(design.getId());
+
+            clothDesignRepository.delete(design);
+
+            log.info("Deleted cloth design {}", design.getId());
+        }
+
+        if (clothDesignRepository.countByUserId(targetUserId) == 0) {
+            userRolesService.removeRoleFromUser(targetUserId, UserRole.DESIGNER);
+            log.info("Removed DESIGNER role from user {} (no designs left)", targetUserId);
+        }
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void adminDeleteDesign(UUID designId) {
+
+        ClothDesign design = clothDesignRepository.findById(designId)
+                .orElseThrow(() -> new ClothDesignNotFoundException(designId));
+
+        try {
+            if (design.getCustomDecalPath() != null && !design.getCustomDecalPath().isBlank()) {
+                cloudinaryService.deleteFile(design.getCustomDecalPath());
+            }
+
+            clothDesignRepository.delete(design);
+
+            log.info("❌ ADMIN deleted cloth design {}", designId);
+
+        } catch (Exception e) {
+            log.error("Failed to delete cloth design by admin", e);
+            throw new ClothDesignProcessingException(
+                    "Admin failed to delete design: " + e.getMessage(), e
+            );
+        }
     }
 }

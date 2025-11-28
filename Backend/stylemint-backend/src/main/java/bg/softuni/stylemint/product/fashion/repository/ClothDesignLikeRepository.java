@@ -25,4 +25,5 @@ public interface ClothDesignLikeRepository extends JpaRepository<ClothDesignLike
             "GROUP BY l.clothDesign.id")
     List<LikeCountProjection> countByClothDesignIdIn(@Param("designIds") List<UUID> designIds);
 
+    void deleteByClothDesignId(UUID designId);
 }

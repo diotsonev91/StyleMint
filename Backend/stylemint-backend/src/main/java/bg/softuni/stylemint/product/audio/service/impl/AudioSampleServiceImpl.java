@@ -20,10 +20,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -40,7 +44,6 @@ public class AudioSampleServiceImpl implements AudioSampleService {
     private final AudioSampleMapper audioSampleMapper;
     private final UserRolesService userRolesService;
 
-
     @Override
     @Transactional
     public AudioSampleDTO uploadSample(UUID authorId, UploadSampleRequest request) {
@@ -53,7 +56,6 @@ public class AudioSampleServiceImpl implements AudioSampleService {
         validateAudioFile(file);
 
         try {
-            // 1. Upload to Cloudinary - връща URL + metadata наведнъж!
             Map<String, Object> uploadResult = cloudinaryService.uploadAudio(file, authorId);
 
             String audioUrl = (String) uploadResult.get("url");
@@ -62,13 +64,12 @@ public class AudioSampleServiceImpl implements AudioSampleService {
 
             log.info("Uploaded audio: URL={}, Duration={} seconds", audioUrl, duration);
 
-            // 2. Build entity and persist
             AudioSample sample = AudioSample.builder()
                     .name(request.getName())
                     .authorId(authorId)
                     .artist(request.getArtist())
                     .audioUrl(audioUrl)
-                    .duration(duration)  // Now we have duration from upload!
+                    .duration(duration)
                     .bpm(request.getBpm())
                     .key(request.getMusicalKey())
                     .scale(request.getMusicalScale())
@@ -100,19 +101,10 @@ public class AudioSampleServiceImpl implements AudioSampleService {
         }
 
         try {
-            // Update metadata
-            sample.setName(request.getName());
-            sample.setArtist(request.getArtist());
-            sample.setBpm(request.getBpm());
-            sample.setKey(request.getMusicalKey());
-            sample.setScale(request.getMusicalScale());
-            sample.setGenre(request.getGenre());
-            sample.setInstrumentGroup(request.getInstrumentGroup());
-            sample.setSampleType(request.getSampleType());
-            sample.setPrice(request.getPrice().doubleValue());
-            sample.setTags(request.getTags());
+            ApplySampleBaseUpdates(sample, request.getName(), request.getArtist(), request.getBpm(),
+                    request.getMusicalKey(), request.getMusicalScale(), request.getGenre(),
+                    request.getInstrumentGroup(), request.getSampleType(), request.getPrice(), request.getTags());
 
-            // If new file is uploaded
             if (request.getFile() != null && !request.getFile().isEmpty()) {
                 validateAudioFile(request.getFile());
 
@@ -139,6 +131,21 @@ public class AudioSampleServiceImpl implements AudioSampleService {
         }
     }
 
+    private void ApplySampleBaseUpdates(AudioSample sample, String name, String artist, Integer bpm, MusicalKey musicalKey,
+                                        MusicalScale musicalScale, Genre genre, InstrumentGroup instrumentGroup,
+                                        SampleType sampleType, BigDecimal price, List<String> tags) {
+        sample.setName(name);
+        sample.setArtist(artist);
+        sample.setBpm(bpm);
+        sample.setKey(musicalKey);
+        sample.setScale(musicalScale);
+        sample.setGenre(genre);
+        sample.setInstrumentGroup(instrumentGroup);
+        sample.setSampleType(sampleType);
+        sample.setPrice(price.doubleValue());
+        sample.setTags(tags);
+    }
+
     @Override
     @Transactional
     public AudioSampleDTO updateSampleMetadata(UUID sampleId, UUID authorId, UpdateSampleRequest request) {
@@ -150,16 +157,9 @@ public class AudioSampleServiceImpl implements AudioSampleService {
         }
 
         try {
-            sample.setName(request.getName());
-            sample.setArtist(request.getArtist());
-            sample.setBpm(request.getBpm());
-            sample.setKey(request.getMusicalKey());
-            sample.setScale(request.getMusicalScale());
-            sample.setGenre(request.getGenre());
-            sample.setInstrumentGroup(request.getInstrumentGroup());
-            sample.setSampleType(request.getSampleType());
-            sample.setPrice(request.getPrice().doubleValue());
-            sample.setTags(request.getTags());
+            ApplySampleBaseUpdates(sample, request.getName(), request.getArtist(), request.getBpm(),
+                    request.getMusicalKey(), request.getMusicalScale(), request.getGenre(),
+                    request.getInstrumentGroup(), request.getSampleType(), request.getPrice(), request.getTags());
 
             AudioSample updated = audioSampleRepository.save(sample);
             return audioSampleMapper.toDTO(updated);
@@ -169,98 +169,81 @@ public class AudioSampleServiceImpl implements AudioSampleService {
         }
     }
 
-
     @Override
     public AudioSampleDTO getSampleById(UUID sampleId) {
-        AudioSample sample = audioSampleRepository.findById(sampleId)
+        AudioSample sample = audioSampleRepository.findByIdAndArchivedFalse(sampleId)
                 .orElseThrow(() -> new AudioSampleNotFoundException(sampleId));
-        return audioSampleMapper.toDTO(sample); // CHANGED HERE
+        return audioSampleMapper.toDTO(sample);
     }
-
 
     @Override
     @Transactional
-    public void deleteSample(UUID sampleId, UUID authorId) {
-        AudioSample sample = audioSampleRepository.findById(sampleId)
-                .orElseThrow(() -> new AudioSampleNotFoundException(sampleId));
+    @Scheduled(cron = "0 0 0 1 1 *")
+    public void deleteArchivedSamples() {
 
-        // Authorization check
-        if (!sample.getAuthorId().equals(authorId)) {
-            throw new ForbiddenOperationException("Unauthorized to delete this sample");
-        }
+        List<AudioSample> archivedSamples = audioSampleRepository.findByArchivedTrue();
 
-        try {
-            // Delete from Cloudinary
-            cloudinaryService.deleteFile(sample.getAudioUrl());
 
-            // Delete from database
-            audioSampleRepository.delete(sample);
+        OffsetDateTime oneYearAgo = OffsetDateTime.now().minusYears(1);
+        archivedSamples.stream()
+                .filter(sample -> sample.getArchivedAt().isBefore(oneYearAgo))
+                .forEach(sample -> {
 
-            // Check if the user has any samples left
-            long remainingSamples = audioSampleRepository.countByAuthorId(authorId);
-
-            // If no samples are left, remove AUTHOR role
-            if (remainingSamples == 0) {
-                userRolesService.removeRoleFromUser(authorId, UserRole.AUTHOR);
-                log.info("User {} no longer has samples, AUTHOR role removed.", authorId);
-            }
-        } catch (Exception e) {
-            log.error("Failed to delete audio sample", e);
-            throw new FileProcessingException("Failed to delete audio sample: " + e.getMessage());
-        }
+                    audioSampleRepository.delete(sample);
+                    log.info("Deleted archived sample with ID {}", sample.getId());
+                });
     }
-
 
     @Override
     public List<AudioSampleDTO> getSamplesByAuthor(UUID authorId) {
-        return audioSampleRepository.findByAuthorId(authorId).stream()
+        return audioSampleRepository.findByAuthorIdAndArchivedFalse(authorId).stream()
                 .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public Page<AudioSampleDTO> getSamplesByGenre(Genre genre, Pageable pageable) {
-        return audioSampleRepository.findByGenre(genre, pageable)
+        return audioSampleRepository.findByGenreAndArchivedFalse(genre, pageable)
                 .map(audioSampleMapper::toDTO);
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByType(SampleType sampleType) {
-        return audioSampleRepository.findBySampleType(sampleType).stream()
+        return audioSampleRepository.findBySampleTypeAndArchivedFalse(sampleType).stream()
                 .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByInstrumentGroup(InstrumentGroup instrumentGroup) {
-        return audioSampleRepository.findByInstrumentGroup(instrumentGroup).stream()
+        return audioSampleRepository.findByInstrumentGroupAndArchivedFalse(instrumentGroup).stream()
                 .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByBpmRange(Integer minBpm, Integer maxBpm) {
-        return audioSampleRepository.findByBpmBetween(minBpm, maxBpm).stream()
+        return audioSampleRepository.findByBpmBetweenAndArchivedFalse(minBpm, maxBpm).stream()
                 .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByKey(MusicalKey key) {
-        return audioSampleRepository.findByKey(key).stream()
+        return audioSampleRepository.findByKeyAndArchivedFalse(key).stream()
                 .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public Page<AudioSampleDTO> getStandaloneSamples(Pageable pageable) {
-        return audioSampleRepository.findAll(pageable)
+        return audioSampleRepository.findByArchivedFalse(pageable)
                 .map(audioSampleMapper::toDTO);
     }
 
     @Override
     public List<AudioSampleDTO> getSamplesByPack(UUID packId) {
-        return audioSampleRepository.findByPackId(packId).stream()
+        return audioSampleRepository.findByPackIdAndArchivedFalse(packId).stream()
                 .map(audioSampleMapper::toDTO)
                 .collect(Collectors.toList());
     }
@@ -275,7 +258,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
                 request.getKey(),
                 request.getInstrumentGroup(),
                 pageable
-        ).map(audioSampleMapper::toDTO); // CHANGED HERE
+        ).map(audioSampleMapper::toDTO);
     }
 
     @Override
@@ -328,14 +311,11 @@ public class AudioSampleServiceImpl implements AudioSampleService {
         return audioSampleRepository.save(sample);
     }
 
-
-
     @Override
     @Transactional
     public AudioSampleDTO updateSamplePrice(UUID sampleId, UUID authorId, Double price) {
         AudioSample sample = getAudioSampleEntityById(sampleId);
 
-        // Authorization check
         if (!sample.getAuthorId().equals(authorId)) {
             throw new ForbiddenOperationException("Unauthorized to modify this sample");
         }
@@ -358,10 +338,6 @@ public class AudioSampleServiceImpl implements AudioSampleService {
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public void archiveAllByAuthor(UUID targetUserId) {
-
-    }
 
     // ================ Helper Methods ================
     private void validateAudioFile(MultipartFile file) {
@@ -373,12 +349,77 @@ public class AudioSampleServiceImpl implements AudioSampleService {
             throw new AudioFileValidationException("Only MP3 and WAV files are allowed");
         }
 
-        // Check file size (e.g., max 50MB)
         long maxSize = 50 * 1024 * 1024; // 50MB
         if (file.getSize() > maxSize) {
             throw  new AudioFileValidationException("File size must not exceed 50MB");
         }
     }
 
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void adminArchiveSample(UUID sampleId) {
+
+        AudioSample sample = audioSampleRepository.findById(sampleId)
+                .orElseThrow(() -> new NotFoundException("Sample not found: " + sampleId));
+
+        sample.setArchived(true);
+        sample.setArchivedAt(OffsetDateTime.now());
+
+        audioSampleRepository.save(sample);
+
+
+        log.info("📁 ADMIN archived sample {}", sampleId);
+    }
+
+    @Override
+    @Transactional
+    public void archiveAllByAuthor(UUID targetUserId) {
+        List<AudioSample> samplesToArchive = audioSampleRepository.findByAuthorIdAndArchivedFalse(targetUserId);
+
+        for (AudioSample sample : samplesToArchive) {
+            sample.setArchived(true);
+            sample.setArchivedAt(OffsetDateTime.now());
+            audioSampleRepository.save(sample);
+        }
+
+        log.info("📁 ADMIN archived all samples for user {}", targetUserId);
+    }
+
+    @Override
+    @Transactional
+    public void archiveSample(UUID sampleId, UUID authorId) {
+        AudioSample sample = audioSampleRepository.findById(sampleId)
+                .orElseThrow(() -> new AudioSampleNotFoundException(sampleId));
+
+        if (!sample.getAuthorId().equals(authorId)) {
+            throw new ForbiddenOperationException("Unauthorized to archive this sample");
+        }
+
+        try {
+            sample.setArchived(true);
+            sample.setArchivedAt(OffsetDateTime.now());
+
+            audioSampleRepository.save(sample);
+
+            log.info("✅ Sample with ID {} has been archived by its author {}", sampleId, authorId);
+
+            long remainingSamples = audioSampleRepository.countByAuthorId(authorId);
+
+            if (remainingSamples == 0) {
+                userRolesService.removeRoleFromUser(authorId, UserRole.AUTHOR);
+                log.info("User {} no longer has samples, AUTHOR role removed.", authorId);
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to archive audio sample", e);
+            throw new FileProcessingException("Failed to archive audio sample: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void deleteSample(UUID id, UUID authorId) {
+        audioSampleRepository.deleteById(id);
+    }
 
 }

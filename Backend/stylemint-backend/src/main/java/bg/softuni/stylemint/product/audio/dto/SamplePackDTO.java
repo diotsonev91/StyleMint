@@ -31,4 +31,5 @@ public class SamplePackDTO {
     private OffsetDateTime releaseDate;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    private boolean archived;
 }

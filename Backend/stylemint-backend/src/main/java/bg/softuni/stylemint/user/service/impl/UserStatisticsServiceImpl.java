@@ -10,7 +10,7 @@ import bg.softuni.stylemint.product.audio.dto.ProducerStatsDTO;
 import bg.softuni.stylemint.product.audio.dto.UserAuthorSummaryDTO;
 import bg.softuni.stylemint.product.audio.service.AudioSampleService;
 import bg.softuni.stylemint.product.audio.service.SamplePackService;
-import bg.softuni.stylemint.product.dto.UserCreatedStatsDTO;
+import bg.softuni.stylemint.product.common.dto.UserCreatedStatsDTO;
 import bg.softuni.stylemint.product.fashion.dto.UserDesignerSummaryDTO;
 import bg.softuni.stylemint.product.fashion.service.ClothDesignService;
 import bg.softuni.stylemint.user.dto.UserStatsDTO;

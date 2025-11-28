@@ -63,5 +63,10 @@ public class ClothLikeServiceImpl implements ClothLikeService {
         return likeRepository.existsByUserIdAndClothDesignId(userId, designId);
     }
 
+    @Override
+    public void deleteAllLikesForDesign(UUID designId) {
+        likeRepository.deleteByClothDesignId(designId);
+    }
+
 
 }

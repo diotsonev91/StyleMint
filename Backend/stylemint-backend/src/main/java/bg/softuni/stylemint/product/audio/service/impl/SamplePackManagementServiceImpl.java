@@ -272,7 +272,6 @@ public class SamplePackManagementServiceImpl implements SamplePackManagementServ
 
         for (NewSampleUploadForPack sample : newSamples) {
             try {
-                // === 1. Създаваме UploadSampleRequest за AudioSampleService ===
                 UploadSampleRequest uploadReq = new UploadSampleRequest();
                 uploadReq.setFile(sample.getFile());
                 uploadReq.setName(sample.getName());
@@ -310,31 +309,5 @@ public class SamplePackManagementServiceImpl implements SamplePackManagementServ
 
         return totalBytes;
     }
-
-
-    /**
-     * Create UploadSampleRequest from PackSampleInfo
-     */
-    private UploadSampleRequest createUploadRequest(PackSampleInfo sampleInfo, String artist, Genre genre) {
-        UploadSampleRequest uploadRequest = new UploadSampleRequest();
-        uploadRequest.setFile(sampleInfo.getFile());
-        uploadRequest.setName(sampleInfo.getName());
-        uploadRequest.setArtist(artist);
-
-        // Use individual price if provided, otherwise zero
-        uploadRequest.setPrice(sampleInfo.getIndividualPrice() != null
-                ? sampleInfo.getIndividualPrice()
-                : BigDecimal.ZERO);
-
-        uploadRequest.setBpm(sampleInfo.getBpm() != null ? sampleInfo.getBpm() : 0);
-        uploadRequest.setMusicalKey(sampleInfo.getMusicalKey());
-        uploadRequest.setMusicalScale(sampleInfo.getMusicalScale());
-        uploadRequest.setGenre(genre);
-        uploadRequest.setSampleType(sampleInfo.getSampleType());
-        uploadRequest.setInstrumentGroup(sampleInfo.getInstrumentGroup());
-
-        return uploadRequest;
-    }
-
 
 }

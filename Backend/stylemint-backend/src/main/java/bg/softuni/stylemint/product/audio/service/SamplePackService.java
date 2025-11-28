@@ -37,7 +37,7 @@ public interface SamplePackService {
     /**
      * Delete pack and all associated samples
      */
-    void deletePack(UUID packId, UUID authorId);
+    void deleteArchivedPacks();
 
     // ================ Query Methods ================
 
@@ -91,10 +91,7 @@ public interface SamplePackService {
      */
     List<SamplePackDTO> getLatestPacks();
 
-    /**
-     * Get featured packs (paginated)
-     */
-    Page<SamplePackDTO> getFeaturedPacks(Pageable pageable);
+
 
     // ================ Statistics ================
 
@@ -122,4 +119,9 @@ public interface SamplePackService {
     boolean validatePackOwnership(UUID packId, UUID authorId);
 
     void archiveAllByAuthor(UUID targetUserId);
+
+    void adminArchivePack(UUID packId);
+
+    void archivePackByUser(UUID samplePackId, UUID authorId);
+
 }

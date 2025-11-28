@@ -36,5 +36,8 @@ public interface ClothDesignService {
 
     Page<DesignPublicDTO> getPublicDesignsOfUser(UUID userId, Pageable pageable);
 
-    void archiveDesignsByUser(UUID targetUserId);
+    void deleteDesignsByUser(UUID targetUserId);
+
+    void adminDeleteDesign(UUID designId);
+
 }

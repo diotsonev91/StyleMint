@@ -14,4 +14,6 @@ public interface ClothLikeService {
 
 
     boolean isLikedByUser(UUID id);
+
+    void deleteAllLikesForDesign(UUID id);
 }

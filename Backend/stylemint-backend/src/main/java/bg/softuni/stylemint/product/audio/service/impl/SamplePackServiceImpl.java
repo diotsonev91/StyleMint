@@ -1,5 +1,7 @@
 package bg.softuni.stylemint.product.audio.service.impl;
 
+import bg.softuni.stylemint.common.exception.FileProcessingException;
+import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
 import bg.softuni.stylemint.product.audio.dto.*;
 import bg.softuni.stylemint.product.audio.enums.Genre;
 import bg.softuni.stylemint.product.audio.model.SamplePack;
@@ -14,9 +16,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -36,15 +41,12 @@ public class SamplePackServiceImpl implements SamplePackService {
     @Override
     @Transactional
     public SamplePackDTO uploadPack(UUID authorId, UploadPackRequest request) {
-        // POST request - no transformation needed
-
         return samplePackManagementService.uploadPack(authorId, request);
     }
 
     @Override
     @Transactional
     public SamplePackDTO updatePack(UUID packId, UUID authorId, UpdatePackRequest request) {
-        // PUT request - no transformation needed
         log.info("=== UPDATE PACK STARTED ===");
         log.info("Pack ID: {}, Author ID: {}", packId, authorId);
         log.info("Request title: {}", request.getTitle());
@@ -65,14 +67,27 @@ public class SamplePackServiceImpl implements SamplePackService {
 
     @Override
     @Transactional
-    public void deletePack(UUID packId, UUID authorId) {
-        // DELETE request - no transformation needed
-        samplePackManagementService.deletePack(packId, authorId);
+    @Scheduled(cron = "0 0 0 6 7 *")
+    public void deleteArchivedPacks() {
+        OffsetDateTime oneYearAgo = OffsetDateTime.now().minusYears(1); // The threshold for archiving
+
+        List<SamplePack> archivedPacks = samplePackRepository.findByArchivedTrue();
+
+        // Iterate over the archived packs and delete those older than one year
+        archivedPacks.stream()
+                .filter(pack -> pack.getArchivedAt().isBefore(oneYearAgo))
+                .forEach(pack -> {
+                    try {
+                        samplePackManagementService.deletePack(pack.getId(), pack.getAuthorId());
+                        log.info("Archived pack with ID {} and author {} has been deleted", pack.getId(), pack.getAuthorId());
+                    } catch (Exception e) {
+                        log.error("Failed to delete archived pack with ID {}", pack.getId(), e);
+                    }
+                });
     }
 
     @Override
     public SamplePackDTO getPackById(UUID packId) {
-        // GET request - transform image URL
         SamplePack pack = samplePackRepository.findById(packId)
                 .orElseThrow(() -> new NotFoundException("Pack not found with id: " + packId));
 
@@ -82,7 +97,6 @@ public class SamplePackServiceImpl implements SamplePackService {
 
     @Override
     public SamplePackDetailDTO getPackWithSamples(UUID packId) {
-        // GET request - transform image URL
         SamplePack pack = samplePackRepository.findById(packId)
                 .orElseThrow(() -> new NotFoundException("Pack not found"));
 
@@ -98,41 +112,34 @@ public class SamplePackServiceImpl implements SamplePackService {
 
     @Override
     public List<SamplePackDTO> getPacksByAuthor(UUID authorId) {
-        // GET request - transform image URLs
-        List<SamplePackDTO> dtos = samplePackRepository.findByAuthorId(authorId).stream()
+        return samplePackRepository.findByAuthorIdAndArchivedFalse(authorId).stream()
                 .map(samplePackMapper::toDTO)
                 .collect(Collectors.toList());
-        return dtos;
     }
 
     @Override
     public Page<SamplePackDTO> getPacksByArtist(String artist, Pageable pageable) {
-        // GET request - transform image URLs
-        Page<SamplePackDTO> page = samplePackRepository.findByArtist(artist, pageable)
+
+        return samplePackRepository.findByArtistAndArchivedFalse(artist, pageable)
                 .map(samplePackMapper::toDTO);
-        return page;
     }
 
     @Override
     public List<SamplePackDTO> getPacksByGenre(Genre genre) {
-        // GET request - transform image URLs
-        List<SamplePackDTO> dtos = samplePackRepository.findByGenresContaining(genre).stream()
+
+        return samplePackRepository.findByGenresContainingAndArchivedFalse(genre).stream()
                 .map(samplePackMapper::toDTO)
                 .collect(Collectors.toList());
-        return dtos;
     }
 
     @Override
     public Page<SamplePackDTO> getAllPacks(Pageable pageable) {
-        // GET request - transform image URLs
-        Page<SamplePackDTO> page = samplePackRepository.findAll(pageable)
+        return samplePackRepository.findByArchivedFalse(pageable)
                 .map(samplePackMapper::toDTO);
-        return page;
     }
 
     @Override
     public Page<SamplePackDTO> searchPacks(SamplePackSearchRequest request, Pageable pageable) {
-        // GET request - transform image URLs
         Page<SamplePackDTO> page = samplePackRepository.searchPacks(
                 request.getArtist(),
                 request.getGenre(),
@@ -141,79 +148,61 @@ public class SamplePackServiceImpl implements SamplePackService {
                 request.getMinRating(),
                 pageable
         ).map(samplePackMapper::toDTO);
-        return page;
+
+        return (Page<SamplePackDTO>) page.filter(pack -> !pack.isArchived());
     }
+
 
     @Override
     public List<SamplePackDTO> searchPacksByTitle(String title) {
-        // GET request - transform image URLs
-        List<SamplePackDTO> dtos = samplePackRepository.findByTitleContainingIgnoreCase(title).stream()
+        return samplePackRepository.findByTitleContainingIgnoreCaseAndArchivedFalse(title).stream()
                 .map(samplePackMapper::toDTO)
                 .collect(Collectors.toList());
-        return dtos;
     }
+
 
     @Override
     public List<SamplePackDTO> findSimilarPacks(UUID packId) {
-        // GET request - transform image URLs
         SamplePack pack = samplePackRepository.findById(packId)
                 .orElseThrow(() -> new NotFoundException("Pack not found"));
 
-        List<SamplePackDTO> dtos = samplePackRepository.findSimilarPacks(pack.getGenres(), packId).stream()
+        return samplePackRepository.findSimilarPacks(pack.getGenres(), packId).stream()
+                .filter(sample -> !sample.isArchived())
                 .map(samplePackMapper::toDTO)
                 .collect(Collectors.toList());
-        return dtos;
     }
+
 
     @Override
     public List<SamplePackDTO> getTopRatedPacks() {
-        // GET request - transform image URLs
-        List<SamplePackDTO> dtos = samplePackRepository.findTop10ByOrderByRatingDesc().stream()
+        return samplePackRepository.findTop10ByOrderByRatingDescAndArchivedFalse().stream()
                 .map(samplePackMapper::toDTO)
                 .collect(Collectors.toList());
-        return dtos;
     }
 
     @Override
     public List<SamplePackDTO> getMostDownloadedPacks() {
-        // GET request - transform image URLs
-        List<SamplePackDTO> dtos = samplePackRepository.findTop10ByOrderByDownloadsDesc().stream()
+        return samplePackRepository.findTop10ByOrderByDownloadsDescAndArchivedFalse().stream()
                 .map(samplePackMapper::toDTO)
                 .collect(Collectors.toList());
-        return dtos;
     }
 
     @Override
     public List<SamplePackDTO> getLatestPacks() {
-        // GET request - transform image URLs
-        List<SamplePackDTO> dtos = samplePackRepository.findTop10ByOrderByReleaseDateDesc().stream()
+        return samplePackRepository.findTop10ByOrderByReleaseDateDescAndArchivedFalse().stream()
                 .map(samplePackMapper::toDTO)
                 .collect(Collectors.toList());
-        return dtos;
     }
 
-    @Override
-    public Page<SamplePackDTO> getFeaturedPacks(Pageable pageable) {
-        // GET request - transform image URLs
-        Page<SamplePackDTO> page = samplePackRepository.findFeaturedPacks(pageable).stream()
-                .map(samplePackMapper::toDTO)
-                .collect(Collectors.collectingAndThen(
-                        Collectors.toList(),
-                        list -> new PageImpl<>(list, pageable, list.size())
-                ));
-        return page;
-    }
 
     @Override
     public long countPacksByAuthor(UUID authorId) {
-        // GET request but returns long - no transformation needed
         return samplePackRepository.countByAuthorId(authorId);
     }
 
     @Override
     @Transactional
     public void incrementDownloadCount(UUID packId) {
-        // PATCH-like operation - no transformation needed
         SamplePack pack = samplePackRepository.findById(packId)
                 .orElseThrow(() -> new NotFoundException("Pack not found"));
 
@@ -224,7 +213,6 @@ public class SamplePackServiceImpl implements SamplePackService {
     @Override
     @Transactional
     public void updatePackRating(UUID packId, Double rating) {
-        // PATCH-like operation - no transformation needed
         SamplePack pack = samplePackRepository.findById(packId)
                 .orElseThrow(() -> new NotFoundException("Pack not found"));
 
@@ -234,7 +222,6 @@ public class SamplePackServiceImpl implements SamplePackService {
 
     @Override
     public ProducerStatsDTO getProducerStats(UUID authorId) {
-        // GET request but returns stats DTO - no image transformation needed
         long totalSamples = audioSampleService.countSamplesByAuthor(authorId);
         long totalPacks = samplePackRepository.countByAuthorId(authorId);
 
@@ -242,7 +229,7 @@ public class SamplePackServiceImpl implements SamplePackService {
         Integer totalDownloads = 0;
         Double averageRating = 0.0;
 
-        List<SamplePack> packs = samplePackRepository.findByAuthorId(authorId);
+        List<SamplePack> packs = samplePackRepository.findByAuthorIdAndArchivedFalse(authorId);
         if (!packs.isEmpty()) {
             averageRating = packs.stream()
                     .filter(p -> p.getRating() != null)
@@ -271,9 +258,58 @@ public class SamplePackServiceImpl implements SamplePackService {
     }
 
     @Override
+    @Transactional
     public void archiveAllByAuthor(UUID targetUserId) {
+        List<SamplePack> samplePacksToArchive = samplePackRepository.findByAuthorIdAndArchivedFalse(targetUserId);
 
+        for (SamplePack pack : samplePacksToArchive) {
+            pack.setArchived(true);
+            pack.setArchivedAt(OffsetDateTime.now()); // Записваме времето на архивирането
+            samplePackRepository.save(pack); // Записваме в базата данни
+        }
+
+        log.info("📁 Archived all sample packs for user {}", targetUserId);
     }
 
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void adminArchivePack(UUID packId) {
+
+        SamplePack pack = samplePackRepository.findById(packId)
+                .orElseThrow(() -> new NotFoundException("Pack not found: " + packId));
+
+        pack.setArchived(true);
+        pack.setArchivedAt(OffsetDateTime.now());
+
+        samplePackRepository.save(pack);
+
+        log.info("📦 ADMIN archived sample pack {}", packId);
+    }
+
+    @Override
+    @Transactional
+    public void archivePackByUser(UUID samplePackId, UUID authorId) {
+
+        SamplePack samplePack = samplePackRepository.findById(samplePackId)
+                .orElseThrow(() -> new NotFoundException("Sample pack not found with ID: " + samplePackId));
+
+        if (!samplePack.getAuthorId().equals(authorId)) {
+            throw new ForbiddenOperationException("Unauthorized to archive this sample pack");
+        }
+
+        try {
+
+            samplePack.setArchived(true);
+            samplePack.setArchivedAt(OffsetDateTime.now());
+
+            samplePackRepository.save(samplePack);
+
+            log.info("📁 Sample pack with ID {} has been archived by its author {}", samplePackId, authorId);
+        } catch (Exception e) {
+            log.error("Failed to archive sample pack", e);
+            throw new FileProcessingException("Failed to archive sample pack: " + e.getMessage());
+        }
+    }
 
 }

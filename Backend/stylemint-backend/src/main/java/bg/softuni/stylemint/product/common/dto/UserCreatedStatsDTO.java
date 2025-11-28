@@ -1,4 +1,4 @@
-package bg.softuni.stylemint.product.dto;
+package bg.softuni.stylemint.product.common.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

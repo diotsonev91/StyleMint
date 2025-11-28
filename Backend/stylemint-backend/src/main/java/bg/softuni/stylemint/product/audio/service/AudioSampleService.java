@@ -31,8 +31,6 @@ public interface AudioSampleService {
     AudioSampleDTO getSampleById(UUID sampleId);
 
 
-
-
     /**
      * Update sample FILE and metadata
      * @param sampleId Sample ID
@@ -57,7 +55,7 @@ public interface AudioSampleService {
      * @param sampleId Sample ID
      * @param authorId Author ID (for authorization)
      */
-    void deleteSample(UUID sampleId, UUID authorId);
+    void deleteArchivedSamples();
 
     // ================ Listing Operations ================
 
@@ -190,4 +188,10 @@ public interface AudioSampleService {
 
 
     void archiveAllByAuthor(UUID targetUserId);
+
+    void adminArchiveSample(UUID sampleId);
+
+    void archiveSample(UUID sampleId, UUID authorId);
+
+    void deleteSample(UUID id, UUID authorId);
 }

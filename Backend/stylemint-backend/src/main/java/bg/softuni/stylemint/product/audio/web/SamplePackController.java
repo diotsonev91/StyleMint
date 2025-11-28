@@ -9,6 +9,7 @@ import bg.softuni.stylemint.product.audio.service.SamplePackService;
 import bg.softuni.stylemint.product.audio.service.impl.ZipService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -81,18 +82,6 @@ public class SamplePackController {
         UUID authorId = SecurityUtil.getCurrentUserId();
         SamplePackDTO pack = samplePackService.updatePack(packId, authorId, request);
         return ResponseEntity.ok(ApiResponse.success(pack, "Pack updated successfully"));
-    }
-
-    /**
-     * Delete pack
-     * DELETE /api/v1/audio/packs/{packId}
-     */
-    @DeleteMapping("/{packId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> deletePack(@PathVariable UUID packId) {
-        UUID authorId = SecurityUtil.getCurrentUserId();
-        samplePackService.deletePack(packId, authorId);
-        return ResponseEntity.noContent().build();
     }
 
     // ================ Listing Operations ================
@@ -226,18 +215,6 @@ public class SamplePackController {
         return ResponseEntity.ok(packs);
     }
 
-    /**
-     * Get featured packs
-     * GET /api/v1/audio/packs/featured
-     */
-    @GetMapping("/featured")
-    public ResponseEntity<Page<SamplePackDTO>> getFeaturedPacks(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<SamplePackDTO> packs = samplePackService.getFeaturedPacks(pageable);
-        return ResponseEntity.ok(packs);
-    }
 
     // ================ Actions ================
 
@@ -345,16 +322,12 @@ public class SamplePackController {
     public ResponseEntity<ByteArrayResource> downloadPackAsZip(@PathVariable UUID packId) throws Exception {
         UUID userId = SecurityUtil.getCurrentUserId();
 
-        // 1) Validate download permission
         sampleLicenseService.validateDownloadPermissionPack(userId, packId);
 
-        // 2) Load pack + samples
         SamplePackDetailDTO packDetail = samplePackService.getPackWithSamples(packId);
 
-        // 3) Create ZIP
         ZipResult zip = zipService.createPackZip(packDetail);
 
-        // 4) Return response
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zip.getFileName() + "\"")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -363,5 +336,14 @@ public class SamplePackController {
 
     }
 
+    @DeleteMapping("/{packId}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> archivePackByUser(@PathVariable UUID packId) {
+
+        UUID userId = SecurityUtil.getCurrentUserId();
+        samplePackService.archivePackByUser(packId, userId);
+
+        return ResponseEntity.noContent().build();
+    }
 
 }

@@ -1,5 +1,5 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
+import React, {useEffect, useState} from "react";
+import {Routes, Route, Navigate} from "react-router-dom";
 import Home from "../pages/Home";
 import Login from "../pages/User/Login";
 import Register from "../pages/User/Register";
@@ -28,12 +28,35 @@ import {EditClothDesignPage} from "../pages/Clothes/EditClothDesignPage";
 import {MyNftsPage} from "../pages/nft/MyNftsPage";
 import MyProfilePage from "../pages/User/MyProfilePage";
 import UserProfilePage from "../pages/User/UserProfilePage";
+import {getCurrentUser} from "../api/auth";
+import AdminPanel from "../pages/admin/AdminPanel";
 
 // You can easily expand this later with private routes or 404 pages
 export const AppRoutes: React.FC = () => {
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const currentUser = await getCurrentUser();
+                setIsAdmin(currentUser.role === 'admin'); // Assuming the role is available
+            } catch (error) {
+                console.error('Error fetching user:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUser();
+    }, []);
+
+    if (loading) {
+        return <div>Loading...</div>;  // Optional: Add loading state
+    }
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+        <Route path="/" element={isAdmin ? <Navigate to="/admin-panel" /> : <Home />} />
+        <Route path="/admin-panel" element={isAdmin ? <AdminPanel /> : <Navigate to="/" />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path='/customize' element={<Customize/>} />

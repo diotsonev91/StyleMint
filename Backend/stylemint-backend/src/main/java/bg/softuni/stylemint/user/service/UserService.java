@@ -23,4 +23,9 @@ public interface UserService {
     User getUserById(UUID userId);
 
     void adminDeleteUser(UUID targetUserId);
+
+    void addRole(UUID userId, String roleName);
+
+    void removeRole(UUID userId, String roleName);
+
 }

@@ -11,55 +11,49 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface AudioSampleRepository extends JpaRepository<AudioSample, UUID> {
 
+    Page<AudioSample> findByArchivedFalse(Pageable pageable);
+
+
     /**
      * Find samples by author
      */
-    List<AudioSample> findByAuthorId(UUID authorId);
-
-    /**
-     * Find samples by artist name
-     */
-    List<AudioSample> findByArtist(String artist);
-
-    /**
-     * Find samples by genre
-     */
-    List<AudioSample> findByGenre(Genre genre);
+    List<AudioSample> findByAuthorIdAndArchivedFalse(UUID authorId);
 
     /**
      * Find samples by sample type
      */
-    List<AudioSample> findBySampleType(SampleType sampleType);
+    List<AudioSample> findBySampleTypeAndArchivedFalse(SampleType sampleType);
 
     /**
      * Find samples by BPM range
      */
-    List<AudioSample> findByBpmBetween(Integer minBpm, Integer maxBpm);
+    List<AudioSample> findByBpmBetweenAndArchivedFalse(Integer minBpm, Integer maxBpm);
 
     /**
      * Find samples by key signature
      */
-    List<AudioSample> findByKey(MusicalKey key);
+    List<AudioSample> findByKeyAndArchivedFalse(MusicalKey key);
 
     /**
      * Find samples by instrument group
      */
-    List<AudioSample> findByInstrumentGroup(InstrumentGroup instrumentGroup);
+    List<AudioSample> findByInstrumentGroupAndArchivedFalse(InstrumentGroup instrumentGroup);
 
     /**
      * Find samples in a specific pack
      */
-    List<AudioSample> findByPack(SamplePack pack);
+    List<AudioSample> findByPackAndArchivedFalse(SamplePack pack);
 
     /**
      * Find samples by pack ID
      */
-    List<AudioSample> findByPackId(UUID packId);
+    List<AudioSample> findByPackIdAndArchivedFalse(UUID packId);
 
     /**
      * Find standalone samples (not in any pack)
@@ -96,7 +90,7 @@ public interface AudioSampleRepository extends JpaRepository<AudioSample, UUID> 
     /**
      * Paginated search by genre
      */
-    Page<AudioSample> findByGenre(Genre genre, Pageable pageable);
+    Page<AudioSample> findByGenreAndArchivedFalse(Genre genre, Pageable pageable);
 
     /**
      * Custom query: Search samples with filters
@@ -140,4 +134,10 @@ public interface AudioSampleRepository extends JpaRepository<AudioSample, UUID> 
     List<AudioSample> findByAuthorIdAndPackIsNull(UUID authorId);
     int countByPackId(UUID packId);
 
+    Optional<AudioSample> findByIdAndArchivedFalse(UUID id);
+
+    Page<AudioSample> findByNameContainingIgnoreCaseAndArchivedFalse(String name, Pageable pageable);
+
+
+    List<AudioSample> findByArchivedTrue();
 }

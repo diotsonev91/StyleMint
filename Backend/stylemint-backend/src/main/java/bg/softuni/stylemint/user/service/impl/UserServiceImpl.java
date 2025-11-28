@@ -36,8 +36,6 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // Domain dependencies for deletion checks - UPDATED to use Facade
-    private final OrderServiceFacade orderServiceFacade;
     private final ClothDesignService clothDesignService;
     private final AudioSampleService audioSampleService;
     private final SamplePackService samplePackService;
@@ -140,7 +138,7 @@ public class UserServiceImpl implements UserService {
 
 
         // 2) Soft delete content *********************************************
-        clothDesignService.archiveDesignsByUser(targetUserId);
+        clothDesignService.deleteDesignsByUser(targetUserId);
         audioSampleService.archiveAllByAuthor(targetUserId);
         samplePackService.archiveAllByAuthor(targetUserId);
 
@@ -180,13 +178,11 @@ public class UserServiceImpl implements UserService {
         User target = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        // ❌ Root admin is untouchable
         if (target.isSystemUser()) {
             throw new ForbiddenOperationException("Root admin cannot be deleted.");
         }
 
-        // Archive all user-related content
-        clothDesignService.archiveDesignsByUser(targetUserId);
+        clothDesignService.deleteDesignsByUser(targetUserId);
         audioSampleService.archiveAllByAuthor(targetUserId);
         samplePackService.archiveAllByAuthor(targetUserId);
 
@@ -196,5 +192,60 @@ public class UserServiceImpl implements UserService {
 
         log.info("❌ Admin deleted user {}", targetUserId);
     }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void addRole(UUID userId, String roleName) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        UserRole role;
+        try {
+            role = UserRole.valueOf(roleName.toUpperCase());
+        } catch (Exception e) {
+            throw new ForbiddenOperationException("Invalid role: " + roleName);
+        }
+
+        if (user.getRoles().contains(role)) {
+            return;
+        }
+
+        user.getRoles().add(role);
+        userRepository.save(user);
+
+        log.info("✅ Added role {} to user {}", role, userId);
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void removeRole(UUID userId, String roleName) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        UserRole role;
+        try {
+            role = UserRole.valueOf(roleName.toUpperCase());
+        } catch (Exception e) {
+            throw new ForbiddenOperationException("Invalid role: " + roleName);
+        }
+
+        if (!user.getRoles().contains(role)) {
+            return;
+        }
+
+        if (role == UserRole.ADMIN && user.isSystemUser()) {
+            throw new ForbiddenOperationException("Cannot remove ADMIN from root user.");
+        }
+
+        user.getRoles().remove(role);
+        userRepository.save(user);
+
+        log.info("❌ Removed role {} from user {}", role, userId);
+    }
+
 
 }

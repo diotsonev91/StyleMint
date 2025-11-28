@@ -27,6 +27,7 @@ public class SamplePackMapper {
                 .releaseDate(pack.getReleaseDate())
                 .createdAt(pack.getCreatedAt())
                 .updatedAt(pack.getUpdatedAt())
+                .archived(pack.isArchived())
                 .build();
     }
 

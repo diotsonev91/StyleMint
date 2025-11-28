@@ -86,17 +86,6 @@ public class AudioSampleController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Sample metadata updated successfully"));
     }
 
-    /**
-     * Delete sample
-     * DELETE /api/v1/audio/samples/{sampleId}
-     */
-    @DeleteMapping("/{sampleId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> deleteSample(@PathVariable UUID sampleId) {
-        UUID authorId = SecurityUtil.getCurrentUserId();
-        audioSampleService.deleteSample(sampleId, authorId);
-        return ResponseEntity.noContent().build();
-    }
 
     // ================ Listing Operations ================
 
@@ -312,5 +301,12 @@ public class AudioSampleController {
         );
     }
 
+    @PutMapping("/{sampleId}/archive")
+    @PreAuthorize("hasRole('USER')")  // само за обикновени потребители
+    public ResponseEntity<Void> archiveSample(@PathVariable UUID sampleId) {
+        UUID authorId = SecurityUtil.getCurrentUserId();
+        audioSampleService.archiveSample(sampleId, authorId);
+        return ResponseEntity.noContent().build();
+    }
 
 }

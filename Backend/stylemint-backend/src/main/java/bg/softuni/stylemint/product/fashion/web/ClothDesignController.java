@@ -92,12 +92,11 @@ public class ClothDesignController {
 
     @GetMapping("/cloth-type/{clothType}")
     public ResponseEntity<ApiResponse<Page<DesignPublicDTO>>> getDesignsByClothType(
-            @PathVariable ClothType clothType,  // Path parameter for ClothType
-            @RequestParam(defaultValue = "0") int page,  // Pagination parameter for page
-            @RequestParam(defaultValue = "20") int size) {  // Pagination parameter for size
-        Pageable pageable = PageRequest.of(page, size);  // Create Pageable from parameters
+            @PathVariable ClothType clothType,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size);
 
-        // Call the service function to get designs by ClothType
         Page<DesignPublicDTO> designs = clothDesignService.getAllByClothType(pageable, clothType);
 
         return ResponseEntity.ok(ApiResponse.success(designs));  // Return the result wrapped in ApiResponse
@@ -110,7 +109,6 @@ public class ClothDesignController {
 
         UUID userId = SecurityUtil.getCurrentUserId();
 
-        // Set default values for temporary design
         if (request.getLabel() == null || request.getLabel().isBlank()) {
             request.setLabel("My Design " + System.currentTimeMillis());
         }
@@ -123,7 +121,6 @@ public class ClothDesignController {
             request.setBonusPoints(0);
         }
 
-        // Create the design
         DesignPublicDTO savedDesign = clothDesignService.createDesign(request, true);
 
         return ResponseEntity.ok(ApiResponse.success(

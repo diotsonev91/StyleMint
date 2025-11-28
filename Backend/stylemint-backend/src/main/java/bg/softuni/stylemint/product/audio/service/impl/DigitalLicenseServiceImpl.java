@@ -43,28 +43,19 @@ public class DigitalLicenseServiceImpl implements DigitalLicenseService {
     private final UserService userService;
     private final AudioSampleMapper audioSampleMapper;
 
-    /* ==========================================================
-       ORDER FULFILLMENT
-       ========================================================== */
-    @Transactional
-    public void processOrderFulfillment(UUID orderId, UUID userId) {
 
-        List<OrderItemDTO> orderItems = orderServiceFacade.getOrderItems(orderId);
-        log.info("Processing fulfillment: order={}, user={}, items={}",
-                orderId, userId, orderItems.size());
 
-        for (OrderItemDTO item : orderItems) {
+    @Override
+    public void createLicenseForPaidItem(UUID userId, OrderItemDTO item) {
 
-            if (item.getProductType() == ProductType.SAMPLE) {
-                grantSampleLicense(userId, item.getProductId(), item.getItemId());
-            }
+        if (item.getProductType() == ProductType.SAMPLE) {
+            grantSampleLicense(userId, item.getProductId(), item.getItemId());
+        }
 
-            else if (item.getProductType() == ProductType.PACK) {
-                grantPackSampleLicenses(userId, item.getProductId(), item.getItemId());
-            }
+        else if (item.getProductType() == ProductType.PACK) {
+            grantPackSampleLicenses(userId, item.getProductId(), item.getItemId());
         }
     }
-
     /* ==========================================================
        GRANT LICENSES
        ========================================================== */
@@ -223,16 +214,6 @@ public class DigitalLicenseServiceImpl implements DigitalLicenseService {
         log.info("🗑 Archived PACK license → user={}, pack={}", userId, packId);
     }
 
-    @Override
-    public void createLicenseForPaidItem(UUID userId, OrderItemDTO item) {
 
-        if (item.getProductType() == ProductType.SAMPLE) {
-            grantSampleLicense(userId, item.getProductId(), item.getItemId());
-        }
-
-        else if (item.getProductType() == ProductType.PACK) {
-            grantPackSampleLicenses(userId, item.getProductId(), item.getItemId());
-        }
-    }
 
 }
