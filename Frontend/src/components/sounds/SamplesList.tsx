@@ -104,6 +104,19 @@ const SamplesList: React.FC<SamplesListProps> = ({ samples, onLoadMore }) => {
     }
 
 
+    async function handleUnbind(sample: AudioSample) {
+        const  sampleId = sample.id;
+        const result = await audioSampleService.unboundSampleFromPack(sample.packId,sampleId);
+
+        if (result.success) {
+            alert(result.message);
+
+            setLocalSamples(prev => prev.filter(s => s.id !== sampleId));
+        } else {
+            alert(result.error);
+        }
+    }
+
     return (
     <div className="samples-list">
       {/* Search Bar */}
@@ -167,6 +180,7 @@ const SamplesList: React.FC<SamplesListProps> = ({ samples, onLoadMore }) => {
               onLike={() => handleLike(sample.id)}
               onDelete={()=> handleDelete(sample.id)}
               doesExistAsStandAlone={sample.price == 0 && sample.packId !=0}
+              onUnbind={()=> handleUnbind(sample)}
             />
           ))
         ) : (

@@ -306,12 +306,6 @@ export function PublicDesignsPage() {
                                                     <span className="detail-value price">${design.price.toFixed(2)}</span>
                                                 </div>
                                             )}
-                                            {design.bonusPoints && (
-                                                <div className="detail-row">
-                                                    <span className="detail-label">Bonus:</span>
-                                                    <span className="detail-value bonus">+{design.bonusPoints} pts</span>
-                                                </div>
-                                            )}
                                         </div>
 
                                         <div className="design-stats">

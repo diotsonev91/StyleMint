@@ -140,4 +140,6 @@ public interface AudioSampleRepository extends JpaRepository<AudioSample, UUID> 
 
 
     List<AudioSample> findByArchivedTrue();
+
+    long countByAuthorIdAndArchivedFalse(UUID authorId);
 }

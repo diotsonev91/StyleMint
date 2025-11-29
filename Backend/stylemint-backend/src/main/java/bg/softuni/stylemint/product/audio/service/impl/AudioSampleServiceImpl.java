@@ -299,7 +299,7 @@ public class AudioSampleServiceImpl implements AudioSampleService {
 
     @Override
     public long countSamplesByAuthor(UUID authorId) {
-        return audioSampleRepository.countByAuthorId(authorId);
+        return audioSampleRepository.countByAuthorIdAndArchivedFalse(authorId);
     }
 
     @Override

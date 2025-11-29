@@ -32,12 +32,6 @@ public class PriceConfigDTO {
     private Map<String, Double> basePrices;
 
     /**
-     * Custom decal premium price
-     * Example: 5.00
-     */
-    private Double customDecalPremium;
-
-    /**
      * Bonus multiplier tiers
      * Example:
      * [

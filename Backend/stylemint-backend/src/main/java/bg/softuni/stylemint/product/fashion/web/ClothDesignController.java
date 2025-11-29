@@ -136,4 +136,21 @@ public class ClothDesignController {
                 "Design saved for cart"
         ));
     }
+
+    @PatchMapping("/{designId}/publish")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Void>> publishDesign(@PathVariable UUID designId) {
+
+        clothDesignService.publishDesign(designId);
+        return ResponseEntity.ok(ApiResponse.successMessage("Design published successfully"));
+    }
+
+    @PatchMapping("/{designId}/unpublish")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Void>> unpublishDesign(@PathVariable UUID designId) {
+
+        clothDesignService.unpublishDesign(designId);
+        return ResponseEntity.ok(ApiResponse.successMessage("Design unpublished successfully"));
+    }
+
 }

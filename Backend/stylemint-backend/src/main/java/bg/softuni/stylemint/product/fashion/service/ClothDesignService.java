@@ -40,4 +40,8 @@ public interface ClothDesignService {
 
     void adminDeleteDesign(UUID designId);
 
+    void publishDesign(UUID designId);
+
+    void unpublishDesign(UUID designId);
+
 }

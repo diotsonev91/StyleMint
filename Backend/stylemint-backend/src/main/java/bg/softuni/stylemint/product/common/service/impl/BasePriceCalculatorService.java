@@ -28,16 +28,6 @@ import java.util.UUID;
  * 1. NFT discounts (permanent, applied first)
  * 2. One-time discounts (consumed after use)
  *
- * Usage:
- * Extend this class and implement calculateBasePrice() method
- *
- * Example:
- * public class FashionPriceCalculatorService extends BasePriceCalculatorService<ClothDesign> {
- *     @Override
- *     protected double calculateBasePrice(ClothDesign product) {
- *         return BASE_PRICES.get(product.getClothType()) * bonusMultiplier;
- *     }
- * }
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -45,6 +35,11 @@ public abstract class BasePriceCalculatorService<T extends BaseProduct> implemen
 
     private final NftServiceFacade nftServiceFacade;
     private final DiscountService discountService;
+
+
+    public double getProductSpecificDiscount(T product, UUID userId) {
+        return 0.0; // default: no discount for generic products
+    }
 
     /**
      * Calculate final price with all applicable discounts
@@ -54,32 +49,28 @@ public abstract class BasePriceCalculatorService<T extends BaseProduct> implemen
      */
     @Override
     public final double calculatePrice(T product) {
-        // 1. Get base price from subclass implementation
         double basePrice = calculateBasePrice(product);
 
-        // 2. Get current user ID
         UUID userId = getCurrentUserId();
         if (userId == null) {
-            log.debug("No authenticated user, returning base price: {}", basePrice);
             return basePrice;
         }
 
-        // 3. Apply NFT discount (permanent)
+        // 1. NFT discount
         double nftDiscount = getNftDiscountPercentage(userId);
         double priceAfterNft = basePrice * (1 - nftDiscount);
 
-        log.debug("Base price: {}, NFT discount: {}%, Price after NFT: {}",
-                basePrice, nftDiscount * 100, priceAfterNft);
+        // 2. Product-specific discount (override in fashion)
+        double productDiscount = getProductSpecificDiscount(product, userId);
+        double priceAfterProductDiscount = priceAfterNft * (1 - productDiscount);
 
-        // 4. Apply one-time discount (will be consumed on order creation)
+        // 3. One-time discount
         double oneTimeDiscount = discountService.getBestDiscountPercentage(userId);
-        double finalPrice = priceAfterNft * (1 - oneTimeDiscount);
-
-        log.debug("One-time discount: {}%, Final price: {}",
-                oneTimeDiscount * 100, finalPrice);
+        double finalPrice = priceAfterProductDiscount * (1 - oneTimeDiscount);
 
         return finalPrice;
     }
+
 
     /**
      * Subclasses must implement this to calculate base price without discounts
@@ -161,4 +152,5 @@ public abstract class BasePriceCalculatorService<T extends BaseProduct> implemen
 
         return usedDiscount;
     }
+
 }

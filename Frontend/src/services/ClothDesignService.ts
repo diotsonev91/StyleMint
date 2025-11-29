@@ -94,6 +94,28 @@ export const clothDesignService = {
         }
     },
 
+    async publishDesign(id: string) {
+        try {
+            return await clothDesignApi.publishDesign(id);
+        } catch (error: any) {
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message || 'Failed to publish design',
+            };
+        }
+    },
+
+    async unpublishDesign(id: string) {
+        try {
+            return await clothDesignApi.unpublishDesign(id);
+        } catch (error: any) {
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message || 'Failed to unpublish design',
+            };
+        }
+    },
+
 // clothDesignService.ts - REPLACE the duplicate updateDesign function
 
     /**

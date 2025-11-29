@@ -195,7 +195,38 @@ export function EditClothDesignPage() {
         );
     }
 
+
+
     const isAdvanced = design.customizationData.page === "advanced";
+
+    async function publishDesign(id: string) {
+        const result = await clothDesignService.publishDesign(id);
+
+        if (result.success) {
+            alert("Design published successfully!");
+
+            setDesign(prev =>
+                prev ? { ...prev, public: true } : prev
+            );
+        } else {
+            alert("Failed to publish design: " + result.error);
+        }
+    }
+
+    async function unpublishDesign(id: string) {
+        const result = await clothDesignService.unpublishDesign(id);
+
+        if (result.success) {
+            alert("Design unpublished successfully!");
+
+            setDesign(prev =>
+                prev ? { ...prev, public: false } : prev
+            );
+        } else {
+            alert("Failed to unpublish design: " + result.error);
+        }
+    }
+
 
     return (
         <div className="edit-design-page">
@@ -205,7 +236,24 @@ export function EditClothDesignPage() {
                     <AiOutlineArrowLeft /> Back to My Designs
                 </button>
                 <h1>Edit Design: {design.label}</h1>
+                {design.public ? (
+                    <button
+                        className="design-btn-edit unpublish-btn"
+                        onClick={() => unpublishDesign(design.id)}
+                    >
+                        Unpublish
+                    </button>
+                ) : (
+                    <button
+                        className="design-btn-edit publish-btn"
+                        onClick={() => publishDesign(design.id)}
+                    >
+                        Publish
+                    </button>
+                )}
+
             </div>
+
 
             {/* Canvas and Controls */}
             <div className="edit-content">

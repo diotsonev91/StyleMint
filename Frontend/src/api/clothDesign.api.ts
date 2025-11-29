@@ -121,21 +121,16 @@ export const clothDesignApi = {
         return response.data;
     },
 
-    /**
-     * Publish design
-     */
-    async publishDesign(designId: string, price: number): Promise<ApiResponse<DesignSummaryDTO>> {
-        const response = await API.post(`/designs/${designId}/publish`, { price });
+    async publishDesign(designId: string): Promise<ApiResponse<void>> {
+        const response = await API.patch(`/designs/${designId}/publish`);
         return response.data;
     },
 
-    /**
-     * Unpublish design
-     */
-    async unpublishDesign(designId: string): Promise<ApiResponse<DesignSummaryDTO>> {
-        const response = await API.post(`/designs/${designId}/unpublish`);
+    async unpublishDesign(designId: string): Promise<ApiResponse<void>> {
+        const response = await API.patch(`/designs/${designId}/unpublish`);
         return response.data;
     },
+
 
     /**
      * Get single design with full details (including customizationData)

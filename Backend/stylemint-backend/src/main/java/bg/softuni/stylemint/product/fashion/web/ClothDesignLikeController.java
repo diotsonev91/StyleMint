@@ -5,11 +5,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+
+import static bg.softuni.stylemint.config.ApiPaths.BASE;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/designs")
+@RequestMapping(BASE + "/designs")
 public class ClothDesignLikeController {
 
     private final ClothLikeService clothLikeService;
@@ -19,8 +23,13 @@ public class ClothDesignLikeController {
      * POST is the correct HTTP verb for toggle operations.
      */
     @PostMapping("/{designId}/like")
-    public ResponseEntity<Void> toggleLike(@PathVariable UUID designId) {
+    public ResponseEntity<Map<String, Object>> toggleLike(@PathVariable UUID designId) {
         clothLikeService.toggleLike(designId);
-        return ResponseEntity.noContent().build();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+
+        return ResponseEntity.ok(body);
     }
+
 }

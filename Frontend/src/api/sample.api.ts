@@ -23,7 +23,7 @@ export const sampleApi = {
     },
 
     async getSampleById(id: string) {
-        return API.get(`${SAMPLE_BASE}/${id}`);
+        return API.get(`${SAMPLE_BASE}/${id}`); 
     },
 
     async searchByName(name: string) {

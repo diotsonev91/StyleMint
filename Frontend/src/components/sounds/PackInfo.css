@@ -126,9 +126,6 @@
   transition: all var(--transition-normal);
 }
 
-.btn-secondary{
-  color: var(--text-primary)!important;
-}
 
 .like-btn svg {
   width: 24px;

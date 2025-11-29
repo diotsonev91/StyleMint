@@ -59,6 +59,7 @@
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     margin-bottom: 24px;
+    height: 450px;
 }
 
 .profile-banner {
@@ -85,8 +86,8 @@
 
 .avatar-wrapper {
     position: relative;
-    width: 160px;
-    height: 160px;
+    width: 170px;
+    height: 170px;
     border-radius: 50%;
     border: 6px solid white;
     overflow: hidden;
@@ -102,9 +103,9 @@
 
 .edit-avatar-btn {
     position: absolute;
-    bottom: 8px;
-    right: 8px;
-    width: 40px;
+    bottom: 3px;
+    right: 38px;
+    width: 80px;
     height: 40px;
     border-radius: 50%;
     background: #667eea;
@@ -129,16 +130,29 @@
 
 /* ==================== Edit Modal ==================== */
 .edit-modal {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 16px;
+    position: fixed; /* ✅ Fixed спрямо viewport-а */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* ✅ Центрирай */
+    margin-top: 0;
     background: white;
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     min-width: 300px;
-    z-index: 10;
+    z-index: 1000; /* ✅ Над всичко */
+}
+
+/* ✅ ДОБАВИ backdrop за затъмняване */
+.edit-modal::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
 }
 
 .edit-modal h3 {
@@ -226,9 +240,8 @@
     color: #1f2937;
 }
 
-.edit-btn {
-    width: 32px;
-    height: 32px;
+.edit-btn-profile {
+
     border-radius: 6px;
     background: #f3f4f6;
     border: none;
@@ -420,11 +433,14 @@
 
 /* ==================== Stat Cards ==================== */
 .stat-card {
-    background: white;
+    width:100%;
     border-radius: 12px;
+    background: linear-gradient(45deg, #667eea, grey) !important;
     padding: 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s;
+    display: flex;
+    flex-direction: column; /* ✅ ДОБАВИ ТОВА! */
 }
 
 .stat-card:hover {
@@ -453,6 +469,14 @@
     color: #1f2937;
 }
 
+.stat-body {
+    /* ✅ Добави min-height за консистентност */
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
 .primary-stat {
     text-align: center;
     margin-bottom: 20px;
@@ -461,7 +485,7 @@
 .stat-label {
     display: block;
     font-size: 14px;
-    color: #6b7280;
+    color: #000000;
     margin-bottom: 8px;
 }
 
@@ -473,19 +497,32 @@
 }
 
 .stat-value.highlight {
-    color: #667eea;
+    color: rgba(0, 0, 0, 0.82);
 }
 
+/* ✅ ПОПРАВКА: Използвай grid вместо flex за по-добро разпределение */
 .stat-row {
-    display: flex;
-    justify-content: space-around;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* ✅ Равномерно разпределение на 3 колони */
     gap: 16px;
     margin-top: 16px;
 }
 
+/* ✅ За 2 items - използвай 2 колони */
+.stat-row:has(.stat-item:nth-child(2):last-child) {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* ✅ За 1 item - използвай 1 колона */
+.stat-row:has(.stat-item:only-child) {
+    grid-template-columns: 1fr;
+}
+
 .stat-item {
     text-align: center;
-    flex: 1;
+    padding: 12px; /* ✅ Добави padding за по-добър spacing */
+    background: #f9fafb; /* ✅ Добави лек background */
+    border-radius: 8px; /* ✅ Закръгли ъглите */
 }
 
 .stat-item .label {
@@ -493,6 +530,7 @@
     font-size: 12px;
     color: #9ca3af;
     margin-bottom: 4px;
+    font-weight: 500; /* ✅ Направи label-а по-четлив */
 }
 
 .stat-item .value {
@@ -516,6 +554,17 @@
 .stat-footer svg {
     width: 16px;
     height: 16px;
+}
+
+/* ✅ Responsive за по-малки екрани */
+@media (max-width: 768px) {
+    .stat-row {
+        grid-template-columns: 1fr; /* ✅ 1 колона на мобилни */
+    }
+
+    .stat-row:has(.stat-item:nth-child(2):last-child) {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ==================== Loading & Error States ==================== */
@@ -579,7 +628,7 @@
 .design-stats-detailed,
 .audio-stats-detailed,
 .orders-stats-detailed {
-    background: white;
+    background: #0f172a;
     border-radius: 12px;
     padding: 32px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -780,6 +829,7 @@
 }
 
 .gaming-card {
+    display: flex;
     background: var(--card-bg);
     border-radius: 12px;
     padding: 20px;
@@ -793,7 +843,6 @@
 }
 
 .gaming-card .stat-header {
-    display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 20px;
@@ -1205,22 +1254,23 @@
     }
 
     .type-label {
-        color: var(--text-secondary);
+        color: black !important;
         font-size: 0.9rem;
     }
 
     .type-count {
         font-weight: 600;
-        color: var(--text-primary);
+        color: black !important;
     }
 
     /* Revenue Section */
     .revenue-section {
         margin-top: 15px;
+        color: black !important;
     }
 
     .revenue-label {
-        color: var(--text-secondary);
+        color: black !important;
         font-size: 0.9rem;
         margin-bottom: 5px;
     }
@@ -1228,17 +1278,17 @@
     .revenue-amount {
         font-size: 1.5rem;
         font-weight: 700;
-        color: var(--success-color);
+        color:black;
         margin-bottom: 8px;
     }
 
     .average-sale {
         font-size: 0.85rem;
-        color: var(--text-secondary);
+        color: black !important;
     }
 
     .average-amount {
-        color: var(--text-primary);
+        color: black !important;
         font-weight: 500;
     }
 
@@ -1268,14 +1318,14 @@
 
     .activity-label {
         font-size: 0.85rem;
-        color: var(--text-secondary);
+        color: black !important;
         margin-bottom: 2px;
     }
 
     .activity-value {
         font-size: 1rem;
         font-weight: 600;
-        color: var(--text-primary);
+        color: black !important;
     }
 
     /* No Sales State */
@@ -1286,7 +1336,7 @@
         justify-content: center;
         padding: 30px 20px;
         text-align: center;
-        color: var(--text-secondary);
+        color: black !important;
     }
 
     .no-sales-icon {
@@ -1302,7 +1352,7 @@
 
     .design-distribution-section h3 {
         margin-bottom: 20px;
-        color: var(--text-primary);
+        color: black !important;
         font-size: 1.3rem;
     }
 
@@ -1340,7 +1390,7 @@
     }
 
     .bar-label {
-        color: white;
+        color: black !important;
         font-size: 0.8rem;
         font-weight: 600;
         text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);

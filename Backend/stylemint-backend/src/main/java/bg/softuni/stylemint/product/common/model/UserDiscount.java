@@ -38,7 +38,7 @@ public class UserDiscount {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "reward_type", nullable = false, length = 32)
-    private RewardType rewardType; // DISCOUNT_20 or DISCOUNT_40
+    private RewardType rewardType;
 
     @Column(name = "claimed_at", nullable = false)
     @Builder.Default

@@ -4,8 +4,10 @@ package bg.softuni.stylemint.product.fashion.service.impl;
 import bg.softuni.stylemint.auth.security.SecurityUtil;
 import bg.softuni.stylemint.common.exception.ForbiddenOperationException;
 import bg.softuni.stylemint.external.claudinary.CloudinaryService;
+import bg.softuni.stylemint.product.fashion.config.FashionPriceProperties;
 import bg.softuni.stylemint.product.fashion.dto.*;
 import bg.softuni.stylemint.product.fashion.enums.ClothType;
+import bg.softuni.stylemint.product.fashion.enums.CustomizationType;
 import bg.softuni.stylemint.product.fashion.exceptions.*;
 import bg.softuni.stylemint.product.fashion.model.ClothDesign;
 import bg.softuni.stylemint.product.fashion.repository.ClothDesignRepository;
@@ -28,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -42,6 +45,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
     private final CloudinaryService cloudinaryService;
     private final ObjectMapper objectMapper;
     private final UserRolesService userRolesService;
+    private final FashionPriceProperties priceProperties;
 
     @Autowired
     public ClothDesignServiceImpl(ClothDesignRepository clothDesignRepository,
@@ -49,13 +53,14 @@ public class ClothDesignServiceImpl implements ClothDesignService {
                                   ClothLikeService clothLikeService,
                                   CloudinaryService cloudinaryService,
                                   ObjectMapper objectMapper,
-                                  UserRolesService userRolesService) {
+                                  UserRolesService userRolesService, FashionPriceProperties priceProperties) {
         this.clothDesignRepository = clothDesignRepository;
         this.clothPriceCalculator = clothPriceCalculator;
         this.clothLikeService = clothLikeService;
         this.cloudinaryService = cloudinaryService;
         this.objectMapper = objectMapper;
         this.userRolesService = userRolesService;
+        this.priceProperties = priceProperties;
     }
 
     @Override
@@ -77,18 +82,19 @@ public class ClothDesignServiceImpl implements ClothDesignService {
                     .customizationType(request.getCustomizationType())
                     .customizationJson(request.getCustomizationJson())
                     .isPublic(request.getIsPublic() != null ? request.getIsPublic() : false)
-                    .bonusPoints(request.getBonusPoints() != null ? request.getBonusPoints() : 20)
+                    .bonusPoints(request.getCustomizationType().getBonusPoints())
                     .salesCount(0L)
                     .build();
 
-            // Process custom decal BEFORE calculating price - сега с Cloudinary
+
             if (request.getCustomDecalFile() != null && !request.getCustomDecalFile().isEmpty()) {
                 processCustomDecalFile(request.getCustomDecalFile(), design, currentUserId);
             }
 
-            // NOW calculate price (will include custom decal premium if exists)
-            double calculatedPrice = clothPriceCalculator.calculatePrice(design);
-            design.setPrice(calculatedPrice);
+            double basePrice = priceProperties.getBasePrice(design.getClothType());
+            double price = basePrice * priceProperties.getComplexityMultiplier(design.getCustomizationType());
+
+            design.setPrice(price);
             design.setAutoSaved(autosave);
             ClothDesign savedDesign = clothDesignRepository.save(design);
 
@@ -134,8 +140,9 @@ public class ClothDesignServiceImpl implements ClothDesignService {
             if (request.getIsPublic() != null) {
                 design.setIsPublic(request.getIsPublic());
             }
-            if (request.getBonusPoints() != null) {
-                design.setBonusPoints(request.getBonusPoints());
+            if (request.getCustomizationType() != null) {
+                design.setCustomizationType(request.getCustomizationType());
+                design.setBonusPoints(request.getCustomizationType().getBonusPoints());
                 needsPriceRecalculation = true;
             }
 
@@ -405,4 +412,44 @@ public class ClothDesignServiceImpl implements ClothDesignService {
             );
         }
     }
+
+    @Override
+    @Transactional
+    public void publishDesign(UUID designId) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+
+        ClothDesign design = clothDesignRepository.findById(designId)
+                .orElseThrow(() -> new ClothDesignNotFoundException(designId));
+
+        if (!design.getUserId().equals(userId)) {
+            throw new ForbiddenOperationException("Not authorized to publish this design");
+        }
+        if(design.getCustomizationType().equals(CustomizationType.SIMPLE)){
+            design.setBonusPoints(20);
+        }
+
+        design.setIsPublic(true);
+        clothDesignRepository.save(design);
+
+        log.info("Design {} published by user {}", designId, userId);
+    }
+
+    @Override
+    @Transactional
+    public void unpublishDesign(UUID designId) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+
+        ClothDesign design = clothDesignRepository.findById(designId)
+                .orElseThrow(() -> new ClothDesignNotFoundException(designId));
+
+        if (!design.getUserId().equals(userId)) {
+            throw new ForbiddenOperationException("Not authorized to unpublish this design");
+        }
+
+        design.setIsPublic(false);
+        clothDesignRepository.save(design);
+
+        log.info("Design {} unpublished by user {}", designId, userId);
+    }
+
 }

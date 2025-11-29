@@ -74,6 +74,10 @@ public class SamplePackBindingServiceImpl implements SamplePackBindingService {
             throw new ForbiddenOperationException("Unauthorized to unbind this sample");
         }
 
+        if(pack.getSampleCount() == 1){
+            throw new ForbiddenOperationException("Cannot unbind last sample of this pack");
+        }
+
         pack.removeSample(sample);
 
         samplePackRepository.save(pack);

@@ -329,4 +329,50 @@
     .decals-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+
+    /* Основен стил за бутоните */
+    /* Основен стил за бутоните */
+    .design-btn-edit {
+        padding: 10px 20px;
+        border: none; /* Променено от 6px solid #667eea */
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        min-width: 120px;
+    }
+
+    /* Специфични стилове за unpublish */
+    .design-btn-edit.unpublish-btn {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        color: white;
+        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    }
+
+    .design-btn-edit.unpublish-btn:hover {
+        background: linear-gradient(135deg, #ff5252, #e74c3c);
+        box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        transform: translateY(-2px);
+    }
+
+    /* Специфични стилове за publish */
+    .design-btn-edit.publish-btn {
+        background: linear-gradient(135deg, #00b894, #00a085);
+        color: white;
+        box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+    }
+
+    .design-btn-edit.publish-btn:hover {
+        background: linear-gradient(135deg, #00a085, #008c75);
+        box-shadow: 0 6px 20px rgba(0, 184, 148, 0.4);
+        transform: translateY(-2px);
+    }
+
+    /* Общи активни стилове */
+    .design-btn-edit:active {
+        transform: translateY(0);
+    }
 }

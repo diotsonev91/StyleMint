@@ -295,6 +295,12 @@ export function MyClothDesignsPage({
                                                 <span className="detail-value">{customization.selectedColor}</span>
                                             </div>
                                         </div>
+                                        {design.bonusPoints && (
+                                            <div className="detail-row">
+                                                <span className="detail-label">Bonus:</span>
+                                                <span className="detail-value bonus">+{design.bonusPoints} pts</span>
+                                            </div>
+                                        )}
                                         {design.price &&
                                             <>
                                             <div className="detail-row"></div>

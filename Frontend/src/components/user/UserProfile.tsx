@@ -136,7 +136,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
             setError('Failed to load user statistics');
         } finally {
             setLoading(false);
-            console.log(stats.game)
+
         }
     };
 
@@ -299,6 +299,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                                     onClick={startEditingAvatar}
                                     title="Edit avatar"
                                 >
+                                    edit avatar
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                     </svg>
@@ -344,13 +345,14 @@ const UserProfile: React.FC<UserProfileProps> = ({
                                     <h1>{displayName || 'User'}</h1>
                                     {isOwnProfile && (
                                         <button
-                                            className="edit-btn"
+                                            className="edit-btn-profile"
                                             onClick={startEditingDisplayName}
                                             title="Edit display name"
                                         >
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                             </svg>
+                                            Edit display name
                                         </button>
                                     )}
                                 </>
@@ -551,77 +553,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
                             </div>
                         )}
 
-                        {/* Design Stats */}
-                        {hasDesignStats && (
-                            <div className="stat-card">
-                                <div className="stat-header">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                                    </svg>
-                                    <h3>Fashion Designs</h3>
-                                </div>
-                                <div className="stat-body">
-                                    <div className="primary-stat">
-                                        <span className="stat-label">Total Designs</span>
-                                        <span className="stat-value">{stats.design.totalDesigns}</span>
-                                    </div>
-                                    {(stats.design.totalSales !== undefined || stats.design.revenue !== undefined) && (
-                                        <div className="stat-row">
-                                            {stats.design.totalSales !== undefined && (
-                                                <div className="stat-item">
-                                                    <span className="label">Total Sales</span>
-                                                    <span className="value">{stats.design.totalSales}</span>
-                                                </div>
-                                            )}
-                                            {stats.design.revenue !== undefined && (
-                                                <div className="stat-item">
-                                                    <span className="label">Revenue</span>
-                                                    <span className="value">{userProfileService.formatCurrency(stats.design.revenue)}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
 
-                        {/* Audio Stats */}
-                        {hasAudioStats && (
-                            <div className="stat-card">
-                                <div className="stat-header">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                                    </svg>
-                                    <h3>Audio Production</h3>
-                                </div>
-                                <div className="stat-body">
-                                    <div className="primary-stat">
-                                        <span className="stat-label">Total Content</span>
-                                        <span className="stat-value">{stats.audio.totalSamples + stats.audio.totalPacks}</span>
-                                    </div>
-                                    <div className="stat-row">
-                                        <div className="stat-item">
-                                            <span className="label">Samples</span>
-                                            <span className="value">{stats.audio.totalSamples}</span>
-                                        </div>
-                                        <div className="stat-item">
-                                            <span className="label">Packs</span>
-                                            <span className="value">{stats.audio.totalPacks}</span>
-                                        </div>
-                                    </div>
-                                    <div className="stat-row">
-                                        <div className="stat-item">
-                                            <span className="label">Total Sales</span>
-                                            <span className="value">{stats.audio.totalSales}</span>
-                                        </div>
-                                        <div className="stat-item">
-                                            <span className="label">Revenue</span>
-                                            <span className="value">{userProfileService.formatCurrency(stats.audio.revenue)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+
 
                         {/* ✅ Order Stats - WITH GRACEFUL DEGRADATION */}
                         {hasOrderStats && (
@@ -664,7 +597,106 @@ const UserProfile: React.FC<UserProfileProps> = ({
                         )}
                     </div>
                 )}
+                {activeTab === 'audio' && (
+                    <div className="audio-stats-container">
+                        {/* Audio Header */}
+                        <div className="audio-header">
+                            <div className="audio-title">
+                                <h2>🎵 Audio Production</h2>
+                                <p>Overview of your audio sample and pack production statistics</p>
+                            </div>
+                        </div>
 
+                        {/* Main Stats Grid */}
+                        <div className="audio-stats-grid">
+                            {/* Portfolio Overview */}
+                            <div className="stat-card audio-card">
+                                <div className="stat-header">
+                                    <div className="stat-icon">📊</div>
+                                    <h3>Portfolio Overview</h3>
+                                </div>
+                                <div className="stat-body">
+                                    <div className="primary-stat">
+                                        <span className="stat-label">Total Content</span>
+                                        <span className="stat-value highlight">{stats.audio.totalSamples + stats.audio.totalPacks}</span>
+                                    </div>
+                                    <div className="stat-row">
+                                        <div className="stat-item">
+                                            <span className="label">Samples</span>
+                                            <span className="value">{stats.audio.totalSamples}</span>
+                                        </div>
+                                        <div className="stat-item">
+                                            <span className="label">Packs</span>
+                                            <span className="value">{stats.audio.totalPacks}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Sales Performance */}
+                            <div className="stat-card audio-card">
+                                <div className="stat-header">
+                                    <div className="stat-icon">💰</div>
+                                    <h3>Sales Performance</h3>
+                                </div>
+                                <div className="stat-body">
+                                    <div className="primary-stat">
+                                        <span className="stat-label">Total Sales</span>
+                                        <span className="stat-value highlight">{stats.audio.totalSales}</span>
+                                    </div>
+                                    <div className="revenue-section">
+                                        <div className="revenue-label">Total Revenue</div>
+                                        <div className="revenue-amount">
+                                            {userProfileService.formatCurrency(stats.audio.revenue)}
+                                        </div>
+                                        {stats.audio.totalSales > 0 && (
+                                            <div className="average-sale">
+                                                <span>Average per item: </span>
+                                                <span className="average-amount">
+                                    {userProfileService.formatCurrency(stats.audio.revenue / stats.audio.totalSales)}
+                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Content Breakdown */}
+                            <div className="stat-card audio-card">
+                                <div className="stat-header">
+                                    <div className="stat-icon">📈</div>
+                                    <h3>Content Breakdown</h3>
+                                </div>
+                                <div className="stat-body">
+                                    <div className="activity-stats">
+                                        <div className="activity-item">
+                                            <div className="activity-icon">🎵</div>
+                                            <div className="activity-info">
+                                                <span className="activity-label">Audio Samples</span>
+                                                <span className="activity-value">{stats.audio.totalSamples}</span>
+                                            </div>
+                                        </div>
+                                        <div className="activity-item">
+                                            <div className="activity-icon">📦</div>
+                                            <div className="activity-info">
+                                                <span className="activity-label">Sample Packs</span>
+                                                <span className="activity-value">{stats.audio.totalPacks}</span>
+                                            </div>
+                                        </div>
+                                        <div className="activity-item">
+                                            <div className="activity-icon">💵</div>
+                                            <div className="activity-info">
+                                                <span className="activity-label">Total Revenue</span>
+                                                <span className="activity-value">{userProfileService.formatCurrency(stats.audio.revenue)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                )}
                 {activeTab === 'gaming' && (
                     <div className="gaming-stats-container">
                         {/* Gaming Header */}
@@ -1008,76 +1040,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
                                 </div>
                             </div>
 
-                            {/* Quick Actions */}
-                            {isOwnProfile && (
-                                <div className="stat-card design-card">
-                                    <div className="stat-header">
-                                        <div className="stat-icon">⚡</div>
-                                        <h3>Quick Actions</h3>
-                                    </div>
-                                    <div className="stat-body">
-                                        <div className="action-buttons">
-                                            <button className="action-btn primary">
-                                                <span className="btn-icon">🎨</span>
-                                                <span>Create New Design</span>
-                                            </button>
-                                            <button className="action-btn secondary">
-                                                <span className="btn-icon">🏪</span>
-                                                <span>View Marketplace</span>
-                                            </button>
-                                            <button
-                                                className="action-btn outline"
-                                                onClick={() => setShowDesignsPage(true)}
-                                            >
-                                                <span className="btn-icon">📂</span>
-                                                <span>Manage Designs</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
-                        {/* Design Distribution Chart */}
-                        {stats.design.totalDesigns > 0 && (
-                            <div className="design-distribution-section">
-                                <h3>Design Distribution</h3>
-                                <div className="distribution-chart">
-                                    <div className="chart-bars">
-                                        <div
-                                            className="chart-bar public"
-                                            style={{
-                                                width: `${((stats.design.publicDesigns || 0) / stats.design.totalDesigns) * 100}%`
-                                            }}
-                                        >
-                                            <div className="bar-label">
-                                                Public: {stats.design.publicDesigns || 0}
-                                            </div>
-                                        </div>
-                                        <div
-                                            className="chart-bar private"
-                                            style={{
-                                                width: `${((stats.design.privateDesigns || 0) / stats.design.totalDesigns) * 100}%`
-                                            }}
-                                        >
-                                            <div className="bar-label">
-                                                Private: {stats.design.privateDesigns || 0}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="chart-legend">
-                                        <div className="legend-item">
-                                            <div className="legend-color public"></div>
-                                            <span>Public Designs</span>
-                                        </div>
-                                        <div className="legend-item">
-                                            <div className="legend-color private"></div>
-                                            <span>Private Designs</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 )}
             </div>

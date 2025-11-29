@@ -4,6 +4,7 @@ import {useSnapshot} from 'valtio';
 import {FaDownload, FaHeart, FaShoppingCart, FaCheck, FaEdit, FaTrash} from 'react-icons/fa';
 import {audioPlayerStore, audioPlayerActions} from '../../state/audioPlayer.store';
 import {cartState} from '../../state/CartItemState';
+import { MdOutlineCallSplit } from "react-icons/md";
 import type {AudioSample} from '../../types';
 import {addSampleToCart} from '../../services/cartService';
 import {useAuth} from '../../hooks/useAuth'; // Add auth hook
@@ -20,6 +21,7 @@ interface SampleItemProps {
     onEdit?: () => void,
     onDelete?: () => void,
     doesExistAsStandAlone?: boolean
+    onUnbind?: () => void,
 }
 
 const SampleItem: React.FC<SampleItemProps> = ({
@@ -28,11 +30,12 @@ const SampleItem: React.FC<SampleItemProps> = ({
                                                    onLike,
                                                    onEdit,
                                                    onDelete,
-                                                   doesExistAsStandAlone
+                                                   doesExistAsStandAlone,
+                                                    onUnbind,
                                                }) => {
     const audioSnap = useSnapshot(audioPlayerStore);
     const cartSnap = useSnapshot(cartState);
-    const {user} = useAuth(); // Get current user
+    const {user} = useAuth();
 
     // Check if this sample is currently playing
     const isPlaying = audioSnap.isPlaying && audioSnap.currentSample?.id === sample.id;
@@ -149,48 +152,62 @@ const SampleItem: React.FC<SampleItemProps> = ({
                 {/* Sample Info */}
                 <div className="sample-info">
                     <h3 className="sample-name">{sample.name}</h3>
+
                     {isCreator && !doesExistAsStandAlone && (
                         <p className="sample-name">${sample.price.toFixed(2)}</p>
                     )}
-                    {sample.packTitle ? <p>Pack: {sample.packTitle}</p> : null}
+
+                    {sample.packTitle && <p>Pack: {sample.packTitle}</p>}
+
                     <div className="sample-meta">
-                        {sample.duration && (
+
+                        {/* Duration */}
+                        {sample.duration != null && (
                             <span className="meta-item">
-                <span className="meta-text">{formatTime(sample.duration)}</span>
-              </span>
+                <span className="meta-text">duration: {formatTime(sample.duration)}</span>
+            </span>
                         )}
-                        {sample.bpm && (
+
+                        {/* BPM — FIXED */}
+                        {sample.bpm != null && (
                             <span className="meta-item">
-                <span className="meta-text">{sample.bpm} BPM</span>
-              </span>
+                <span className="meta-text">BPM: {sample.bpm}</span>
+            </span>
                         )}
+
+                        {/* Key */}
                         {sample.key && (
                             <span className="meta-item">
                 <span className="meta-text">Key: {sample.key}</span>
-              </span>
+            </span>
                         )}
+
+                        {/* Genre */}
                         {sample.genre && (
                             <span className="sample-genre">{sample.genre}</span>
                         )}
-                        {sample.tags && sample.tags.length > 0 && (
+
+                        {/* Tags */}
+                        {sample.tags?.length > 0 && (
                             <div className="sample-tags">
                                 {sample.tags.map((tag, i) => (
-                                    <span key={i} className="sample-tag">
-        #{tag}
-      </span>
+                                    <span key={i} className="sample-tag">#{tag}</span>
                                 ))}
                             </div>
                         )}
 
-                        {/* Show creator badge if user is viewing their own sample */}
+                        {/* Creator badge */}
                         {isCreator && (
                             <span className="creator-badge">Your Sample</span>
                         )}
+
+                        {/* If exists only inside pack */}
                         {doesExistAsStandAlone && (
-                            <p className="creator-badge">bound to this pack</p>
+                            <p className="creator-badge">buy with {sample.packTitle}</p>
                         )}
                     </div>
                 </div>
+
 
                 {/* Price - Hide for creator */}
                 {!isCreator && sample.price !== undefined && sample.price > 0 && (
@@ -234,6 +251,16 @@ const SampleItem: React.FC<SampleItemProps> = ({
                         >
                             <FaDownload className="action-icon"/>
                         </button>
+                        {! doesExistAsStandAlone &&
+                        <button
+                            className="action-icon-btn"
+                            onClick={onUnbind}
+                            aria-label="Download sample"
+                            title="Unbind sample from pack"
+                            >
+                            <MdOutlineCallSplit className="action-icon"/>
+                        </button>
+                        }
                     </>
                 ) : (
                     // Regular user actions - Cart, Download, Like

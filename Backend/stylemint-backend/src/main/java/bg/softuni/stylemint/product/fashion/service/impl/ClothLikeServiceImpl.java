@@ -9,6 +9,7 @@ import bg.softuni.stylemint.product.fashion.repository.LikeCountProjection;
 import bg.softuni.stylemint.product.fashion.service.ClothLikeService;
 import bg.softuni.stylemint.user.model.User;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +26,7 @@ public class ClothLikeServiceImpl implements ClothLikeService {
     private final ClothDesignRepository clothRepository;
 
     @Override
+    @Transactional
     public void toggleLike(UUID designId) {
         UUID userId = SecurityUtil.getCurrentUserId();
         if (likeRepository.existsByUserIdAndClothDesignId(userId, designId)) {

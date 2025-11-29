@@ -51,7 +51,6 @@ public class PriceConfigController {
 
         return PriceConfigDTO.builder()
                 .basePrices(getBasePricesMap())
-                .customDecalPremium(priceProperties.getCustomDecalPremium())
                 .bonusTiers(getBonusTiers())
                 .discounts(getDiscounts())
                 .build();
@@ -75,31 +74,30 @@ public class PriceConfigController {
      */
     @GetMapping("/bonus-tiers")
     public List<PriceConfigDTO.BonusTierDTO> getBonusTiers() {
-        log.debug("Fetching bonus tiers");
-
         return List.of(
                 PriceConfigDTO.BonusTierDTO.builder()
                         .minPoints(100)
-                        .multiplier(1.30)
-                        .description("Expert Designer - 30% price increase")
+                        .multiplier(0.90) // 10% discount
+                        .description("Master Designer - 40% discount")
                         .build(),
                 PriceConfigDTO.BonusTierDTO.builder()
-                        .minPoints(50)
-                        .multiplier(1.15)
-                        .description("Advanced Designer - 15% price increase")
+                        .minPoints(40)
+                        .multiplier(0.95) // 5% discount
+                        .description("Advanced Designer - 15% discount")
                         .build(),
                 PriceConfigDTO.BonusTierDTO.builder()
                         .minPoints(20)
-                        .multiplier(1.00)
-                        .description("Regular Designer - Base price")
+                        .multiplier(0.98) // 2% discount
+                        .description("Regular Designer - 5% discount")
                         .build(),
                 PriceConfigDTO.BonusTierDTO.builder()
                         .minPoints(0)
-                        .multiplier(0.95)
-                        .description("Beginner Designer - 5% price decrease")
+                        .multiplier(1.00) // no discount
+                        .description("customer - no discount")
                         .build()
         );
     }
+
 
     /**
      * Get available discount types
@@ -158,9 +156,8 @@ public class PriceConfigController {
         return Arrays.stream(ClothType.values())
                 .collect(Collectors.toMap(
                         Enum::name,
-                        clothType -> priceProperties.getBasePrice(
-                                clothType.name().toLowerCase().replace("_", "-")
+                        priceProperties::getBasePrice
                         )
-                ));
+                );
     }
 }
