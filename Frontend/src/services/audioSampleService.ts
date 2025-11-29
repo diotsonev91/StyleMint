@@ -226,14 +226,13 @@ async unboundSampleFromPack(packId: string, sampleId: string): Promise<ApiRespon
   }
 },
 
-
   // DELETE
   async deleteSample(sampleId: string): Promise<ApiResponse> {
     try {
-      await API.delete(`/audio/samples/${sampleId}`);
+      await API.delete(`/audio/samples/${sampleId}/archive`);
       return {
         success: true,
-        message: 'Sample deleted successfully',
+        message: 'Sample deleted successfully for new users',
       };
     } catch (error: any) {
       console.error('Sample delete error:', error);

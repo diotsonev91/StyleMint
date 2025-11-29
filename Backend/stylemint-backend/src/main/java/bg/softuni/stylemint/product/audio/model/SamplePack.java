@@ -47,15 +47,18 @@ public class SamplePack extends BaseProduct {
     @Enumerated(EnumType.STRING)
     @CollectionTable(name = "sample_pack_genres", joinColumns = @JoinColumn(name = "pack_id"))
     @Column(name = "genre", length = 32, nullable = false)
-    private List<Genre> genres;
+    @Builder.Default
+    private List<Genre> genres = new java.util.ArrayList<>();
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "sample_pack_tags", joinColumns = @JoinColumn(name = "pack_id"))
     @Column(name = "tag", length = 32, nullable = false)
-    private List<String> tags;
+    @Builder.Default
+    private List<String> tags = new java.util.ArrayList<>();
 
     @OneToMany(mappedBy = "pack", fetch = FetchType.LAZY)
-    private List<AudioSample> samples;
+    @Builder.Default
+    private List<AudioSample> samples = new java.util.ArrayList<>();
 
     @Column
     private Double rating;
@@ -70,7 +73,6 @@ public class SamplePack extends BaseProduct {
     private OffsetDateTime updatedAt;
 
     private boolean archived = false;
-
     private OffsetDateTime archivedAt;
 
     public void addSample(AudioSample sample) {
@@ -82,6 +84,5 @@ public class SamplePack extends BaseProduct {
         samples.remove(sample);
         sample.setPack(null);
     }
-
-
 }
+

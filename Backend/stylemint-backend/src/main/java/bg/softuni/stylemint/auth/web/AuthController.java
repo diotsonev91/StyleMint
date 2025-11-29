@@ -2,6 +2,7 @@ package bg.softuni.stylemint.auth.web;
 
 import bg.softuni.stylemint.auth.dto.*;
 import bg.softuni.stylemint.auth.exception.MissingTokenException;
+import bg.softuni.stylemint.auth.security.JwtUserDetails;
 import bg.softuni.stylemint.auth.service.AuthService;
 import bg.softuni.stylemint.auth.util.JwtTokenProvider;
 import bg.softuni.stylemint.user.dto.UserDTO;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -128,19 +130,13 @@ public class AuthController {
      * Get current authenticated user
      */
     @GetMapping("/me")
-    public ResponseEntity<UserDTO> getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    public ResponseEntity<UserDTO> getCurrentUser(
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).build();
-        }
+        // ✅ Директно достъпваш userId от userDetails
+        UserDTO user = userService.findById(userDetails.getUserId());
 
-        String userIdStr = authentication.getName();
-        UUID userId = UUID.fromString(userIdStr);
-
-        UserDTO userDto = userService.findById(userId);
-
-        return ResponseEntity.ok(userDto);
+        return ResponseEntity.ok(user);
     }
 
     /**

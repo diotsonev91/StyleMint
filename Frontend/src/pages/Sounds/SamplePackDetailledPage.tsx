@@ -9,6 +9,7 @@ import PackDetails from '../../components/sounds/PackDetails';
 import './SamplePackDetailedPage.css';
 import { audioPackService } from '../../services/audioPackService';
 import { addSamplePackToCart } from '../../services/cartService';
+import {getCurrentUser} from "../../api/auth";
 
 const SamplePackDetailledPage: React.FC = () => {
   const { packId } = useParams<{ packId: string }>();
@@ -40,7 +41,8 @@ const SamplePackDetailledPage: React.FC = () => {
         // ✅ Backend returns nested structure: { pack: {...}, samples: [...] }
         const packData = (response.data as any).pack || response.data;
         const samplesData = (response.data as any).samples || packData.samples || [];
-        
+        const currentUser = await getCurrentUser();
+        const isOwner = currentUser && packData.authorId === currentUser.id;
         // Transform backend response to ensure all required fields exist
         const transformedPack: SamplePack = {
           ...packData,
@@ -49,6 +51,7 @@ const SamplePackDetailledPage: React.FC = () => {
           // Ensure artist exists
           artist: packData.artist || packData.author || 'Unknown Artist',
           // Ensure arrays exist (prevent .map() errors)
+            isLoggedUserPack: isOwner,
           genres: Array.isArray(packData.genres) ? packData.genres : [],
           tags: Array.isArray(packData.tags) ? packData.tags : [],
           samples: Array.isArray(samplesData) ? samplesData : [],

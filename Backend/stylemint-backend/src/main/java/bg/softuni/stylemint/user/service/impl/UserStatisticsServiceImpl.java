@@ -124,7 +124,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
         LocalDate today = LocalDate.now();
         OffsetDateTime start = today.atStartOfDay().atOffset(OffsetDateTime.now().getOffset());
         OffsetDateTime end = start.plusDays(1);
-        return userRepository.findByCreatedAtBetween(start, end).size();
+        return userRepository.findByCreatedAtBetweenAndDeletedFalse(start, end).size();
     }
 
     @Override
@@ -132,7 +132,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
         OffsetDateTime weekStart = OffsetDateTime.now()
                 .truncatedTo(ChronoUnit.DAYS)
                 .minusWeeks(1);
-        return userRepository.findByCreatedAtAfter(weekStart).size();
+        return userRepository.findByCreatedAtAfterAndDeletedFalse(weekStart).size();
     }
 
     @Override
@@ -140,7 +140,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
         OffsetDateTime monthStart = OffsetDateTime.now()
                 .withDayOfMonth(1)
                 .truncatedTo(ChronoUnit.DAYS);
-        return userRepository.findByCreatedAtAfter(monthStart).size();
+        return userRepository.findByCreatedAtAfterAndDeletedFalse(monthStart).size();
     }
 
 

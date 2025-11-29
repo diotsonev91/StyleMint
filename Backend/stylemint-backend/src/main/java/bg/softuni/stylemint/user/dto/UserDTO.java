@@ -17,7 +17,7 @@ public class UserDTO {
     private String email;
     private String displayName;
     private String avatarUrl;
-    private Set<UserRole> roles; // multiple roles
+    private Set<UserRole> roles;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }

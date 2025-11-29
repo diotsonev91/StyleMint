@@ -1,6 +1,6 @@
 package bg.softuni.stylemint.user.web;
 
-import bg.softuni.stylemint.auth.security.SecurityUtil;
+import bg.softuni.stylemint.auth.security.JwtUserDetails;
 import bg.softuni.stylemint.user.dto.UserDTO;
 import bg.softuni.stylemint.user.model.User;
 import bg.softuni.stylemint.user.service.UserService;
@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,6 +28,7 @@ public class UserController {
      * Accessible by authenticated users
      */
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserDTO> getUserById(@PathVariable UUID id) {
         return ResponseEntity.ok(userService.findById(id));
     }
@@ -36,6 +38,7 @@ public class UserController {
      * Accessible by authenticated users
      */
     @GetMapping("/email/{email}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserDTO> getUserByEmail(@PathVariable String email) {
         return ResponseEntity.ok(userService.findByEmail(email));
     }
@@ -45,6 +48,7 @@ public class UserController {
      * Query parameter: q (search query)
      */
     @GetMapping("/search")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<UserDTO>> searchUsers(@RequestParam String q) {
         return ResponseEntity.ok(userService.searchUsers(q));
     }
@@ -58,18 +62,21 @@ public class UserController {
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable UUID id,
             @Valid @RequestBody User user) {
+
         return ResponseEntity.ok(userService.updateUser(id, user));
     }
 
     /**
      * Delete user
-     * Only accessible by admins
+     * Only accessible by the user themselves
      */
     @DeleteMapping("/{userId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteUser(
-            @PathVariable UUID userId
-    ) {
-        UUID currentUserId = SecurityUtil.getCurrentUserId();
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID currentUserId = userDetails.getUserId();
         userService.deleteUser(userId, currentUserId);
         return ResponseEntity.noContent().build();
     }

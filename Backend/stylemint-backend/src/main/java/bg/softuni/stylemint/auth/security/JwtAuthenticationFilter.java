@@ -98,26 +98,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String email = jwtTokenProvider.extractEmail(token);
         List<String> roles = jwtTokenProvider.extractRoles(token);
 
-        // Convert roles to Spring Security authorities
-        List<org.springframework.security.core.GrantedAuthority> authorities =
-                roles.stream()
-                        .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + role))
-                        .collect(java.util.stream.Collectors.toList());
+        // ✅ Създай UserDetails обект
+        JwtUserDetails userDetails = new JwtUserDetails(userId, email, roles);
 
-        // Create authentication token
+        // ✅ Използвай userDetails като principal
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
-                        userId.toString(),  // Principal (user ID)
-                        null,              // Credentials (не ни трябват след validation)
-                        authorities        // ✅ Authorities от roles
+                        userDetails,   // ✅ UserDetails обект (НЕ String!)
+                        null,
+                        userDetails.getAuthorities()
                 );
 
-        // Set request details
         authentication.setDetails(
                 new WebAuthenticationDetailsSource().buildDetails(request)
         );
 
-        // Set authentication in SecurityContext
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         log.debug("User authenticated: userId={}, email={}, roles={}", userId, email, roles);

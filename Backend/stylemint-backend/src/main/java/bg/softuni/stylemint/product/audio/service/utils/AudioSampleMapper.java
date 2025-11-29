@@ -29,6 +29,7 @@ public class AudioSampleMapper {
                 .packTitle(sample.getPack() != null ? sample.getPack().getTitle() : null)
                 .createdAt(sample.getCreatedAt())
                 .updatedAt(sample.getUpdatedAt())
+                .isArchived(sample.isArchived())
                 // Map tags here
                 .tags(sample.getTags() != null ? sample.getTags() : List.of())
                 .build();

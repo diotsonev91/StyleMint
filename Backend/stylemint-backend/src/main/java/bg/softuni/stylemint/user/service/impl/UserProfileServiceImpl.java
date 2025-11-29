@@ -54,7 +54,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         }
 
         if (!displayName.equals(user.getDisplayName()) &&
-                userRepository.existsByDisplayName(displayName)) {
+                userRepository.existsByDisplayNameAndDeletedFalse(displayName)) {
             throw new ConflictException("Display name already taken: " + displayName);
         }
 

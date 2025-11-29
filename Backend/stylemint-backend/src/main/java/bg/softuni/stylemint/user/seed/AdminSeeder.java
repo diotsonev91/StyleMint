@@ -28,7 +28,7 @@ public class AdminSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
-        boolean adminExists = userRepository.existsByRolesContaining(UserRole.ADMIN);
+        boolean adminExists = userRepository.existsByRolesContainingAndDeletedFalse(UserRole.ADMIN);
 
         if (!adminExists) {
 

@@ -1,6 +1,6 @@
 package bg.softuni.stylemint.product.fashion.web;
 
-import bg.softuni.stylemint.auth.security.SecurityUtil;
+import bg.softuni.stylemint.auth.security.JwtUserDetails;
 import bg.softuni.stylemint.common.dto.ApiResponse;
 import bg.softuni.stylemint.product.fashion.dto.*;
 import bg.softuni.stylemint.product.fashion.enums.ClothType;
@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,6 +31,7 @@ public class ClothDesignController {
     @PostMapping
     public ResponseEntity<ApiResponse<DesignPublicDTO>> createDesign(
             @Valid @ModelAttribute DesignUploadRequestDTO request) {
+
         DesignPublicDTO design = clothDesignService.createDesign(request, false);
 
         return ResponseEntity
@@ -41,6 +43,7 @@ public class ClothDesignController {
     public ResponseEntity<ApiResponse<DesignPublicDTO>> updateDesign(
             @PathVariable UUID designId,
             @Valid @ModelAttribute DesignUploadRequestDTO request) {
+
         DesignPublicDTO design = clothDesignService.updateDesign(designId, request);
         return ResponseEntity.ok(ApiResponse.success(design, "Design updated successfully"));
     }
@@ -61,8 +64,11 @@ public class ClothDesignController {
     }
 
     @GetMapping("/my-designs")
-    public ResponseEntity<ApiResponse<List<DesignDetailDTO>>> getMyDesigns() {
-        UUID userId = SecurityUtil.getCurrentUserId();
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<List<DesignDetailDTO>>> getMyDesigns(
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID userId = userDetails.getUserId();
         List<DesignDetailDTO> designs = clothDesignService.getUserDesigns(userId);
         return ResponseEntity.ok(ApiResponse.success(designs));
     }
@@ -71,14 +77,18 @@ public class ClothDesignController {
     public ResponseEntity<ApiResponse<Page<DesignPublicDTO>>> getPublicDesigns(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+
         Pageable pageable = PageRequest.of(page, size);
         Page<DesignPublicDTO> designs = clothDesignService.getPublicDesigns(pageable);
         return ResponseEntity.ok(ApiResponse.success(designs));
     }
 
     @GetMapping("/user/me/summary")
-    public ResponseEntity<ApiResponse<UserDesignerSummaryDTO>> getMyDesignerSummary() {
-        UUID userId = SecurityUtil.getCurrentUserId();
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<UserDesignerSummaryDTO>> getMyDesignerSummary(
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID userId = userDetails.getUserId();
         UserDesignerSummaryDTO summary = clothDesignService.getUserDesignerSummary(userId);
         return ResponseEntity.ok(ApiResponse.success(summary));
     }
@@ -95,19 +105,17 @@ public class ClothDesignController {
             @PathVariable ClothType clothType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, size);
 
+        Pageable pageable = PageRequest.of(page, size);
         Page<DesignPublicDTO> designs = clothDesignService.getAllByClothType(pageable, clothType);
 
-        return ResponseEntity.ok(ApiResponse.success(designs));  // Return the result wrapped in ApiResponse
+        return ResponseEntity.ok(ApiResponse.success(designs));
     }
 
     @PostMapping("/auto-save-for-cart")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<DesignPublicDTO>> autoSaveForCart(
             @ModelAttribute DesignUploadRequestDTO request) {
-
-        UUID userId = SecurityUtil.getCurrentUserId();
 
         if (request.getLabel() == null || request.getLabel().isBlank()) {
             request.setLabel("My Design " + System.currentTimeMillis());
@@ -128,5 +136,4 @@ public class ClothDesignController {
                 "Design saved for cart"
         ));
     }
-
 }

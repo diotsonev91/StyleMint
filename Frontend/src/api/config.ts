@@ -58,8 +58,15 @@ API.interceptors.response.use(
                 originalRequest.url?.includes("/auth/refresh") ||
                 originalRequest.url?.includes("/auth/login")
             ) {
-                console.warn("⛔ 401 on auth endpoint → redirecting to login");
-                window.location.href = "/login";
+                console.warn("⛔ 401 on auth endpoint");
+
+                // ⭐ Only redirect if NOT already on login/register page
+                const currentPath = window.location.pathname;
+                if (currentPath !== '/login' && currentPath !== '/register') {
+                    console.log("→ Redirecting to login");
+                    window.location.href = "/login";
+                }
+
                 return Promise.reject(error);
             }
 
@@ -77,7 +84,6 @@ API.interceptors.response.use(
 
             try {
                 console.log("🔄 Attempting token refresh...");
-                // ✅ Just try to refresh - backend will check HttpOnly cookies
                 await API.post("/auth/refresh", {}, { withCredentials: true });
                 console.log("✅ Token refreshed successfully");
 
@@ -88,9 +94,12 @@ API.interceptors.response.use(
                 console.error("❌ Token refresh failed");
                 processQueue(refreshError);
 
-                // Refresh failed → user needs to login
-                console.warn("⛔ Redirecting to login");
-                window.location.href = "/login";
+                // ⭐ Only redirect if NOT already on login/register page
+                const currentPath = window.location.pathname;
+                if (currentPath !== '/login' && currentPath !== '/register') {
+                    console.warn("⛔ Redirecting to login");
+                    window.location.href = "/login";
+                }
 
                 return Promise.reject(refreshError);
 

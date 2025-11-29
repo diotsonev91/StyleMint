@@ -16,6 +16,8 @@ import bg.softuni.stylemint.user.service.UserService;
 import bg.softuni.stylemint.user.service.util.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -51,18 +53,18 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public UserDTO findByEmail(String email) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailAndDeletedFalse(email)
                 .orElseThrow(() -> new NotFoundException("User not found with email: " + email));
         return UserMapper.toDTO(user);
     }
 
     @Override
     public UserDTO createUser(String email, String displayName, String rawPassword) {
-        if (userRepository.existsByEmailIgnoreCase(email)) {
+        if (userRepository.existsByEmailIgnoreCaseAndDeletedFalse(email)) {
             throw new ConflictException("Email already exists: " + email);
         }
 
-        if (userRepository.existsByDisplayName(displayName)) {
+        if (userRepository.existsByDisplayNameAndDeletedFalse(displayName)) {
             throw new ConflictException("Display name already taken: " + displayName);
         }
 
@@ -89,7 +91,7 @@ public class UserServiceImpl implements UserService {
         if (user.getDisplayName() != null &&
                 !user.getDisplayName().equals(existing.getDisplayName())) {
 
-            if (userRepository.existsByDisplayName(user.getDisplayName())) {
+            if (userRepository.existsByDisplayNameAndDeletedFalse(user.getDisplayName())) {
                 throw new ConflictException("Display name already taken: " + user.getDisplayName());
             }
             existing.setDisplayName(user.getDisplayName());
@@ -109,46 +111,55 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(UUID targetUserId, UUID currentUserId) {
 
         User target = userRepository.findById(targetUserId)
-                .orElseThrow(() -> new NotFoundException("User not found: " + targetUserId));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         User current = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new NotFoundException("Current user not found"));
 
-        // 1) Check permissions *********************************************
-
-        // Case A: User deletes themself
         boolean isSelfDelete = targetUserId.equals(currentUserId);
+        boolean currentIsAdmin = current.getRoles().contains(UserRole.ADMIN);
+        boolean targetIsAdmin = target.getRoles().contains(UserRole.ADMIN);
+        boolean currentIsSystem = current.isSystemUser();
+        boolean targetIsSystem = target.isSystemUser();
 
-        // Case B: Admin deletes someone else
-        boolean isAdmin = current.getRoles().contains(UserRole.ADMIN);
+        // 1) ❌ Nobody can delete SYSTEM USER
+        if (targetIsSystem) {
+            throw new ForbiddenOperationException("Root admin cannot be deleted.");
+        }
 
-        if (!isSelfDelete && !isAdmin) {
+        // 2) ✔ Self-delete is always allowed
+        if (isSelfDelete) {
+            softDeleteUser(target);
+            return;
+        }
+
+        // 3) ❌ Non-admins cannot delete ANYONE except themselves
+        if (!currentIsAdmin) {
             throw new ForbiddenOperationException("You cannot delete another user's account.");
         }
 
-        // Prevent deleting system user
-        if (target.isSystemUser()) {
-            throw new ForbiddenOperationException("System user cannot be deleted.");
+        // 4) ❌ Admin cannot delete another admin (unless current = systemUser)
+        if (targetIsAdmin && !currentIsSystem) {
+            throw new ForbiddenOperationException("Only root admin can delete other admins.");
         }
 
-        // Prevent deleting admin unless it's self-delete
-        if (target.getRoles().contains(UserRole.ADMIN) && !isSelfDelete) {
-            throw new ForbiddenOperationException("Admins cannot delete other admins.");
-        }
+        // 5) ✔ If we reach here → deletion is allowed
+        softDeleteUser(target);
 
+        log.info("User {} deleted by {}", targetUserId, currentUserId);
+    }
 
-        // 2) Soft delete content *********************************************
-        clothDesignService.deleteDesignsByUser(targetUserId);
-        audioSampleService.archiveAllByAuthor(targetUserId);
-        samplePackService.archiveAllByAuthor(targetUserId);
+    private void softDeleteUser(User target) {
+        clothDesignService.deleteDesignsByUser(target.getId());
+        audioSampleService.archiveAllByAuthor(target.getId());
+        samplePackService.archiveAllByAuthor(target.getId());
 
-        // 3) Soft delete user ***********************************************
         target.setDeleted(true);
         target.setDeletedAt(OffsetDateTime.now());
+        anonymizeEmail(target);
         userRepository.save(target);
-
-        log.info("🔒 User {} deleted by {}", targetUserId, currentUserId);
     }
+
 
 
     @Override
@@ -166,32 +177,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserById(UUID userId) {
-        return userRepository.getUserById(userId);
+        return userRepository.getUserByIdAndDeletedFalse(userId);
     }
 
-
-    @Override
-    @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
-    public void adminDeleteUser(UUID targetUserId) {
-
-        User target = userRepository.findById(targetUserId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
-        if (target.isSystemUser()) {
-            throw new ForbiddenOperationException("Root admin cannot be deleted.");
-        }
-
-        clothDesignService.deleteDesignsByUser(targetUserId);
-        audioSampleService.archiveAllByAuthor(targetUserId);
-        samplePackService.archiveAllByAuthor(targetUserId);
-
-        target.setDeleted(true);
-        target.setDeletedAt(OffsetDateTime.now());
-        userRepository.save(target);
-
-        log.info("❌ Admin deleted user {}", targetUserId);
-    }
 
     @Override
     @Transactional
@@ -247,5 +235,14 @@ public class UserServiceImpl implements UserService {
         log.info("❌ Removed role {} from user {}", role, userId);
     }
 
+    public Page<UserDTO> getAllUsers(Pageable pageable) {
+        return userRepository.findAllByDeletedFalse(pageable)
+                .map(UserMapper::toDTO);
+    }
+
+    private void anonymizeEmail(User user) {
+        String newEmail = "deleted-" + UUID.randomUUID() + "@deleted.local";
+        user.setEmail(newEmail);
+    }
 
 }

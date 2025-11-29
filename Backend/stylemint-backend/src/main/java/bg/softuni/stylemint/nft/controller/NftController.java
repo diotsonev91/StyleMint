@@ -1,7 +1,7 @@
 package bg.softuni.stylemint.nft.controller;
 
 import bg.softuni.dtos.nft.*;
-import bg.softuni.stylemint.auth.security.SecurityUtil;
+import bg.softuni.stylemint.auth.security.JwtUserDetails;
 import bg.softuni.stylemint.common.dto.ApiResponse;
 import bg.softuni.stylemint.external.facade.nft.NftServiceFacade;
 import bg.softuni.stylemint.user.dto.UserDTO;
@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -30,8 +32,11 @@ public class NftController {
      * Get user's NFTs
      */
     @GetMapping("/my-nfts")
-    public ResponseEntity<ApiResponse<UserNftsResponse>> getMyNfts() {
-        UUID userId = SecurityUtil.getCurrentUserId();
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<UserNftsResponse>> getMyNfts(
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID userId = userDetails.getUserId();
         log.debug("Fetching NFTs for user {}", userId);
 
         UserNftsResponse response = nftServiceFacade.getUserNfts(userId);
@@ -43,9 +48,12 @@ public class NftController {
      * Download NFT badge certificate (PDF)
      */
     @GetMapping("/certificate/{tokenId}")
-    public ResponseEntity<byte[]> downloadCertificate(@PathVariable UUID tokenId) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<byte[]> downloadCertificate(
+            @PathVariable UUID tokenId,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        UUID userId = SecurityUtil.getCurrentUserId();
+        UUID userId = userDetails.getUserId();
         UserDTO user = userService.findById(userId);
         String ownerName = user.getDisplayName();
 
@@ -69,11 +77,13 @@ public class NftController {
      * Transfer NFT to another user
      */
     @PostMapping("/transfer")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<TransferNftResponse>> transferNft(
             @RequestParam UUID tokenId,
-            @RequestParam UUID toUserId) {
+            @RequestParam UUID toUserId,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        UUID fromUserId = SecurityUtil.getCurrentUserId();
+        UUID fromUserId = userDetails.getUserId();
         log.info("Transferring NFT {} from {} to {}", tokenId, fromUserId, toUserId);
 
         TransferNftResponse response = nftServiceFacade.transferNft(

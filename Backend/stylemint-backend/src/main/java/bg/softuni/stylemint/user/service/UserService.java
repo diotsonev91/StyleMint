@@ -2,6 +2,8 @@ package bg.softuni.stylemint.user.service;
 
 import bg.softuni.stylemint.user.dto.UserDTO;
 import bg.softuni.stylemint.user.model.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,10 +24,9 @@ public interface UserService {
 
     User getUserById(UUID userId);
 
-    void adminDeleteUser(UUID targetUserId);
-
     void addRole(UUID userId, String roleName);
 
     void removeRole(UUID userId, String roleName);
 
+    Page<UserDTO> getAllUsers(Pageable pageable);
 }

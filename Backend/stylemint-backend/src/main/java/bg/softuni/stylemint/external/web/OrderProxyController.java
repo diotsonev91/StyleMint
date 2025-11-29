@@ -1,7 +1,7 @@
 package bg.softuni.stylemint.external.web;
 
 import bg.softuni.dtos.order.*;
-import bg.softuni.stylemint.auth.security.SecurityUtil;
+import bg.softuni.stylemint.auth.security.JwtUserDetails;
 import bg.softuni.stylemint.external.dto.OrderPreviewResponse;
 import bg.softuni.stylemint.external.service.order.OrderProxyService;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,9 +31,10 @@ public class OrderProxyController {
     @PostMapping("/create")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CreateOrderResponseDTO> createOrder(
-            @RequestBody CreateOrderRequestDTO request) {
+            @RequestBody CreateOrderRequestDTO request,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        UUID userId = SecurityUtil.getCurrentUserId();
+        UUID userId = userDetails.getUserId();
         if (!request.getUserId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -48,9 +50,10 @@ public class OrderProxyController {
     @PostMapping("/preview")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderPreviewResponse> previewOrder(
-            @RequestBody CreateOrderRequestDTO request) {
+            @RequestBody CreateOrderRequestDTO request,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        UUID userId = SecurityUtil.getCurrentUserId();
+        UUID userId = userDetails.getUserId();
         if (!request.getUserId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -63,9 +66,11 @@ public class OrderProxyController {
     // ====================================================
     @GetMapping("/{orderId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<OrderDTO> getOrder(@PathVariable UUID orderId) {
+    public ResponseEntity<OrderDTO> getOrder(
+            @PathVariable UUID orderId,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        UUID userId = SecurityUtil.getCurrentUserId();
+        UUID userId = userDetails.getUserId();
         return ResponseEntity.ok(orderProxyService.getOrder(orderId, userId));
     }
 
@@ -83,9 +88,11 @@ public class OrderProxyController {
     // ====================================================
     @GetMapping("/{orderId}/items")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<OrderItemDTO>> getOrderItems(@PathVariable UUID orderId) {
+    public ResponseEntity<List<OrderItemDTO>> getOrderItems(
+            @PathVariable UUID orderId,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        UUID userId = SecurityUtil.getCurrentUserId();
+        UUID userId = userDetails.getUserId();
         return ResponseEntity.ok(orderProxyService.getOrderItems(orderId, userId));
     }
 
@@ -94,25 +101,28 @@ public class OrderProxyController {
     // ====================================================
     @GetMapping("/user/{userId}/summary")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UserOrderSummaryDTO> getUserOrderSummary(@PathVariable UUID userIdPath) {
+    public ResponseEntity<UserOrderSummaryDTO> getUserOrderSummary(
+            @PathVariable UUID userIdPath,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        UUID userId = SecurityUtil.getCurrentUserId();
+        UUID userId = userDetails.getUserId();
         return ResponseEntity.ok(orderProxyService.getUserOrderSummary(userIdPath, userId));
     }
 
     @GetMapping("/my-summary")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UserOrderSummaryDTO> getMyOrderSummary() {
+    public ResponseEntity<UserOrderSummaryDTO> getMyOrderSummary(
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        UUID userId = SecurityUtil.getCurrentUserId();
+        UUID userId = userDetails.getUserId();
         return ResponseEntity.ok(orderProxyService.getUserOrderSummary(userId, userId));
     }
 
     // ====================================================
-    // ADMIN / SYSTEM: MARK DIGITAL UNLOCKED
+    // ADMIN : MARK DIGITAL UNLOCKED
     // ====================================================
     @PostMapping("/{orderId}/items/{itemId}/digital-unlocked")
-    @PreAuthorize("hasRole('SYSTEM') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> markDigitalUnlocked(
             @PathVariable UUID orderId,
             @PathVariable UUID itemId) {
@@ -136,9 +146,12 @@ public class OrderProxyController {
     // PRICE FOR SINGLE ITEM
     // ====================================================
     @PostMapping("/price-item")
-    public ResponseEntity<Double> getItemPrice(@RequestBody OrderItemRequestDTO item) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Double> getItemPrice(
+            @RequestBody OrderItemRequestDTO item,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        UUID userId = SecurityUtil.getCurrentUserId();
+        UUID userId = userDetails.getUserId();
         return ResponseEntity.ok(orderProxyService.calculateItemPrice(userId, item));
     }
 

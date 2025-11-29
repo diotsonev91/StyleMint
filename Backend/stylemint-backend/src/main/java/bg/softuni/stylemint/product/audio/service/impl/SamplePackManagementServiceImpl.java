@@ -272,23 +272,7 @@ public class SamplePackManagementServiceImpl implements SamplePackManagementServ
 
         for (NewSampleUploadForPack sample : newSamples) {
             try {
-                UploadSampleRequest uploadReq = new UploadSampleRequest();
-                uploadReq.setFile(sample.getFile());
-                uploadReq.setName(sample.getName());
-                uploadReq.setArtist(pack.getArtist());
-                uploadReq.setBpm(sample.getBpm() != null ? sample.getBpm() : 0);
-                uploadReq.setMusicalKey(sample.getKey());
-                uploadReq.setMusicalScale(sample.getScale());
-
-                Genre genre = sample.getGenre() != null
-                        ? sample.getGenre()
-                        : (pack.getGenres().isEmpty() ? null : pack.getGenres().get(0));
-
-                uploadReq.setGenre(genre);
-                uploadReq.setInstrumentGroup(sample.getInstrumentGroup());
-                uploadReq.setSampleType(sample.getSampleType());
-                uploadReq.setPrice(BigDecimal.ZERO);
-                uploadReq.setTags(sample.getTags());
+                UploadSampleRequest uploadReq = getUploadSampleRequest(pack, sample);
 
                 // === 2. Качваме семпъла - вече е в базата със salesCount = 0L ===
                 AudioSampleDTO saved = audioSampleService.uploadSample(authorId, uploadReq);
@@ -308,6 +292,27 @@ public class SamplePackManagementServiceImpl implements SamplePackManagementServ
         }
 
         return totalBytes;
+    }
+
+    private static UploadSampleRequest getUploadSampleRequest(SamplePack pack, NewSampleUploadForPack sample) {
+        UploadSampleRequest uploadReq = new UploadSampleRequest();
+        uploadReq.setFile(sample.getFile());
+        uploadReq.setName(sample.getName());
+        uploadReq.setArtist(pack.getArtist());
+        uploadReq.setBpm(sample.getBpm() != null ? sample.getBpm() : 0);
+        uploadReq.setMusicalKey(sample.getKey());
+        uploadReq.setMusicalScale(sample.getScale());
+
+        Genre genre = sample.getGenre() != null
+                ? sample.getGenre()
+                : (pack.getGenres().isEmpty() ? null : pack.getGenres().get(0));
+
+        uploadReq.setGenre(genre);
+        uploadReq.setInstrumentGroup(sample.getInstrumentGroup());
+        uploadReq.setSampleType(sample.getSampleType());
+        uploadReq.setPrice(BigDecimal.ZERO);
+        uploadReq.setTags(sample.getTags());
+        return uploadReq;
     }
 
 }

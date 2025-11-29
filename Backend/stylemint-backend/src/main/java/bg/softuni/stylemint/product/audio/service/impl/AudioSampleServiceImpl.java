@@ -19,6 +19,7 @@ import bg.softuni.stylemint.user.service.util.UserRolesService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -250,7 +251,8 @@ public class AudioSampleServiceImpl implements AudioSampleService {
 
     @Override
     public Page<AudioSampleDTO> searchSamples(AudioSampleSearchRequest request, Pageable pageable) {
-        return audioSampleRepository.searchSamples(
+
+        Page<AudioSampleDTO> page = audioSampleRepository.searchSamples(
                 request.getGenre(),
                 request.getSampleType(),
                 request.getMinBpm(),
@@ -259,7 +261,20 @@ public class AudioSampleServiceImpl implements AudioSampleService {
                 request.getInstrumentGroup(),
                 pageable
         ).map(audioSampleMapper::toDTO);
+
+        // филтриране
+        List<AudioSampleDTO> filtered = page.getContent()
+                .stream()
+                .filter(sample -> !sample.getIsArchived())
+                .toList();
+
+        return new PageImpl<>(
+                filtered,
+                pageable,
+                page.getTotalElements()
+        );
     }
+
 
     @Override
     public List<AudioSampleDTO> searchSamplesByName(String name) {

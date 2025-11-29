@@ -19,7 +19,14 @@ const SamplesList: React.FC<SamplesListProps> = ({ samples, onLoadMore }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const audioSnap = useSnapshot(audioPlayerStore);
   const navigate = useNavigate();
-  // Preload samples when component mounts or samples change
+    const [localSamples, setLocalSamples] = useState<AudioSample[]>(samples);
+
+// Ако се сменят props.samples — обнови локалното състояние
+    useEffect(() => {
+        setLocalSamples(samples);
+    }, [samples]);
+
+    // Preload samples when component mounts or samples change
   useEffect(() => {
     if (samples.length > 0) {
       console.log('Preloading samples in SamplesList...');
@@ -84,7 +91,20 @@ const SamplesList: React.FC<SamplesListProps> = ({ samples, onLoadMore }) => {
     // Implement like logic
   };
 
-  return (
+    async function handleDelete(id: string) {
+        const result = await audioSampleService.deleteSample(id);
+
+        if (result.success) {
+            alert(result.message);
+
+            setLocalSamples(prev => prev.filter(s => s.id !== id));
+        } else {
+            alert(result.error);
+        }
+    }
+
+
+    return (
     <div className="samples-list">
       {/* Search Bar */}
       <div className="search-container">
@@ -145,6 +165,8 @@ const SamplesList: React.FC<SamplesListProps> = ({ samples, onLoadMore }) => {
               onEdit={() => handleOnEdit(sample.id)}
               onDownload={() => handleDownload(sample.id)}
               onLike={() => handleLike(sample.id)}
+              onDelete={()=> handleDelete(sample.id)}
+              doesExistAsStandAlone={sample.price == 0 && sample.packId !=0}
             />
           ))
         ) : (

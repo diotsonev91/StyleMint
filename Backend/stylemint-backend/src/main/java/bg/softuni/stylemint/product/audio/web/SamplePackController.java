@@ -1,6 +1,6 @@
 package bg.softuni.stylemint.product.audio.web;
 
-import bg.softuni.stylemint.auth.security.SecurityUtil;
+import bg.softuni.stylemint.auth.security.JwtUserDetails;
 import bg.softuni.stylemint.common.dto.ApiResponse;
 import bg.softuni.stylemint.product.audio.dto.*;
 import bg.softuni.stylemint.product.audio.enums.Genre;
@@ -9,7 +9,6 @@ import bg.softuni.stylemint.product.audio.service.SamplePackService;
 import bg.softuni.stylemint.product.audio.service.impl.ZipService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,6 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,8 +44,10 @@ public class SamplePackController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<SamplePackDTO>> uploadPack(
-            @Valid @ModelAttribute UploadPackRequest request) {
-        UUID authorId = SecurityUtil.getCurrentUserId();
+            @Valid @ModelAttribute UploadPackRequest request,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID authorId = userDetails.getUserId();
         SamplePackDTO pack = samplePackService.uploadPack(authorId, request);
         return ResponseEntity.ok(ApiResponse.success(pack, "Sample pack uploaded successfully"));
     }
@@ -78,8 +80,10 @@ public class SamplePackController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<SamplePackDTO>> updatePack(
             @PathVariable UUID packId,
-            @Valid @ModelAttribute UpdatePackRequest request) {
-        UUID authorId = SecurityUtil.getCurrentUserId();
+            @Valid @ModelAttribute UpdatePackRequest request,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID authorId = userDetails.getUserId();
         SamplePackDTO pack = samplePackService.updatePack(packId, authorId, request);
         return ResponseEntity.ok(ApiResponse.success(pack, "Pack updated successfully"));
     }
@@ -92,8 +96,10 @@ public class SamplePackController {
      */
     @GetMapping("/my-packs")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<SamplePackDTO>> getMyPacks() {
-        UUID authorId = SecurityUtil.getCurrentUserId();
+    public ResponseEntity<List<SamplePackDTO>> getMyPacks(
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID authorId = userDetails.getUserId();
         List<SamplePackDTO> packs = samplePackService.getPacksByAuthor(authorId);
         return ResponseEntity.ok(packs);
     }
@@ -117,6 +123,7 @@ public class SamplePackController {
             @PathVariable String artist,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+
         Pageable pageable = PageRequest.of(page, size);
         Page<SamplePackDTO> packs = samplePackService.getPacksByArtist(artist, pageable);
         return ResponseEntity.ok(packs);
@@ -142,6 +149,7 @@ public class SamplePackController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "DESC") Sort.Direction direction) {
+
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
         Page<SamplePackDTO> packs = samplePackService.getAllPacks(pageable);
         return ResponseEntity.ok(packs);
@@ -158,6 +166,7 @@ public class SamplePackController {
             @RequestBody SamplePackSearchRequest request,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+
         Pageable pageable = PageRequest.of(page, size);
         Page<SamplePackDTO> packs = samplePackService.searchPacks(request, pageable);
         return ResponseEntity.ok(packs);
@@ -238,6 +247,7 @@ public class SamplePackController {
     public ResponseEntity<ApiResponse<Void>> ratePack(
             @PathVariable UUID packId,
             @RequestParam Double rating) {
+
         if (rating < 1.0 || rating > 5.0) {
             throw new IllegalArgumentException("Rating must be between 1.0 and 5.0");
         }
@@ -263,8 +273,10 @@ public class SamplePackController {
      */
     @GetMapping("/producer/me/stats")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ProducerStatsDTO> getMyProducerStats() {
-        UUID authorId = SecurityUtil.getCurrentUserId();
+    public ResponseEntity<ProducerStatsDTO> getMyProducerStats(
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID authorId = userDetails.getUserId();
         ProducerStatsDTO stats = samplePackService.getProducerStats(authorId);
         return ResponseEntity.ok(stats);
     }
@@ -279,16 +291,19 @@ public class SamplePackController {
      */
     @GetMapping("/{packId}/download")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<PackDownloadResponse>> downloadPack(@PathVariable UUID packId) {
-        UUID userId = SecurityUtil.getCurrentUserId();
+    public ResponseEntity<ApiResponse<PackDownloadResponse>> downloadPack(
+            @PathVariable UUID packId,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        // Validate permission
-        sampleLicenseService.validateDownloadPermissionPack(userId, packId);
+        UUID userId = userDetails.getUserId();
 
-        // Get pack with samples
+        SamplePackDTO packById = samplePackService.getPackById(packId);
+        if (!packById.getAuthorId().equals(userId)) {
+            sampleLicenseService.validateDownloadPermissionPack(userId, packId);
+        }
+
         SamplePackDetailDTO packDetail = samplePackService.getPackWithSamples(packId);
 
-        // ⭐ ВАЖНО: Extract pack and samples first
         SamplePackDTO pack = packDetail.getPack();
         List<AudioSampleDTO> samples = packDetail.getSamples();
 
@@ -319,10 +334,17 @@ public class SamplePackController {
 
     @GetMapping("/{packId}/download-zip")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ByteArrayResource> downloadPackAsZip(@PathVariable UUID packId) throws Exception {
-        UUID userId = SecurityUtil.getCurrentUserId();
+    public ResponseEntity<ByteArrayResource> downloadPackAsZip(
+            @PathVariable UUID packId,
+            @AuthenticationPrincipal JwtUserDetails userDetails) throws Exception {
 
-        sampleLicenseService.validateDownloadPermissionPack(userId, packId);
+        UUID userId = userDetails.getUserId();
+
+        SamplePackDTO packById = samplePackService.getPackById(packId);
+        if (!packById.getAuthorId().equals(userId)) {
+            sampleLicenseService.validateDownloadPermissionPack(userId, packId);
+        }
+
 
         SamplePackDetailDTO packDetail = samplePackService.getPackWithSamples(packId);
 
@@ -333,17 +355,17 @@ public class SamplePackController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .contentLength(zip.getBytes().length)
                 .body(new ByteArrayResource(zip.getBytes()));
-
     }
 
     @DeleteMapping("/{packId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Void> archivePackByUser(@PathVariable UUID packId) {
+    public ResponseEntity<Void> archivePackByUser(
+            @PathVariable UUID packId,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        UUID userId = SecurityUtil.getCurrentUserId();
+        UUID userId = userDetails.getUserId();
         samplePackService.archivePackByUser(packId, userId);
 
         return ResponseEntity.noContent().build();
     }
-
 }

@@ -1,6 +1,6 @@
 package bg.softuni.stylemint.product.audio.web;
 
-import bg.softuni.stylemint.auth.security.SecurityUtil;
+import bg.softuni.stylemint.auth.security.JwtUserDetails;
 import bg.softuni.stylemint.common.dto.ApiResponse;
 import bg.softuni.stylemint.product.audio.dto.*;
 import bg.softuni.stylemint.product.audio.enums.*;
@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -32,6 +33,7 @@ public class AudioSampleController {
     private final AudioSampleService audioSampleService;
     private final SamplePackBindingService samplePackBindingService;
     private final DigitalLicenseService sampleLicenseService;
+
     // ================ CRUD Operations ================
 
     /**
@@ -41,8 +43,10 @@ public class AudioSampleController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<AudioSampleDTO>> uploadSample(
-            @Valid @ModelAttribute UploadSampleRequest request) {
-        UUID authorId = SecurityUtil.getCurrentUserId();
+            @Valid @ModelAttribute UploadSampleRequest request,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID authorId = userDetails.getUserId();
         AudioSampleDTO sample = audioSampleService.uploadSample(authorId, request);
         return ResponseEntity.ok(ApiResponse.success(sample, "Sample uploaded successfully"));
     }
@@ -65,8 +69,10 @@ public class AudioSampleController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<AudioSampleDTO>> updateSample(
             @PathVariable UUID sampleId,
-            @Valid @ModelAttribute UploadSampleRequest request) {
-        UUID authorId = SecurityUtil.getCurrentUserId();
+            @Valid @ModelAttribute UploadSampleRequest request,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID authorId = userDetails.getUserId();
         AudioSampleDTO sample = audioSampleService.updateSample(sampleId, authorId, request);
         return ResponseEntity.ok(ApiResponse.success(sample, "Sample updated successfully"));
     }
@@ -79,9 +85,10 @@ public class AudioSampleController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<AudioSampleDTO>> updateSampleMetadata(
             @PathVariable UUID sampleId,
-            @Valid @RequestBody UpdateSampleRequest request) {
+            @Valid @RequestBody UpdateSampleRequest request,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        UUID authorId = SecurityUtil.getCurrentUserId();
+        UUID authorId = userDetails.getUserId();
         AudioSampleDTO updated = audioSampleService.updateSampleMetadata(sampleId, authorId, request);
         return ResponseEntity.ok(ApiResponse.success(updated, "Sample metadata updated successfully"));
     }
@@ -95,8 +102,10 @@ public class AudioSampleController {
      */
     @GetMapping("/my-samples")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<AudioSampleDTO>> getMySamples() {
-        UUID authorId = SecurityUtil.getCurrentUserId();
+    public ResponseEntity<List<AudioSampleDTO>> getMySamples(
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID authorId = userDetails.getUserId();
         List<AudioSampleDTO> samples = audioSampleService.getSamplesByAuthor(authorId);
         return ResponseEntity.ok(samples);
     }
@@ -122,6 +131,7 @@ public class AudioSampleController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "DESC") Sort.Direction direction) {
+
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
         Page<AudioSampleDTO> samples = audioSampleService.getSamplesByGenre(genre, pageable);
         return ResponseEntity.ok(samples);
@@ -144,6 +154,7 @@ public class AudioSampleController {
     @GetMapping("/instrument/{instrumentGroup}")
     public ResponseEntity<List<AudioSampleDTO>> getSamplesByInstrument(
             @PathVariable InstrumentGroup instrumentGroup) {
+
         List<AudioSampleDTO> samples = audioSampleService.getSamplesByInstrumentGroup(instrumentGroup);
         return ResponseEntity.ok(samples);
     }
@@ -166,6 +177,7 @@ public class AudioSampleController {
     public ResponseEntity<List<AudioSampleDTO>> getSamplesByBpmRange(
             @RequestParam Integer minBpm,
             @RequestParam Integer maxBpm) {
+
         List<AudioSampleDTO> samples = audioSampleService.getSamplesByBpmRange(minBpm, maxBpm);
         return ResponseEntity.ok(samples);
     }
@@ -178,6 +190,7 @@ public class AudioSampleController {
     public ResponseEntity<Page<AudioSampleDTO>> getStandaloneSamples(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+
         Pageable pageable = PageRequest.of(page, size);
         Page<AudioSampleDTO> samples = audioSampleService.getStandaloneSamples(pageable);
         return ResponseEntity.ok(samples);
@@ -194,6 +207,7 @@ public class AudioSampleController {
             @RequestBody AudioSampleSearchRequest request,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+
         Pageable pageable = PageRequest.of(page, size);
         Page<AudioSampleDTO> samples = audioSampleService.searchSamples(request, pageable);
         return ResponseEntity.ok(samples);
@@ -230,6 +244,7 @@ public class AudioSampleController {
             @PathVariable Genre genre,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+
         Pageable pageable = PageRequest.of(page, size);
         Page<AudioSampleDTO> samples = audioSampleService.getPopularSamplesByGenre(genre, pageable);
         return ResponseEntity.ok(samples);
@@ -253,10 +268,11 @@ public class AudioSampleController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> unbindSampleFromPack(
             @PathVariable UUID sampleId,
-            @PathVariable UUID packId) {
+            @PathVariable UUID packId,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
 
-        UUID authorId = SecurityUtil.getCurrentUserId();
-        samplePackBindingService.unbindSampleFromPack(sampleId,packId, authorId);
+        UUID authorId = userDetails.getUserId();
+        samplePackBindingService.unbindSampleFromPack(sampleId, packId, authorId);
 
         return ResponseEntity.ok(ApiResponse.success(null, "Sample successfully unbound from pack"));
     }
@@ -284,8 +300,11 @@ public class AudioSampleController {
 
     @GetMapping("/{sampleId}/download")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<SampleDownloadResponse> downloadSample(@PathVariable UUID sampleId) {
-        UUID userId = SecurityUtil.getCurrentUserId();
+    public ResponseEntity<SampleDownloadResponse> downloadSample(
+            @PathVariable UUID sampleId,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID userId = userDetails.getUserId();
 
         sampleLicenseService.validateDownloadPermissionSample(userId, sampleId);
 
@@ -301,12 +320,18 @@ public class AudioSampleController {
         );
     }
 
-    @PutMapping("/{sampleId}/archive")
-    @PreAuthorize("hasRole('USER')")  // само за обикновени потребители
-    public ResponseEntity<Void> archiveSample(@PathVariable UUID sampleId) {
-        UUID authorId = SecurityUtil.getCurrentUserId();
+    @DeleteMapping("/{sampleId}/archive")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> archiveSample(
+            @PathVariable UUID sampleId,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID authorId = userDetails.getUserId();
+        AudioSampleDTO sample = audioSampleService.getSampleById(sampleId);
+        if(sample.getPackId() != null) {
+            samplePackBindingService.unbindSampleFromPack(sampleId, sample.getPackId(), authorId);
+        }
         audioSampleService.archiveSample(sampleId, authorId);
         return ResponseEntity.noContent().build();
     }
-
 }

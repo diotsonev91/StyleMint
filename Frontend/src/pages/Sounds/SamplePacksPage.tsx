@@ -6,6 +6,7 @@ import { SamplePack } from '../../types';
 import './SamplePacksPage.css';
 import { audioPackService } from '../../services/audioPackService';
 import { useAuth } from '../../hooks/useAuth';
+import {getCurrentUser} from "../../api/auth";
 const SamplePacksPage: React.FC = () => {
   const [allPacks, setAllPacks] = useState<SamplePack[]>([]);
   const [selectedAuthor, setSelectedAuthor] = useState('');
@@ -15,9 +16,6 @@ const SamplePacksPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [error, setError] = useState<string | null>(null);
 
-    const { user, loading: authLoading } = useAuth();
-
-     const currentUserId = user?.id;
   // ✅ Load from real backend API
   useEffect(() => {
     const loadPacks = async () => {
@@ -27,15 +25,20 @@ const SamplePacksPage: React.FC = () => {
         
         // Use getAllPacks with pagination - you might want to adjust page/size based on your needs
         const response = await audioPackService.getAllPacks(0, 50); // Get first 50 packs
-        
+
+
+
         if (response.success && response.data) {
           // Handle both array and Page response format
           const packsData = Array.isArray(response.data) 
             ? response.data 
             : response.data.content || [];
+            const currentUser = await getCurrentUser();
+
           console.log(response.data)
           // Transform backend DTO to frontend SamplePack type if needed
           const transformedPacks = packsData.map((pack: any) => ({
+
             id: pack.id,
             title: pack.title,
             artist: pack.artist,
@@ -49,9 +52,9 @@ const SamplePacksPage: React.FC = () => {
             downloadCount: pack.downloadCount,
             createdAt: pack.createdAt,
             updatedAt: pack.updatedAt, 
-            isLoggedUserPack: currentUserId == pack.authorId
+            isLoggedUserPack: pack.authorId === currentUser.id,
           }));
-          console.log(currentUserId, "   ---", )
+
           
           
           setAllPacks(transformedPacks);

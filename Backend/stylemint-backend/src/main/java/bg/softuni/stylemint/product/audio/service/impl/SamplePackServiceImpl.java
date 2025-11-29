@@ -140,6 +140,7 @@ public class SamplePackServiceImpl implements SamplePackService {
 
     @Override
     public Page<SamplePackDTO> searchPacks(SamplePackSearchRequest request, Pageable pageable) {
+
         Page<SamplePackDTO> page = samplePackRepository.searchPacks(
                 request.getArtist(),
                 request.getGenre(),
@@ -149,7 +150,17 @@ public class SamplePackServiceImpl implements SamplePackService {
                 pageable
         ).map(samplePackMapper::toDTO);
 
-        return (Page<SamplePackDTO>) page.filter(pack -> !pack.isArchived());
+        List<SamplePackDTO> filtered = page
+                .getContent()
+                .stream()
+                .filter(pack -> !pack.isArchived())
+                .toList();
+
+        return new PageImpl<>(
+                filtered,
+                pageable,
+                filtered.size()
+        );
     }
 
 

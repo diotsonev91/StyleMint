@@ -25,7 +25,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     /**
      * Find user by email (for login)
      */
-    Optional<User> findByEmail(String email);
+    Optional<User> findByEmailAndDeletedFalse(String email);
 
     /**
      * Check if email exists (for registration)
@@ -35,30 +35,23 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     /**
      * Check if email exists (case insensitive)
      */
-    boolean existsByEmailIgnoreCase(String email);
+    boolean existsByEmailIgnoreCaseAndDeletedFalse(String email);
 
     // ============================================
     // PROFILE
     // ============================================
 
-    /**
-     * Find user by display name
-     */
-    Optional<User> findByDisplayName(String displayName);
 
     /**
      * Check if display name is taken
      */
-    boolean existsByDisplayName(String displayName);
+    boolean existsByDisplayNameAndDeletedFalse(String displayName);
 
     // ============================================
     // ROLE QUERIES
     // ============================================
 
-    /**
-     * Find users by role
-     */
-    List<User> findByRolesContaining(UserRole role, Pageable pageable);
+
 
 
     long countByRolesContaining(UserRole role);
@@ -71,10 +64,16 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     /**
      * Search users by email or display name
      */
-    @Query("SELECT u FROM User u WHERE " +
-            "LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-            "LOWER(u.displayName) LIKE LOWER(CONCAT('%', :query, '%'))")
+    @Query("""
+        SELECT u FROM User u
+        WHERE u.deleted = false
+          AND (
+                LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(u.displayName) LIKE LOWER(CONCAT('%', :query, '%'))
+              )
+        """)
     Page<User> searchUsers(@Param("query") String query, Pageable pageable);
+
 
     // ============================================
     // DATE QUERIES (for basic filtering)
@@ -83,14 +82,16 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     /**
      * Find users created after date
      */
-    List<User> findByCreatedAtAfter(OffsetDateTime date);
+    List<User> findByCreatedAtAfterAndDeletedFalse(OffsetDateTime date);
 
     /**
      * Find users created between dates
      */
-    List<User> findByCreatedAtBetween(OffsetDateTime startDate, OffsetDateTime endDate);
+    List<User> findByCreatedAtBetweenAndDeletedFalse(OffsetDateTime startDate, OffsetDateTime endDate);
 
-    User getUserById(UUID id);
+    User getUserByIdAndDeletedFalse(UUID id);
 
-    boolean existsByRolesContaining(UserRole userRole);
+    boolean existsByRolesContainingAndDeletedFalse(UserRole userRole);
+
+    Page<User> findAllByDeletedFalse(Pageable pageable);
 }

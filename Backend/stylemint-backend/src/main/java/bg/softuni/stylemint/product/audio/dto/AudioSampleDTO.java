@@ -33,4 +33,5 @@ public class AudioSampleDTO {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private List<String> tags;
+    private Boolean isArchived;
 }
