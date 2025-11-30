@@ -59,5 +59,25 @@ export const packApi = {
     },
     async getUserRating(packId: string) {
         return API.get(`${PACK_BASE}/${packId}/my-rating`);
+    },
+    /**
+     * Get top rated packs
+     */
+    async getTopRatedPacks() {
+        return API.get(`${PACK_BASE}/top-rated`);
+    },
+
+    /**
+     * Get most downloaded packs
+     */
+    async getMostDownloadedPacks() {
+        return API.get(`${PACK_BASE}/most-downloaded`);
+    },
+
+    /**
+     * Get latest released packs
+     */
+    async getLatestPacks() {
+        return API.get(`${PACK_BASE}/latest`);
     }
 };

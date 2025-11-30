@@ -16,10 +16,7 @@ import java.util.UUID;
 @Repository
 public interface SamplePackRepository extends JpaRepository<SamplePack, UUID> {
 
-
     List<SamplePack> findByAuthorIdAndArchivedFalse(UUID authorId);
-
-
 
     List<SamplePack> findByTitleContainingIgnoreCaseAndArchivedFalse(String title);
 
@@ -29,16 +26,13 @@ public interface SamplePackRepository extends JpaRepository<SamplePack, UUID> {
     @Query("SELECT p FROM SamplePack p JOIN p.genres g WHERE g = :genre AND p.archived = false")
     List<SamplePack> findByGenresContainingAndArchivedFalse(@Param("genre") Genre genre);
 
-
     @Query("select p from SamplePack p join fetch p.samples where p.id = :packId")
     SamplePack fetchPackWithSamples(UUID packId);
-
 
     /**
      * Count packs by author
      */
     long countByAuthorId(UUID authorId);
-
 
     @Query("SELECT p FROM SamplePack p WHERE p.archived = false ORDER BY p.rating DESC")
     List<SamplePack> findTop10ByOrderByRatingDescAndArchivedFalse();
@@ -48,7 +42,6 @@ public interface SamplePackRepository extends JpaRepository<SamplePack, UUID> {
 
     @Query("SELECT p FROM SamplePack p WHERE p.archived = false ORDER BY p.releaseDate DESC")
     List<SamplePack> findTop10ByOrderByReleaseDateDescAndArchivedFalse();
-
 
     /**
      * Paginated search by artist
@@ -91,10 +84,50 @@ public interface SamplePackRepository extends JpaRepository<SamplePack, UUID> {
     @Query("SELECT DISTINCT p FROM SamplePack p JOIN p.genres g WHERE g IN :genres AND p.id != :excludeId")
     List<SamplePack> findSimilarPacks(@Param("genres") List<Genre> genres, @Param("excludeId") UUID excludeId);
 
-
     boolean existsByIdAndAuthorId(UUID packId, UUID authorId);
 
     Page<SamplePack>  findByArchivedFalse(Pageable pageable);
 
     List<SamplePack> findByArchivedTrue();
+
+    /**
+     * Advanced search with all filters including sort
+     * Supports: artist, genres, price range, rating, sort by
+     */
+    @Query("SELECT DISTINCT p FROM SamplePack p LEFT JOIN p.genres g WHERE " +
+            "p.archived = false AND " +
+            "(:artist IS NULL OR LOWER(p.artist) LIKE LOWER(CONCAT('%', :artist, '%'))) AND " +
+            "(:title IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))) AND " +
+            "(:genres IS NULL OR g IN :genres) AND " +
+            "(:minPrice IS NULL OR p.price >= :minPrice) AND " +
+            "(:maxPrice IS NULL OR p.price <= :maxPrice) AND " +
+            "(:minRating IS NULL OR p.rating >= :minRating)")
+    Page<SamplePack> advancedSearch(
+            @Param("artist") String artist,
+            @Param("title") String title,
+            @Param("genres") List<Genre> genres,
+            @Param("minPrice") Double minPrice,
+            @Param("maxPrice") Double maxPrice,
+            @Param("minRating") Double minRating,
+            Pageable pageable
+    );
+
+    /**
+     * Get all distinct artists who have non-archived packs
+     */
+    @Query("SELECT DISTINCT p.artist FROM SamplePack p WHERE p.archived = false ORDER BY p.artist")
+    List<String> findDistinctArtists();
+
+    /**
+     * Get all distinct genres from non-archived packs
+     */
+    @Query("SELECT DISTINCT g FROM SamplePack p JOIN p.genres g WHERE p.archived = false")
+    List<Genre> findDistinctGenres();
+
+    /**
+     * Get price range (min, max) from all non-archived packs
+     */
+    @Query("SELECT MIN(p.price), MAX(p.price) FROM SamplePack p WHERE p.archived = false")
+    List<Double[]> getPriceRange();
+
 }

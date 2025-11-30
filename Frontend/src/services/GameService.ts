@@ -1,6 +1,4 @@
 // src/services/GameService.ts
-// Refactored to use game.api.ts for consistency
-
 import {
     gameApi,
     GameType,
@@ -10,15 +8,19 @@ import {
     type UserGameSummaryDTO
 } from "../api/game.api";
 
-
 interface SaveScoreParams {
     score: number;
     timestamp: number;
     gameName: "bpm-matcher" | "3d-runner";
 }
 
-class GameService {
+export interface GlobalStats {
+    activePlayers: number;
+    totalGamesPlayed: number;
+    totalHighScores: number;
+}
 
+class GameService {
     /** Map game names from client to enum used by backend */
     private mapGameNameToType(gameName: string): GameType {
         switch (gameName) {
@@ -31,7 +33,7 @@ class GameService {
         }
     }
 
-    /** Submit score to backend — CLEAN version without metadata */
+    /** Submit score to backend */
     async saveScore(params: SaveScoreParams): Promise<{ success: boolean; data?: GameSessionDTO; error?: string }> {
         try {
             const gameResult: GameResultDTO = {
@@ -41,18 +43,27 @@ class GameService {
             };
 
             const response = await gameApi.submitGameResult(gameResult);
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
-            return { success: true, data };
+            return { success: true, data: response.data };
 
         } catch (error: any) {
             console.error("❌ Error saving score:", error);
-            return { success: false, error: error.message || "Failed to save score" };
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message || "Failed to save score"
+            };
+        }
+    }
+
+    async getGlobalStats(): Promise<{ success: boolean; data?: GlobalStats; error?: string }> {
+        try {
+            const response = await gameApi.getGlobalStats();
+            return { success: true, data: response.data };
+        } catch (error: any) {
+            console.error("❌ Error loading global stats:", error);
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message
+            };
         }
     }
 
@@ -63,17 +74,14 @@ class GameService {
     ): Promise<{ success: boolean; data?: LeaderboardEntryDTO[]; error?: string }> {
         try {
             const response = await gameApi.getLeaderboard(gameType, limit);
-
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.message || `HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
-            return { success: true, data };
+            return { success: true, data: response.data };
 
         } catch (error: any) {
-            return { success: false, error: error.message };
+            console.error("❌ Error fetching leaderboard:", error);
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message
+            };
         }
     }
 
@@ -81,37 +89,34 @@ class GameService {
     async fetchTopScores(
         gameType?: GameType
     ): Promise<{ success: boolean; data?: LeaderboardEntryDTO[]; error?: string }> {
-
-        if (!gameType) {
-            try {
-                const response = await gameApi.getGlobalLeaderboard(10);
-
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                return { success: true, data: await response.json() };
-
-            } catch (error: any) {
-                return { success: false, error: error.message };
+        try {
+            let response;
+            if (!gameType) {
+                response = await gameApi.getGlobalLeaderboard(10);
+            } else {
+                response = await gameApi.getLeaderboard(gameType, 10);
             }
-        }
+            return { success: true, data: response.data };
 
-        return this.fetchLeaderboard(gameType);
+        } catch (error: any) {
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message
+            };
+        }
     }
 
     /** User summary */
     async getUserSummary(): Promise<{ success: boolean; data?: UserGameSummaryDTO; error?: string }> {
         try {
             const response = await gameApi.getUserSummary();
-
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.message || `HTTP ${response.status}`);
-            }
-
-            return { success: true, data: await response.json() };
+            return { success: true, data: response.data };
 
         } catch (error: any) {
-            return { success: false, error: error.message };
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message
+            };
         }
     }
 
@@ -119,16 +124,13 @@ class GameService {
     async getUserSessions(): Promise<{ success: boolean; data?: GameSessionDTO[]; error?: string }> {
         try {
             const response = await gameApi.getUserSessions();
-
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.message || `HTTP ${response.status}`);
-            }
-
-            return { success: true, data: await response.json() };
+            return { success: true, data: response.data };
 
         } catch (error: any) {
-            return { success: false, error: error.message };
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message
+            };
         }
     }
 
@@ -136,16 +138,13 @@ class GameService {
     async claimReward(sessionId: string): Promise<{ success: boolean; data?: GameSessionDTO; error?: string }> {
         try {
             const response = await gameApi.claimReward(sessionId);
-
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.message || `HTTP ${response.status}`);
-            }
-
-            return { success: true, data: await response.json() };
+            return { success: true, data: response.data };
 
         } catch (error: any) {
-            return { success: false, error: error.message };
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message || "Failed to claim reward"
+            };
         }
     }
 
@@ -153,16 +152,14 @@ class GameService {
     async getUnclaimedRewards(): Promise<{ success: boolean; data?: GameSessionDTO[]; error?: string }> {
         try {
             const response = await gameApi.getUnclaimedRewards();
-
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.message || `HTTP ${response.status}`);
-            }
-
-            return { success: true, data: await response.json() };
+            return { success: true, data: response.data };
 
         } catch (error: any) {
-            return { success: false, error: error.message };
+            console.error("❌ Error loading unclaimed rewards:", error);
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message || "Failed to load rewards"
+            };
         }
     }
 
@@ -170,17 +167,13 @@ class GameService {
     async getBestScore(gameType: GameType): Promise<{ success: boolean; data?: number; error?: string }> {
         try {
             const response = await gameApi.getBestScore(gameType);
-
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.message || `HTTP ${response.status}`);
-            }
-
-            const body = await response.json();
-            return { success: true, data: body.bestScore };
+            return { success: true, data: response.data?.bestScore };
 
         } catch (error: any) {
-            return { success: false, error: error.message };
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message
+            };
         }
     }
 

@@ -179,7 +179,7 @@
   animation: fadeIn 1s ease;
 }
 
-.stat-item {
+.stat-item-gm {
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px);
   border-radius: 15px;
@@ -315,4 +315,298 @@
     padding: 12px 28px;
     font-size: 15px;
   }
+}
+
+/* Unclaimed Rewards Section */
+.rewards-section {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 40px;
+    max-width: 800px;
+    width: 100%;
+    animation: fadeInUp 0.6s ease;
+}
+
+.rewards-section h2 {
+    color: white;
+    margin: 0 0 20px 0;
+    font-size: 24px;
+    text-align: center;
+}
+
+.rewards-table {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.5fr 1fr;
+    gap: 15px;
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.table-body {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.table-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.5fr 1fr;
+    gap: 15px;
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    align-items: center;
+    color: #fff;
+    transition: background 0.2s ease;
+}
+
+.table-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+.game-name {
+    font-weight: 500;
+}
+
+.score {
+    color: #4ade80;
+    font-weight: 600;
+}
+
+.reward-type {
+    color: #fbbf24;
+    font-weight: 500;
+}
+
+.claim-btn {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.claim-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+}
+
+.claim-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.claim-btn.claiming {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
+/* Error Message */
+.error-message {
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 800px;
+    width: 100%;
+    animation: fadeIn 0.3s ease;
+}
+
+.dismiss-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dismiss-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+}
+
+/* Loading State */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: white;
+    margin-bottom: 20px;
+}
+
+.loading-spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-left: 3px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Scrollbar for table */
+.table-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.table-body::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.table-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.table-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .rewards-section {
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+
+    .table-header,
+    .table-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 12px 15px;
+    }
+
+    .table-header span:nth-child(3),
+    .table-row span:nth-child(3),
+    .table-header span:nth-child(4),
+    .table-row span:nth-child(4) {
+        grid-column: span 2;
+    }
+
+    .claim-btn {
+        justify-self: start;
+    }
+
+    .rewards-section h2 {
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .rewards-section {
+        padding: 15px;
+    }
+
+    .table-header,
+    .table-row {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .table-header span,
+    .table-row span {
+        grid-column: span 1;
+    }
+
+    .claim-btn {
+        justify-self: center;
+        width: 100%;
+        max-width: 150px;
+    }
+}
+
+/* Personal Best Score Styles */
+.personal-best {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 15px 0;
+    padding: 10px 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.best-score-label {
+    font-size: 12px;
+    color: #ccc;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.best-score-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fbbf24;
+}
+
+.loading-dots {
+    color: #999;
+    font-weight: normal;
+}
+
+/* Update stats section to use consistent class */
+.stat-item-gm {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 25px 35px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    color: white;
+    min-width: 200px;
+    transition: all 0.3s ease;
+}
+
+.stat-item-gm:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-5px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .personal-best {
+        flex-direction: column;
+        gap: 5px;
+        text-align: center;
+    }
+
+    .stat-item-gm {
+        padding: 20px 25px;
+        min-width: 150px;
+    }
 }

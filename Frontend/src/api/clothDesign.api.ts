@@ -28,6 +28,13 @@ export interface DesignDetailDTO extends DesignSummaryDTO {
     customizationData: CustomizationData;
     customDecalUrl?: string;
 }
+
+export interface DesignDetailDTOWithLikes extends DesignSummaryDTO {
+    customizationData: CustomizationData;
+    customDecalUrl?: string;
+    likesCount?: number;
+}
+
 export interface DesignPublicDTO extends DesignSummaryDTO {
     customizationData: CustomizationData;
     customDecalUrl?: string;
@@ -187,6 +194,30 @@ export const clothDesignApi = {
         return API.post("/designs/auto-save-for-cart", formData, {
             headers: { "Content-Type": "multipart/form-data" },
         });
+    },
+    /**
+     * Get top liked public designs
+     */
+    async getTopLikedDesigns(limit: number = 10): Promise<ApiResponse<DesignPublicDTO[]>> {
+        const response = await API.get('/designs/top-liked', {
+            params: { limit }
+        });
+        return response.data;
+    },
+
+    /**
+     * Get likes count for multiple designs
+     */
+    async getLikesCountForDesigns(designIds: string[]): Promise<ApiResponse<{ [designId: string]: number }>> {
+        const response = await API.get('/designs/likes-count', {
+            params: {
+                designIds: designIds.join(',')
+            },
+            paramsSerializer: {
+                indexes: null // This ensures array params are properly serialized
+            }
+        });
+        return response.data;
     },
 
 };

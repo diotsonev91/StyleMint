@@ -13,9 +13,7 @@ import bg.softuni.stylemint.common.exception.NotFoundException;
 import bg.softuni.stylemint.product.audio.service.utils.SamplePackMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -36,7 +34,6 @@ public class SamplePackServiceImpl implements SamplePackService {
     private final SamplePackManagementService samplePackManagementService;
     private final AudioSampleService audioSampleService;
     private final SamplePackMapper samplePackMapper;
-
 
     @Override
     @Transactional
@@ -163,14 +160,12 @@ public class SamplePackServiceImpl implements SamplePackService {
         );
     }
 
-
     @Override
     public List<SamplePackDTO> searchPacksByTitle(String title) {
         return samplePackRepository.findByTitleContainingIgnoreCaseAndArchivedFalse(title).stream()
                 .map(samplePackMapper::toDTO)
                 .collect(Collectors.toList());
     }
-
 
     @Override
     public List<SamplePackDTO> findSimilarPacks(UUID packId) {
@@ -182,7 +177,6 @@ public class SamplePackServiceImpl implements SamplePackService {
                 .map(samplePackMapper::toDTO)
                 .collect(Collectors.toList());
     }
-
 
     @Override
     public List<SamplePackDTO> getTopRatedPacks() {
@@ -205,7 +199,6 @@ public class SamplePackServiceImpl implements SamplePackService {
                 .collect(Collectors.toList());
     }
 
-
     @Override
     public long countPacksByAuthor(UUID authorId) {
         return samplePackRepository.countByAuthorId(authorId);
@@ -220,7 +213,6 @@ public class SamplePackServiceImpl implements SamplePackService {
         pack.setDownloads(pack.getDownloads() + 1);
         samplePackRepository.save(pack);
     }
-
 
     @Override
     public ProducerStatsDTO getProducerStats(UUID authorId) {
@@ -312,6 +304,80 @@ public class SamplePackServiceImpl implements SamplePackService {
             log.error("Failed to archive sample pack", e);
             throw new FileProcessingException("Failed to archive sample pack: " + e.getMessage());
         }
+    }
+
+    @Override
+    public Page<SamplePackDTO> filterPacks(SamplePackFilterRequest filterRequest, Pageable pageable) {
+        log.debug("Filtering packs with request: {}", filterRequest);
+
+        // Build pageable with sort
+        Pageable sortedPageable = buildPageableWithSort(filterRequest.getSortBy(), pageable);
+
+        // Call repository with all filter parameters
+        Page<SamplePack> packsPage = samplePackRepository.advancedSearch(
+                filterRequest.getArtist(),
+                filterRequest.getTitle(),
+                filterRequest.getGenres(),
+                filterRequest.getMinPrice(),
+                filterRequest.getMaxPrice(),
+                filterRequest.getMinRating(),
+                sortedPageable
+        );
+
+        return packsPage.map(samplePackMapper::toDTO);
+    }
+
+    @Override
+    public PackFilterMetadata getFilterMetadata() {
+        List<String> artists = samplePackRepository.findDistinctArtists();
+
+        List<Genre> genres = samplePackRepository.findDistinctGenres();
+
+        List<Double[]> priceRange = samplePackRepository.getPriceRange();
+        Double minPrice = 0.0;
+        Double maxPrice = 100.0;
+
+        if (!priceRange.isEmpty() && priceRange.get(0) != null) {
+            Double[] range = priceRange.get(0);
+            if (range[0] != null) minPrice = range[0];
+            if (range[1] != null) maxPrice = range[1];
+        }
+        Long totalPacks = samplePackRepository.count(); // Or implement custom count
+
+        return PackFilterMetadata.builder()
+                .availableArtists(artists)
+                .availableGenres(genres)
+                .minPrice(minPrice)
+                .maxPrice(maxPrice)
+                .totalPacks(totalPacks)
+                .build();
+    }
+
+    private Pageable buildPageableWithSort(String sortBy, Pageable pageable) {
+        if (sortBy == null || sortBy.isBlank()) {
+            return PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    Sort.by(Sort.Direction.DESC, "releaseDate")
+            );
+        }
+
+        Sort sort = switch (sortBy.toLowerCase()) {
+            case "newest" -> Sort.by(Sort.Direction.DESC, "releaseDate");
+            case "oldest" -> Sort.by(Sort.Direction.ASC, "releaseDate");
+            case "rating" -> Sort.by(Sort.Direction.DESC, "rating");
+            case "price-low" -> Sort.by(Sort.Direction.ASC, "price");
+            case "price-high" -> Sort.by(Sort.Direction.DESC, "price");
+            case "downloads" -> Sort.by(Sort.Direction.DESC, "downloads");
+            case "title" -> Sort.by(Sort.Direction.ASC, "title");
+            default -> Sort.by(Sort.Direction.DESC, "releaseDate");
+        };
+
+        return PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                sort
+        );
     }
 
 }

@@ -1,8 +1,7 @@
 // Game API - handles game-related HTTP requests
 // Mirrors the structure of sample.api.ts for consistency
-// Game API - CLEAN VERSION matching GameService (metadata removed)
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1";
+import API from "./config"; // 👈 IMPORT THE AXIOS INSTANCE
 
 // ==================== DTOs ====================
 
@@ -25,14 +24,12 @@ export enum RewardType {
     AUTHOR_BADGE_PRODUCER = "AUTHOR_BADGE_PRODUCER",
 }
 
-
 // Payload sent from client → backend
 export interface GameResultDTO {
     gameType: GameType;
     score: number;
     durationSeconds?: number;
-    rewardType?: RewardType; // keep this
-    // metadata removed
+    rewardType?: RewardType;
 }
 
 // Backend returns GameSessionDTO → metadata removed
@@ -45,7 +42,6 @@ export interface GameSessionDTO {
     rewardType?: RewardType;
     rewardClaimed: boolean;
     playedAt: string;
-    // metadata removed
 }
 
 export interface LeaderboardEntryDTO {
@@ -65,95 +61,59 @@ export interface UserGameSummaryDTO {
     lastPlayedAt?: string;
     lastRewardType?: RewardType;
 }
-
-export interface ApiResponse<T = any> {
-    success: boolean;
-    data?: T;
-    message?: string;
-    error?: string;
+export interface GlobalStatsDTO {
+    activePlayers: number;
+    totalGamesPlayed: number;
+    totalHighScores: number;
 }
 
 // ==================== Game API ====================
 
 export const gameApi = {
-    async submitGameResult(result: GameResultDTO): Promise<Response> {
-        return fetch(`${API_BASE_URL}/games/submit`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(result),
+    async submitGameResult(result: GameResultDTO): Promise<any> {
+        return API.post('/games/submit', result);
+    },
+
+    async getUserSummary(): Promise<any> {
+        return API.get('/games/summary');
+    },
+
+    async getUserSessions(): Promise<any> {
+        return API.get('/games/sessions');
+    },
+
+    async getLeaderboard(gameType: GameType, limit: number = 10): Promise<any> {
+        return API.get(`/games/leaderboard/${gameType}`, {
+            params: { limit }
         });
     },
 
-    async getUserSummary(): Promise<Response> {
-        return fetch(`${API_BASE_URL}/games/summary`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
+    async getGlobalLeaderboard(limit: number = 10): Promise<any> {
+        return API.get('/games/leaderboard/global', {
+            params: { limit }
         });
     },
 
-    async getUserSessions(): Promise<Response> {
-        return fetch(`${API_BASE_URL}/games/sessions`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-        });
+    async claimReward(sessionId: string): Promise<any> {
+        return API.post(`/games/sessions/${sessionId}/claim-reward`);
     },
 
-    async getLeaderboard(gameType: GameType, limit: number = 10): Promise<Response> {
-        return fetch(`${API_BASE_URL}/games/leaderboard/${gameType}?limit=${limit}`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-        });
+    async getUnclaimedRewards(): Promise<any> {
+        return API.get('/games/rewards/unclaimed');
     },
 
-    async getGlobalLeaderboard(limit: number = 10): Promise<Response> {
-        return fetch(`${API_BASE_URL}/games/leaderboard/global?limit=${limit}`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-        });
+    async getSessionById(sessionId: string): Promise<any> {
+        return API.get(`/games/sessions/${sessionId}`);
     },
 
-    async claimReward(sessionId: string): Promise<Response> {
-        return fetch(`${API_BASE_URL}/games/sessions/${sessionId}/claim-reward`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-        });
+    async getBestScore(gameType: GameType): Promise<any> {
+        return API.get(`/games/best-score/${gameType}`);
     },
 
-    async getUnclaimedRewards(): Promise<Response> {
-        return fetch(`${API_BASE_URL}/games/rewards/unclaimed`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-        });
+    async getUserRank(gameType: GameType): Promise<any> {
+        return API.get(`/games/rank/${gameType}`);
     },
-
-    async getSessionById(sessionId: string): Promise<Response> {
-        return fetch(`${API_BASE_URL}/games/sessions/${sessionId}`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-        });
-    },
-
-    async getBestScore(gameType: GameType): Promise<Response> {
-        return fetch(`${API_BASE_URL}/games/best-score/${gameType}`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-        });
-    },
-
-    async getUserRank(gameType: GameType): Promise<Response> {
-        return fetch(`${API_BASE_URL}/games/rank/${gameType}`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-        });
+    async getGlobalStats(): Promise<any> {
+        return API.get('/games/stats/global');
     },
 };

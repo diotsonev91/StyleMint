@@ -141,7 +141,7 @@ public class DigitalLicenseServiceImpl implements DigitalLicenseService {
             return; // owner always has access
         }
 
-        boolean hasLicense = sampleLicenseRepository.existsByUserIdAndAudioSampleId(userId, sampleId);
+        boolean hasLicense = sampleLicenseRepository.existsByUserIdAndAudioSampleIdAndArchivedFalse(userId, sampleId);
 
         if (!hasLicense) {
             throw new ForbiddenOperationException("You must purchase this sample before downloading it.");
@@ -151,7 +151,7 @@ public class DigitalLicenseServiceImpl implements DigitalLicenseService {
     @Override
     public void validateDownloadPermissionPack(UUID userId, UUID packId) {
 
-        boolean hasLicense = packLicenseRepository.existsByUserIdAndPackId(userId, packId);
+        boolean hasLicense = packLicenseRepository.existsByUserIdAndPackIdAndArchivedFalse(userId, packId);
 
         if (!hasLicense) {
             throw new ForbiddenOperationException("You must purchase this pack before downloading it.");

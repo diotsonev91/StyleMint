@@ -19,4 +19,6 @@ public interface SampleLicenseRepository extends JpaRepository<SampleLicense, UU
     List<SampleLicense> findByUserId(UUID userId);
 
     Optional<SampleLicense> findByUserIdAndAudioSampleId(UUID userId, UUID sampleId);
+
+    boolean existsByUserIdAndAudioSampleIdAndArchivedFalse(UUID userId, UUID sampleId);
 }

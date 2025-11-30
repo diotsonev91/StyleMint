@@ -11,6 +11,7 @@ import bg.softuni.stylemint.product.fashion.enums.CustomizationType;
 import bg.softuni.stylemint.product.fashion.exceptions.*;
 import bg.softuni.stylemint.product.fashion.model.ClothDesign;
 import bg.softuni.stylemint.product.fashion.repository.ClothDesignRepository;
+import bg.softuni.stylemint.product.fashion.repository.LikeCountProjection;
 import bg.softuni.stylemint.product.fashion.service.ClothDesignService;
 import bg.softuni.stylemint.product.common.service.PriceCalculatorService;
 import bg.softuni.stylemint.product.fashion.service.ClothLikeService;
@@ -342,15 +343,6 @@ public class ClothDesignServiceImpl implements ClothDesignService {
         return clothDesignPage.map(this::toPublicDTO);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Page<DesignPublicDTO> getPublicDesignsOfUser(UUID userId, Pageable pageable) {
-        log.debug("Fetching public designs for user: {} with pageable: {}", userId, pageable);
-
-        Page<ClothDesign> publicDesigns = clothDesignRepository.findByUserIdAndIsPublicTrue(userId, pageable);
-
-        return publicDesigns.map(this::toPublicDTO);
-    }
 
     @Override
     @Transactional
@@ -452,4 +444,33 @@ public class ClothDesignServiceImpl implements ClothDesignService {
         log.info("Design {} unpublished by user {}", designId, userId);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<DesignPublicDTO> getTopLikedPublicDesigns(int limit) {
+        List<LikeCountProjection> topLikedIds = clothLikeService.getTopLikedDesignIds(limit);
+
+        if (topLikedIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<UUID> designIds = topLikedIds.stream()
+                .map(LikeCountProjection::getDesignId)
+                .collect(Collectors.toList());
+
+        List<ClothDesign> designs = clothDesignRepository.findAllByIdInAndIsPublicTrue(designIds);
+
+        Map<UUID, Long> likeCounts = topLikedIds.stream()
+                .collect(Collectors.toMap(
+                        LikeCountProjection::getDesignId,
+                        LikeCountProjection::getCount
+                ));
+
+        return designs.stream()
+                .map(design -> {
+                    long likes = likeCounts.getOrDefault(design.getId(), 0L);
+                    return toPublicDTO(design, likes);
+                })
+                .sorted((d1, d2) -> Long.compare(d2.getLikesCount(), d1.getLikesCount()))
+                .collect(Collectors.toList());
+    }
 }

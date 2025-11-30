@@ -388,4 +388,49 @@ public class SamplePackController {
 
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Advanced filter with all options
+     * POST /api/v1/audio/packs/filter
+     */
+    @PostMapping("/filter")
+    public ResponseEntity<Page<SamplePackDTO>> filterPacks(
+            @RequestBody SamplePackFilterRequest filterRequest,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<SamplePackDTO> packs = samplePackService.filterPacks(filterRequest, pageable);
+        return ResponseEntity.ok(packs);
+    }
+
+    /**
+     * Get filter metadata (available artists, genres, price range)
+     * GET /api/v1/audio/packs/filter-metadata
+     */
+    @GetMapping("/filter-metadata")
+    public ResponseEntity<PackFilterMetadata> getFilterMetadata() {
+        PackFilterMetadata metadata = samplePackService.getFilterMetadata();
+        return ResponseEntity.ok(metadata);
+    }
+
+    /**
+     * Get all distinct artists
+     * GET /api/v1/audio/packs/artists
+     */
+    @GetMapping("/artists")
+    public ResponseEntity<List<String>> getAllArtists() {
+        PackFilterMetadata metadata = samplePackService.getFilterMetadata();
+        return ResponseEntity.ok(metadata.getAvailableArtists());
+    }
+
+    /**
+     * Get all distinct genres
+     * GET /api/v1/audio/packs/genres
+     */
+    @GetMapping("/genres")
+    public ResponseEntity<List<Genre>> getAllGenres() {
+        PackFilterMetadata metadata = samplePackService.getFilterMetadata();
+        return ResponseEntity.ok(metadata.getAvailableGenres());
+    }
 }

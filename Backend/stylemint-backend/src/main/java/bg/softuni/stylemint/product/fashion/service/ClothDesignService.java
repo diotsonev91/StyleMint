@@ -33,8 +33,6 @@ public interface ClothDesignService {
 
     Page<DesignPublicDTO> getAllByClothType(Pageable pageable, ClothType clothType);
 
-    Page<DesignPublicDTO> getPublicDesignsOfUser(UUID userId, Pageable pageable);
-
     void deleteDesignsByUser(UUID targetUserId);
 
     void adminDeleteDesign(UUID designId);
@@ -42,5 +40,7 @@ public interface ClothDesignService {
     void publishDesign(UUID designId);
 
     void unpublishDesign(UUID designId);
+
+    List<DesignPublicDTO> getTopLikedPublicDesigns(int limit);
 
 }

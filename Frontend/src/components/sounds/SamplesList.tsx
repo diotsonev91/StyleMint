@@ -117,6 +117,7 @@ const SamplesList: React.FC<SamplesListProps> = ({ samples, onLoadMore }) => {
         }
     }
 
+    // @ts-ignore
     return (
     <div className="samples-list">
       {/* Search Bar */}

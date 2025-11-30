@@ -5,7 +5,7 @@ import {
     DesignDetailDTO,
     CustomizationData,
     ApiResponse,
-    PaginatedResponse, ClothType, DesignSummaryDTO,
+    PaginatedResponse, ClothType, DesignSummaryDTO, DesignDetailDTOWithLikes,
 } from '../api/clothDesign.api';
 
 export const clothDesignService = {
@@ -218,5 +218,59 @@ export const clothDesignService = {
                 error: error.response?.data?.message || error.message || 'Failed to fetch designs by cloth type',
             };
         }
-    }
+    },
+    async getUserDesignsWithLikes(): Promise<ApiResponse<DesignDetailDTOWithLikes[]>> {
+        try {
+            // Get user designs first
+            const designsResponse = await clothDesignApi.getUserDesigns();
+
+            if (!designsResponse.success || !designsResponse.data) {
+                return designsResponse as ApiResponse<DesignDetailDTOWithLikes[]>;
+            }
+
+            // Extract design IDs
+            const designIds = designsResponse.data.map(design => design.id);
+
+            if (designIds.length === 0) {
+                return {
+                    success: true,
+                    data: designsResponse.data.map(design => ({
+                        ...design,
+                        likesCount: 0
+                    }))
+                };
+            }
+
+            // Get likes count for all designs
+            const likesResponse = await clothDesignApi.getLikesCountForDesigns(designIds);
+
+            if (!likesResponse.success || !likesResponse.data) {
+                // If likes fetch fails, return designs with 0 likes
+                return {
+                    success: true,
+                    data: designsResponse.data.map(design => ({
+                        ...design,
+                        likesCount: 0
+                    }))
+                };
+            }
+
+            // Map likes count to designs
+            const designsWithLikes: DesignDetailDTOWithLikes[] = designsResponse.data.map(design => ({
+                ...design,
+                likesCount: likesResponse.data![design.id] || 0
+            }));
+
+            return {
+                success: true,
+                data: designsWithLikes
+            };
+
+        } catch (error: any) {
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message || 'Failed to fetch user designs with likes',
+            };
+        }
+    },
 };

@@ -153,4 +153,12 @@ public class ClothDesignController {
         return ResponseEntity.ok(ApiResponse.successMessage("Design unpublished successfully"));
     }
 
+    @GetMapping("/top-liked")
+    public ResponseEntity<ApiResponse<List<DesignPublicDTO>>> getTopLikedDesigns(
+            @RequestParam(defaultValue = "10") int limit) {
+
+        List<DesignPublicDTO> designs = clothDesignService.getTopLikedPublicDesigns(limit);
+        return ResponseEntity.ok(ApiResponse.success(designs));
+    }
+
 }

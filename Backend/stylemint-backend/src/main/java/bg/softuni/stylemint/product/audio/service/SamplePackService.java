@@ -111,7 +111,20 @@ public interface SamplePackService {
      */
     ProducerStatsDTO getProducerStats(UUID authorId);
 
-    // In SamplePackService interface - ADD THIS METHOD
+    // ================ Filtering ================
+
+    /**
+     * Advanced filter with all options
+     */
+    Page<SamplePackDTO> filterPacks(SamplePackFilterRequest filterRequest, Pageable pageable);
+
+    /**
+     * Get filter metadata (available artists, genres, price range)
+     */
+    PackFilterMetadata getFilterMetadata();
+
+    // ================ Archivation ================
+
     boolean validatePackOwnership(UUID packId, UUID authorId);
 
     void archiveAllByAuthor(UUID targetUserId);

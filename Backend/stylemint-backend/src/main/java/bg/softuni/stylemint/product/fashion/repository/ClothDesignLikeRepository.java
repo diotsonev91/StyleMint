@@ -1,6 +1,7 @@
 package bg.softuni.stylemint.product.fashion.repository;
 
 import bg.softuni.stylemint.product.fashion.model.ClothDesignLike;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,4 +27,11 @@ public interface ClothDesignLikeRepository extends JpaRepository<ClothDesignLike
     List<LikeCountProjection> countByClothDesignIdIn(@Param("designIds") List<UUID> designIds);
 
     void deleteByClothDesignId(UUID designId);
+
+    @Query("SELECT l.clothDesign.id as designId, COUNT(l) as count " +
+            "FROM ClothDesignLike l " +
+            "WHERE l.clothDesign.isPublic = true " +
+            "GROUP BY l.clothDesign.id " +
+            "ORDER BY COUNT(l) DESC")
+    List<LikeCountProjection> findTopLikedPublicDesigns(Pageable pageable);
 }

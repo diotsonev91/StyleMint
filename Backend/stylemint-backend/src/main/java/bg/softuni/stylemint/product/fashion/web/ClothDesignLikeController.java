@@ -1,13 +1,16 @@
 package bg.softuni.stylemint.product.fashion.web;
 
+import bg.softuni.stylemint.common.dto.ApiResponse;
 import bg.softuni.stylemint.product.fashion.service.ClothLikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static bg.softuni.stylemint.config.ApiPaths.BASE;
 
@@ -30,6 +33,22 @@ public class ClothDesignLikeController {
         body.put("success", true);
 
         return ResponseEntity.ok(body);
+    }
+
+    @GetMapping("/likes-count")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getLikesCountForDesigns(
+            @RequestParam List<UUID> designIds) {
+
+        Map<UUID, Long> likesCount = clothLikeService.getLikesCountForDesigns(designIds);
+
+        // Convert UUID keys to String for JSON serialization
+        Map<String, Long> result = likesCount.entrySet().stream()
+                .collect(Collectors.toMap(
+                        entry -> entry.getKey().toString(),
+                        Map.Entry::getValue
+                ));
+
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
 }

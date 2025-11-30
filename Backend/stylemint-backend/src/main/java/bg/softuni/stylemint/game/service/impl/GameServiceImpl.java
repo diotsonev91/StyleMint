@@ -10,6 +10,7 @@ import bg.softuni.stylemint.game.model.GameSession;
 import bg.softuni.stylemint.game.model.GameStats;
 import bg.softuni.stylemint.game.model.Leaderboard;
 import bg.softuni.stylemint.game.repository.GameRepository;
+import bg.softuni.stylemint.game.repository.LeaderboardRepository;
 import bg.softuni.stylemint.game.service.GameService;
 import bg.softuni.stylemint.product.common.service.DiscountService;
 import bg.softuni.stylemint.user.dto.UserDTO;
@@ -34,8 +35,9 @@ public class GameServiceImpl implements GameService {
 
     private final GameRepository gameRepository;
     private final UserRepository userRepository;
+    private final LeaderboardRepository leaderboardRepository;
     private final UserService userService;
-    private final DiscountService discountService; // ✅ NEW
+    private final DiscountService discountService;
 
     // ========== GAME SESSION METHODS ==========
 
@@ -248,21 +250,25 @@ public class GameServiceImpl implements GameService {
     private void updateLeaderboard(UUID userId, GameResultDTO result) {
         // Update game-specific leaderboard
         if (result.getGameType() != null) {
-            Leaderboard gameTypeLeaderboard = gameRepository
-                    .findLeaderboardByUserIdAndGameType(userId, result.getGameType())
+            Leaderboard gameTypeLeaderboard = leaderboardRepository
+                    .findByUserIdAndGameType(userId, result.getGameType())
                     .orElseGet(() -> createNewLeaderboardEntry(userId, result.getGameType()));
 
             gameTypeLeaderboard.setTotalScore(gameTypeLeaderboard.getTotalScore() + result.getScore());
             gameTypeLeaderboard.setGamesPlayed(gameTypeLeaderboard.getGamesPlayed() + 1);
+
+            leaderboardRepository.save(gameTypeLeaderboard);
         }
 
         // Update overall leaderboard
-        Leaderboard overallLeaderboard = gameRepository
-                .findLeaderboardByUserIdAndGameTypeIsNull(userId)
+        Leaderboard overallLeaderboard = leaderboardRepository
+                .findByUserIdAndGameTypeIsNull(userId)
                 .orElseGet(() -> createNewLeaderboardEntry(userId, null));
 
         overallLeaderboard.setTotalScore(overallLeaderboard.getTotalScore() + result.getScore());
         overallLeaderboard.setGamesPlayed(overallLeaderboard.getGamesPlayed() + 1);
+
+        leaderboardRepository.save(overallLeaderboard);
     }
 
     private void updateGameStatsRewardClaimed(UUID userId) {

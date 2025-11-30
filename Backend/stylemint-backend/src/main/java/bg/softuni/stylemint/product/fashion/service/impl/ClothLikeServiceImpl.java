@@ -11,6 +11,8 @@ import bg.softuni.stylemint.user.model.User;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -70,5 +72,17 @@ public class ClothLikeServiceImpl implements ClothLikeService {
         likeRepository.deleteByClothDesignId(designId);
     }
 
+    @Override
+    public List<LikeCountProjection> getTopLikedDesignIds(int limit) {
+        // Validate limit
+        if (limit < 1 || limit > 50) {
+            limit = 10;
+        }
+
+        Pageable pageable = PageRequest.of(0, limit);
+
+        // Get top liked design IDs from the repository
+        return likeRepository.findTopLikedPublicDesigns(pageable);
+    }
 
 }

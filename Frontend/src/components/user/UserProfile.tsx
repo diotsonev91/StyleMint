@@ -362,7 +362,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                                         type="text"
                                         value={newDisplayName}
                                         onChange={(e) => setNewDisplayName(e.target.value)}
-                                        className="edit-input-inline"
+                                        className="edit-input-inline-user"
                                         placeholder="Enter display name"
                                         disabled={updateLoading}
                                         autoFocus
@@ -553,48 +553,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
                             </div>
                         )}
 
-
-
-
-                        {/* ✅ Order Stats - WITH GRACEFUL DEGRADATION */}
-                        {hasOrderStats && (
-                            <div className="stat-card">
-                                <div className="stat-header">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                    <h3>Order History</h3>
-                                </div>
-
-                                {/* ✅ Check if order service is available */}
-                                {stats.orders.serviceAvailable === false ? (
-                                    <div className="stat-body service-unavailable">
-                                        <div className="unavailable-notice">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <p className="notice-title">Order History Temporarily Unavailable</p>
-                                            <p className="notice-description">
-                                                We're currently updating our order system. Your order history will be available shortly.
-                                            </p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="stat-body">
-                                        <div className="primary-stat">
-                                            <span className="stat-label">Total Orders</span>
-                                            <span className="stat-value">{stats.orders.totalOrders}</span>
-                                        </div>
-                                        <div className="stat-row">
-                                            <div className="stat-item">
-                                                <span className="label">Total Spent</span>
-                                                <span className="value">{userProfileService.formatCurrency(stats.orders.totalSpent)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </div>
                 )}
                 {activeTab === 'audio' && (
@@ -695,6 +653,96 @@ const UserProfile: React.FC<UserProfileProps> = ({
                             </div>
 
                         </div>
+                    </div>
+                )}
+                {activeTab === 'orders' && (
+                    <div className="orders-stats-container">
+                        {/* Orders Header */}
+                        <div className="orders-header">
+                            <div className="orders-title">
+                                <h2>🛒 Order History</h2>
+                                <p>Overview of your purchases and spending</p>
+                            </div>
+                        </div>
+
+                        {/* Check if order service is available */}
+                        {stats.orders.serviceAvailable === false ? (
+                            <div className="service-unavailable-section">
+                                <div className="unavailable-card">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="unavailable-icon">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <h3 className="unavailable-title">Order History Temporarily Unavailable</h3>
+                                    <p className="unavailable-description">
+                                        We're currently updating our order system. Your order history will be available shortly.
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="orders-stats-grid">
+                                {/* Total Orders */}
+                                <div className="stat-card orders-card">
+                                    <div className="stat-header">
+                                        <div className="stat-icon">📦</div>
+                                        <h3>Total Orders</h3>
+                                    </div>
+                                    <div className="stat-body">
+                                        <div className="primary-stat">
+                                            <span className="stat-label">Orders Placed</span>
+                                            <span className="stat-value highlight">{stats.orders.totalOrders}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Total Spent */}
+                                <div className="stat-card orders-card">
+                                    <div className="stat-header">
+                                        <div className="stat-icon">💰</div>
+                                        <h3>Total Spending</h3>
+                                    </div>
+                                    <div className="stat-body">
+                                        <div className="primary-stat">
+                                            <span className="stat-label">Total Spent</span>
+                                            <span className="stat-value highlight">{userProfileService.formatCurrency(stats.orders.totalSpent)}</span>
+                                        </div>
+                                        {stats.orders.totalOrders > 0 && (
+                                            <div className="average-order">
+                                                <span className="average-label">Average per order:</span>
+                                                <span className="average-value">
+                                    {userProfileService.formatCurrency(stats.orders.totalSpent / stats.orders.totalOrders)}
+                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Order Activity */}
+                                <div className="stat-card orders-card">
+                                    <div className="stat-header">
+                                        <div className="stat-icon">📊</div>
+                                        <h3>Order Activity</h3>
+                                    </div>
+                                    <div className="stat-body">
+                                        <div className="activity-stats">
+                                            <div className="activity-item">
+                                                <div className="activity-icon">🛍️</div>
+                                                <div className="activity-info">
+                                                    <span className="activity-label">Total Orders</span>
+                                                    <span className="activity-value">{stats.orders.totalOrders}</span>
+                                                </div>
+                                            </div>
+                                            <div className="activity-item">
+                                                <div className="activity-icon">💵</div>
+                                                <div className="activity-info">
+                                                    <span className="activity-label">Total Spent</span>
+                                                    <span className="activity-value">{userProfileService.formatCurrency(stats.orders.totalSpent)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
                 {activeTab === 'gaming' && (
