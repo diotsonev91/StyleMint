@@ -297,4 +297,82 @@
     width: 14px;
     height: 14px;
   }
+
+}
+
+/* Add these styles to your SampleItem.css */
+
+/* Like Container */
+.like-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Like Button */
+.like-btn {
+    transition: all 0.3s ease;
+}
+
+.like-btn .action-icon {
+    color: #666;
+    transition: all 0.3s ease;
+}
+
+.like-btn:hover .action-icon {
+    color: #ff4444;
+    transform: scale(1.1);
+}
+
+.like-btn.liked .action-icon {
+    color: #ff4444;
+    fill: #ff4444;
+}
+
+.like-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Likes Count */
+.likes-count {
+    font-size: 11px;
+    color: #999;
+    font-weight: 600;
+    margin-top: -2px;
+    min-width: 30px;
+    text-align: center;
+}
+
+.like-btn.liked + .likes-count {
+    color: #ff4444;
+}
+
+/* Animation when liked */
+@keyframes heartBeat {
+    0%, 100% {
+        transform: scale(1);
+    }
+    25% {
+        transform: scale(1.3);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.like-btn.liked .action-icon {
+    animation: heartBeat 0.4s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .like-container {
+        gap: 2px;
+    }
+
+    .likes-count {
+        font-size: 10px;
+    }
 }

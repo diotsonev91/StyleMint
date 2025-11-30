@@ -105,10 +105,6 @@ public interface SamplePackService {
      */
     void incrementDownloadCount(UUID packId);
 
-    /**
-     * Update pack rating
-     */
-    void updatePackRating(UUID packId, Double rating);
 
     /**
      * Get producer statistics

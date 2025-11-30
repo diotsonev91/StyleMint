@@ -65,7 +65,7 @@
   gap: var(--spacing-md);
 }
 
-.stat-item {
+.stat-item-pack {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -142,9 +142,10 @@
   color: #ef4444;
 }
 
-.action-btn {
+.action-btn-pack {
   width: 100%;
   justify-content: center;
+  background: rgba(78, 123, 220, 0.82) !important;
 }
 
 .btn-icon {
@@ -216,4 +217,124 @@
 .action-btn:disabled:hover {
     transform: none; /* Don't lift on hover when disabled */
     box-shadow: none;
+}
+
+/* Add this to your PackInfo.css */
+
+/* Pack Rating Display (Average Rating) */
+.pack-rating-display {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.rating-stars-display {
+    display: flex;
+    gap: 4px;
+}
+
+.star-display {
+    font-size: 20px;
+    color: #444;
+}
+
+.star-display.filled {
+    color: #ffc107;
+}
+
+.rating-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffc107;
+}
+
+/* User Rating Input */
+.star-rating-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.rating-label {
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stars-container {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.rating-loader {
+    font-size: 12px;
+    color: #999;
+    font-style: italic;
+}
+
+.user-rating-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffc107;
+    margin-left: 8px;
+}
+
+.star {
+    font-size: 24px;
+    color: #444;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.star.filled {
+    color: #ffc107; /* Golden color for filled stars */
+}
+
+.star.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.star:hover:not(.disabled) {
+    transform: scale(1.2);
+}
+
+/* Optional: Add animation when rating is submitted */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15);
+    }
+}
+
+.star.filled {
+    animation: pulse 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .pack-rating-display {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .star-rating-input {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .stars-container {
+        justify-content: center;
+        width: 100%;
+    }
 }

@@ -1,18 +1,20 @@
 // src/components/PackInfo.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SamplePack } from '../../types';
 import { useLocation } from 'react-router-dom';
-import { FaEdit } from 'react-icons/fa';
+import { FaEdit, FaStar } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
+
 import './PackInfo.css';
+import {packApi} from "../../api/pack.api";
 
 interface PackInfoProps {
     pack: SamplePack;
     onAddToCart: () => void;
     onDownloadPreview: () => void;
     onShare: () => void;
-    isDownloading?: boolean; // ⭐ NEW: Download state
+    isDownloading?: boolean;
 }
 
 const PackInfo: React.FC<PackInfoProps> = ({
@@ -20,16 +22,57 @@ const PackInfo: React.FC<PackInfoProps> = ({
                                                onAddToCart,
                                                onDownloadPreview,
                                                onShare,
-                                               isDownloading = false // ⭐ NEW: Default to false
+                                               isDownloading = false
                                            }) => {
-    const [isLiked, setIsLiked] = useState(false);
+    const [userRating, setUserRating] = useState<number>(0); // User's rating (0-5)
+    const [hoverRating, setHoverRating] = useState<number>(0); // Hover state for stars
+    const [isRatingSubmitting, setIsRatingSubmitting] = useState(false);
+    const [isLoadingRating, setIsLoadingRating] = useState(false);
     const location = useLocation();
     const { isLoggedUserPack } = location.state || {};
     const navigate = useNavigate();
 
+    // Load user's existing rating when component mounts
+    useEffect(() => {
+        const loadUserRating = async () => {
+            if (isLoggedUserPack) return; // Don't load rating for own pack
+
+            setIsLoadingRating(true);
+            try {
+                const response = await packApi.getUserRating(pack.id);
+                if (response.data?.data !== null && response.data?.data !== undefined) {
+                    setUserRating(response.data.data);
+                }
+            } catch (error) {
+                console.error('Error loading user rating:', error);
+                // If user is not authenticated or hasn't rated, rating stays 0
+            } finally {
+                setIsLoadingRating(false);
+            }
+        };
+
+        loadUserRating();
+    }, [pack.id, isLoggedUserPack]);
+
     const handleEditPack = () => {
         console.log(":should navigate to edit pack")
         navigate(`/edit-pack/${pack.id}`, { state: { pack } });
+    };
+
+    const handleRating = async (rating: number) => {
+        if (isRatingSubmitting || isLoggedUserPack) return; // Don't allow rating own pack
+
+        setIsRatingSubmitting(true);
+        try {
+            await packApi.ratePack(pack.id, rating);
+            setUserRating(rating);
+            console.log(`Successfully rated pack with ${rating} stars`);
+        } catch (error) {
+            console.error('Error rating pack:', error);
+            // Optionally show error message to user
+        } finally {
+            setIsRatingSubmitting(false);
+        }
     };
 
     return (
@@ -76,19 +119,54 @@ const PackInfo: React.FC<PackInfoProps> = ({
                     ))}
                 </div>
 
+                {/* Rating Display */}
+                {pack.rating !== undefined && pack.rating > 0 && (
+                    <div className="pack-rating-display">
+                        <div className="rating-stars-display">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <FaStar
+                                    key={star}
+                                    className={`star-display ${star <= Math.round(pack.rating!) ? 'filled' : ''}`}
+                                />
+                            ))}
+                        </div>
+                        <span className="rating-value">{pack.rating.toFixed(1)} / 5.0</span>
+                    </div>
+                )}
+
                 {/* Price & Actions */}
                 <div className="pack-actions">
                     <div className="price-section">
                         <span className="pack-price">${pack.price}</span>
-                        <button
-                            className={`like-btn ${isLiked ? 'liked' : ''}`}
-                            onClick={() => setIsLiked(!isLiked)}
-                            aria-label="Like this pack"
-                        >
-                            <svg viewBox="0 0 24 24" fill={isLiked ? "currentColor" : "none"} stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                        </button>
+
+                        {/* Star Rating - Only show if not user's pack */}
+                        {!isLoggedUserPack && (
+                            <div className="star-rating-input">
+                                <span className="rating-label">
+                                    {userRating > 0 ? 'Your rating:' : 'Rate this pack:'}
+                                </span>
+                                <div className="stars-container">
+                                    {isLoadingRating ? (
+                                        <div className="rating-loader">Loading...</div>
+                                    ) : (
+                                        [1, 2, 3, 4, 5].map((star) => (
+                                            <FaStar
+                                                key={star}
+                                                className={`star ${
+                                                    star <= (hoverRating || userRating) ? 'filled' : ''
+                                                } ${isRatingSubmitting ? 'disabled' : ''}`}
+                                                onClick={() => handleRating(star)}
+                                                onMouseEnter={() => !isRatingSubmitting && setHoverRating(star)}
+                                                onMouseLeave={() => setHoverRating(0)}
+                                            />
+                                        ))
+                                    )}
+                                </div>
+                                {userRating > 0 && !isLoadingRating && (
+                                    <span className="user-rating-value">{userRating}.0</span>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Add to Cart - Only if not user's pack */}
@@ -109,20 +187,18 @@ const PackInfo: React.FC<PackInfoProps> = ({
                         </button>
                     }
 
-                    {/* ⭐⭐⭐ Download Button with loading state ⭐⭐⭐ */}
+                    {/* Download Button with loading state */}
                     <button
                         className="btn btn-secondary action-btn"
                         onClick={onDownloadPreview}
-                        disabled={isDownloading} // ⭐ Disable while downloading
+                        disabled={isDownloading}
                     >
                         {isDownloading ? (
-                            // Loading state
                             <>
                                 <div className="btn-spinner"></div>
                                 <span>Downloading...</span>
                             </>
                         ) : (
-                            // Normal state
                             <>
                                 <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

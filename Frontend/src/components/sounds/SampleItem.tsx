@@ -1,5 +1,5 @@
 // src/components/SampleItem.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {useSnapshot} from 'valtio';
 import {FaDownload, FaHeart, FaShoppingCart, FaCheck, FaEdit, FaTrash} from 'react-icons/fa';
 import {audioPlayerStore, audioPlayerActions} from '../../state/audioPlayer.store';
@@ -7,12 +7,14 @@ import {cartState} from '../../state/CartItemState';
 import { MdOutlineCallSplit } from "react-icons/md";
 import type {AudioSample} from '../../types';
 import {addSampleToCart} from '../../services/cartService';
-import {useAuth} from '../../hooks/useAuth'; // Add auth hook
+import {useAuth} from '../../hooks/useAuth';
+
 import './SampleItem.css';
 
 // Import your custom icons
 import playIcon from '../../assets/play-button.png';
 import pauseIcon from '../../assets/pause-button.png';
+import {sampleApi} from "../../api/sample.api";
 
 interface SampleItemProps {
     sample: AudioSample,
@@ -31,20 +33,43 @@ const SampleItem: React.FC<SampleItemProps> = ({
                                                    onEdit,
                                                    onDelete,
                                                    doesExistAsStandAlone,
-                                                    onUnbind,
+                                                   onUnbind,
                                                }) => {
     const audioSnap = useSnapshot(audioPlayerStore);
     const cartSnap = useSnapshot(cartState);
     const {user} = useAuth();
 
+    // Like state
+    const [isLiked, setIsLiked] = useState(false);
+    const [likesCount, setLikesCount] = useState(0);
+    const [isLikeLoading, setIsLikeLoading] = useState(false);
+
     // Check if this sample is currently playing
     const isPlaying = audioSnap.isPlaying && audioSnap.currentSample?.id === sample.id;
     const isLoading = audioSnap.isLoading && audioSnap.currentSample?.id === sample.id;
     const inCart = cartSnap.items.some(item => item.id === sample.id && item.type === 'sample');
-    console.log("tags for", sample.name, sample.tags);
-    console.log("full sample: ", sample)
+
     // Check if current user is the creator of this sample
     const isCreator = user?.id === sample.authorId;
+
+    // Load like status on mount
+    useEffect(() => {
+        const loadLikeStatus = async () => {
+            if (!user || isCreator) return; // Don't load for non-authenticated users or creators
+
+            try {
+                const response = await sampleApi.getLikeStatus(sample.id);
+                if (response.data) {
+                    setIsLiked(response.data.isLiked || false);
+                    setLikesCount(response.data.likesCount || 0);
+                }
+            } catch (error) {
+                console.error('Error loading like status:', error);
+            }
+        };
+
+        loadLikeStatus();
+    }, [sample.id, user, isCreator]);
 
     const handleTogglePlay = async () => {
         // If already playing this sample, pause it
@@ -90,12 +115,38 @@ const SampleItem: React.FC<SampleItemProps> = ({
         }
     };
 
+    const handleLikeToggle = async () => {
+        if (isLikeLoading || isCreator) return;
+
+        setIsLikeLoading(true);
+        try {
+            const response = await sampleApi.toggleLike(sample.id);
+            if (response.data) {
+                setIsLiked(response.data.isLiked);
+                setLikesCount(response.data.likesCount);
+            }
+            // Call parent callback if needed
+            onLike?.();
+        } catch (error) {
+            console.error('Error toggling like:', error);
+        } finally {
+            setIsLikeLoading(false);
+        }
+    };
+
     // Format time for display
     const formatTime = (seconds: number): string => {
         if (!seconds || !isFinite(seconds)) return '0:00';
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    // Format likes count (1000 -> 1k, 1500 -> 1.5k, etc.)
+    const formatLikesCount = (count: number): string => {
+        if (count < 1000) return count.toString();
+        if (count < 1000000) return `${(count / 1000).toFixed(1)}k`.replace('.0k', 'k');
+        return `${(count / 1000000).toFixed(1)}M`.replace('.0M', 'M');
     };
 
     return (
@@ -212,8 +263,6 @@ const SampleItem: React.FC<SampleItemProps> = ({
                 {/* Price - Hide for creator */}
                 {!isCreator && sample.price !== undefined && sample.price > 0 && (
                     <div className="sample-price">
-
-
                         ${sample.price.toFixed(2)}
                     </div>
                 )}
@@ -252,19 +301,20 @@ const SampleItem: React.FC<SampleItemProps> = ({
                             <FaDownload className="action-icon"/>
                         </button>
                         {! doesExistAsStandAlone &&
-                        <button
-                            className="action-icon-btn"
-                            onClick={onUnbind}
-                            aria-label="Download sample"
-                            title="Unbind sample from pack"
+                            <button
+                                className="action-icon-btn"
+                                onClick={onUnbind}
+                                aria-label="Download sample"
+                                title="Unbind sample from pack"
                             >
-                            <MdOutlineCallSplit className="action-icon"/>
-                        </button>
+                                <MdOutlineCallSplit className="action-icon"/>
+                            </button>
                         }
                     </>
                 ) : (
                     // Regular user actions - Cart, Download, Like
                     <>
+                        {sample.price !== 0 && (
                         <button
                             className={`action-icon-btn ${inCart ? 'in-cart' : ''}`}
                             onClick={handleAddToCart}
@@ -278,6 +328,7 @@ const SampleItem: React.FC<SampleItemProps> = ({
                                 <FaShoppingCart className="action-icon"/>
                             )}
                         </button>
+                        )}
 
                         <button
                             className="action-icon-btn"
@@ -288,14 +339,20 @@ const SampleItem: React.FC<SampleItemProps> = ({
                             <FaDownload className="action-icon"/>
                         </button>
 
-                        <button
-                            className="action-icon-btn"
-                            onClick={onLike}
-                            aria-label="Like sample"
-                            title="Like sample"
-                        >
-                            <FaHeart className="action-icon"/>
-                        </button>
+                        <div className="like-container">
+                            <button
+                                className={`action-icon-btn like-btn ${isLiked ? 'liked' : ''}`}
+                                onClick={handleLikeToggle}
+                                disabled={isLikeLoading}
+                                aria-label={isLiked ? 'Unlike sample' : 'Like sample'}
+                                title={isLiked ? 'Unlike sample' : 'Like sample'}
+                            >
+                                <FaHeart className="action-icon"/>
+                            </button>
+                            {likesCount > 0 && (
+                                <span className="likes-count">{formatLikesCount(likesCount)}</span>
+                            )}
+                        </div>
                     </>
                 )}
             </div>

@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import './SamplesList.css';
 import {AudioSample} from "../../types";
 import {audioSampleService} from "../../services/audioSampleService";
-import {sample} from "three/src/Three.TSL";
+
 
 interface SamplesListProps {
   samples: AudioSample[];

@@ -171,22 +171,12 @@ const PackDetails: React.FC<PackDetailsProps> = ({ pack }) => {
       <div className="details-section">
         <h3 className="subsection-title">Technical Info</h3>
         <div className="tech-grid">
-          <div className="tech-item">
-            <span className="tech-label">Format:</span>
-            <span className="tech-value">{technicalInfo.format}</span>
-          </div>
-          <div className="tech-item">
-            <span className="tech-label">Sample Rate:</span>
-            <span className="tech-value">{technicalInfo.sampleRate}</span>
-          </div>
+
           <div className="tech-item">
             <span className="tech-label">Total Size:</span>
             <span className="tech-value">{technicalInfo.totalSize}</span>
           </div>
-          <div className="tech-item">
-            <span className="tech-label">Compatible:</span>
-            <span className="tech-value">{technicalInfo.compatible}</span>
-          </div>
+
           {bpmRange && (
             <div className="tech-item">
               <span className="tech-label">BPM Range:</span>

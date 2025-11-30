@@ -15,8 +15,7 @@ public interface ClothDesignService {
 
     DesignPublicDTO createDesign(DesignUploadRequestDTO request, Boolean autosave);
 
-    public DesignPublicDTO updateDesign(UUID designId, DesignUploadRequestDTO request);
-
+    DesignPublicDTO updateDesign(UUID designId, DesignUploadRequestDTO request);
 
     void deleteDesign(UUID designId);
 

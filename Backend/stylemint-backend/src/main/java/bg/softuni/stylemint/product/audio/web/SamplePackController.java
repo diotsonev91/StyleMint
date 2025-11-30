@@ -5,6 +5,7 @@ import bg.softuni.stylemint.common.dto.ApiResponse;
 import bg.softuni.stylemint.product.audio.dto.*;
 import bg.softuni.stylemint.product.audio.enums.Genre;
 import bg.softuni.stylemint.product.audio.service.DigitalLicenseService;
+import bg.softuni.stylemint.product.audio.service.SamplePackRatingService;
 import bg.softuni.stylemint.product.audio.service.SamplePackService;
 import bg.softuni.stylemint.product.audio.service.impl.ZipService;
 import jakarta.validation.Valid;
@@ -33,6 +34,7 @@ public class SamplePackController {
 
     private final SamplePackService samplePackService;
     private final DigitalLicenseService sampleLicenseService;
+    private final SamplePackRatingService samplePackRatingService;
     private final ZipService zipService;
 
     // ================ CRUD Operations ================
@@ -224,6 +226,41 @@ public class SamplePackController {
         return ResponseEntity.ok(packs);
     }
 
+    /**
+     * Rate a pack
+     * POST /api/v1/audio/packs/{packId}/rate
+     */
+    @PostMapping("/{packId}/rate")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Void>> ratePack(
+            @PathVariable UUID packId,
+            @RequestParam Double rating,
+            @AuthenticationPrincipal JwtUserDetails userDetails) {
+
+        UUID userId = userDetails.getUserId();
+        samplePackRatingService.validateRate(rating);
+        samplePackRatingService.updateUserPackRate(packId,userId, rating);
+        return ResponseEntity.ok(ApiResponse.successMessage("Rating updated"));
+    }
+
+
+    /**
+     * Get user's rating for a pack
+     * GET /api/v1/audio/packs/{packId}/my-rating
+     */
+    @GetMapping("/{packId}/my-rating")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Double>> getUserPackRate(
+            @PathVariable UUID packId) {
+
+        Double userRating = samplePackRatingService.getUserPackRate(packId);
+
+        if (userRating != null) {
+            return ResponseEntity.ok(ApiResponse.success(userRating, "User rating retrieved"));
+        } else {
+            return ResponseEntity.ok(ApiResponse.success(null, "User has not rated this pack"));
+        }
+    }
 
     // ================ Actions ================
 
@@ -236,23 +273,6 @@ public class SamplePackController {
     public ResponseEntity<ApiResponse<Void>> incrementDownload(@PathVariable UUID packId) {
         samplePackService.incrementDownloadCount(packId);
         return ResponseEntity.ok(ApiResponse.successMessage("Download recorded"));
-    }
-
-    /**
-     * Rate a pack
-     * POST /api/v1/audio/packs/{packId}/rate
-     */
-    @PostMapping("/{packId}/rate")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Void>> ratePack(
-            @PathVariable UUID packId,
-            @RequestParam Double rating) {
-
-        if (rating < 1.0 || rating > 5.0) {
-            throw new IllegalArgumentException("Rating must be between 1.0 and 5.0");
-        }
-        samplePackService.updatePackRating(packId, rating);
-        return ResponseEntity.ok(ApiResponse.successMessage("Rating updated"));
     }
 
     // ================ Statistics ================

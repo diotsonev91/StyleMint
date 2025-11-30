@@ -50,5 +50,14 @@ export const packApi = {
         return API.get(`${PACK_BASE}/${packId}/download-zip`, {
             responseType: 'blob' // ⭐ IMPORTANT: Get binary data
         });
+    },
+    async ratePack(packId: string, rating: number) {
+        if (rating < 1.0 || rating > 5.0) {
+            throw new Error("Rating must be between 1.0 and 5.0");
+        }
+        return API.post(`${PACK_BASE}/${packId}/rate?rating=${rating}`);
+    },
+    async getUserRating(packId: string) {
+        return API.get(`${PACK_BASE}/${packId}/my-rating`);
     }
 };

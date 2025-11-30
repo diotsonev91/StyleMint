@@ -23,7 +23,7 @@ export const sampleApi = {
     },
 
     async getSampleById(id: string) {
-        return API.get(`${SAMPLE_BASE}/${id}`); 
+        return API.get(`${SAMPLE_BASE}/${id}`);
     },
 
     async searchByName(name: string) {
@@ -60,5 +60,13 @@ export const sampleApi = {
 
     async downloadSample(sampleId: string) {
         return API.get(`${SAMPLE_BASE}/${sampleId}/download`);
+    },
+
+    async toggleLike(sampleId: string) {
+        return API.post(`${SAMPLE_BASE}/${sampleId}/like`);
+    },
+
+    async getLikeStatus(sampleId: string) {
+        return API.get(`${SAMPLE_BASE}/${sampleId}/like-status`);
     }
 };

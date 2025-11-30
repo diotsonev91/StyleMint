@@ -221,15 +221,6 @@ public class SamplePackServiceImpl implements SamplePackService {
         samplePackRepository.save(pack);
     }
 
-    @Override
-    @Transactional
-    public void updatePackRating(UUID packId, Double rating) {
-        SamplePack pack = samplePackRepository.findById(packId)
-                .orElseThrow(() -> new NotFoundException("Pack not found"));
-
-        pack.setRating(rating);
-        samplePackRepository.save(pack);
-    }
 
     @Override
     public ProducerStatsDTO getProducerStats(UUID authorId) {
