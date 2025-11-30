@@ -2,9 +2,11 @@
 package bg.softuni.stylemint.game.scheduler;
 
 import bg.softuni.dtos.enums.nft.NftType;
+import bg.softuni.dtos.nft.MintNftResponse;
 import bg.softuni.stylemint.external.facade.nft.NftServiceFacade;
 import bg.softuni.stylemint.game.model.GameSession;
 import bg.softuni.stylemint.game.repository.GameRepository;
+import bg.softuni.stylemint.game.service.GameService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -22,7 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NftMintingScheduler {
 
-    private final GameRepository gameSessionRepository;
+    private final GameService gameService;
     private final NftServiceFacade nftServiceFacade;
 
 
@@ -33,7 +35,7 @@ public class NftMintingScheduler {
 
         try {
             // Find all claimed sessions with NFT rewards that haven't been minted yet
-            List<GameSession> pendingNfts = gameSessionRepository.findClaimedNftRewardsNotMinted();
+            List<GameSession> pendingNfts = gameService.getClaimedNftRewardsNotMinted();
 
             if (pendingNfts.isEmpty()) {
                 log.debug("✅ No pending NFT rewards to mint");
@@ -79,13 +81,9 @@ public class NftMintingScheduler {
         }
 
         // Mint the NFT
-        var response = nftServiceFacade.mintNft(session.getUserId(), nftType);
+        MintNftResponse response = nftServiceFacade.mintNft(session.getUserId(), nftType);
 
-        // Mark as minted and save ONLY the tokenId reference
-        // All other NFT details (transaction, metadata, etc.) are stored in the NFT microservice
-        session.setNftMinted(true);
-        session.setNftTokenId(response.getTokenId());
-        gameSessionRepository.save(session);
+        gameService.markNftAsMinted(session.getId(), response.getTokenId());
 
         log.info("✅ NFT minted successfully for session: {}, tokenId: {}, message: {}",
                 session.getId(), response.getTokenId(), response.getMessage());

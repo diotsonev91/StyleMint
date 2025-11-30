@@ -2,6 +2,7 @@ package bg.softuni.stylemint.game.service;
 
 import bg.softuni.stylemint.game.dto.*;
 import bg.softuni.stylemint.game.enums.GameType;
+import bg.softuni.stylemint.game.model.GameSession;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,4 +25,6 @@ public interface GameService {
     List<LeaderboardEntryDTO> getLeaderboardByGameType(GameType gameType, int limit);
     int getUserOverallRank(UUID userId);
     int getUserRankForGameType(UUID userId, GameType gameType);
+    List<GameSession> getClaimedNftRewardsNotMinted();
+    void markNftAsMinted(UUID sessionId, UUID tokenId);
 }

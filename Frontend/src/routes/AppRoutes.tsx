@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from "react";
-import {Routes, Route, Navigate, useLocation} from "react-router-dom";
+import React from "react";
+import {Routes, Route, Navigate} from "react-router-dom";
 import Home from "../pages/Home";
 import Login from "../pages/User/Login";
 import Register from "../pages/User/Register";
@@ -28,52 +28,34 @@ import {EditClothDesignPage} from "../pages/Clothes/EditClothDesignPage";
 import {MyNftsPage} from "../pages/nft/MyNftsPage";
 import MyProfilePage from "../pages/User/MyProfilePage";
 import UserProfilePage from "../pages/User/UserProfilePage";
-import {getCurrentUser} from "../api/auth";
 import AdminPanel from "../pages/admin/AdminPanel";
-
-// ⭐ Public routes that don't require authentication check
-const PUBLIC_ROUTES = ['/login', '/register'];
+import { useAuth } from "../hooks/useAuth";  // ✅ ИЗПОЛЗВАЙ useAuth
 
 export const AppRoutes: React.FC = () => {
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const location = useLocation(); // ⭐ Get current route
+    // ✅ Вземи user и loading от AuthProvider (НЕ повече getCurrentUser!)
+    const { user, loading } = useAuth();
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            // ⭐ Skip auth check for public routes
-            if (PUBLIC_ROUTES.includes(location.pathname)) {
-                console.log('📍 On public route, skipping auth check');
-                setLoading(false);
-                return;
-            }
-
-            try {
-                const currentUser = await getCurrentUser();
-                console.log(currentUser);
-                console.log("INCLUDING ADMIN: " + currentUser.roles?.includes("ADMIN"));
-                setIsAdmin(currentUser.roles?.includes("ADMIN"));
-            } catch (error) {
-                console.error('Error fetching user:', error);
-                setIsAdmin(false);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchUser();
-    }, [location.pathname]); // ⭐ Re-run when route changes
+    const isAdmin = user?.roles?.includes("ADMIN") || false;
 
     if (loading) {
-        return <div>Loading...</div>;
+        return (
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100vh'
+            }}>
+                <div className="loading-spinner"></div>
+            </div>
+        );
     }
 
     return (
         <Routes>
             <Route path="/admin-panel" element={isAdmin ? <AdminPanel /> : <Navigate to="/" />} />
             <Route path="/" element={isAdmin ? <Navigate to="/admin-panel" /> : <Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+            <Route path="/register" element={user ? <Navigate to="/" /> : <Register />} />
             <Route path='/customize' element={<Customize/>} />
             <Route path='/catalogue' element={<Catalogue/>} />
             <Route path='/sounds' element={<ChooseYourSoundsPage/>} />

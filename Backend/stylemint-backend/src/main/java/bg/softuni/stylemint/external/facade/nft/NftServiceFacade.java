@@ -5,6 +5,7 @@ import bg.softuni.dtos.enums.nft.NftType;
 import bg.softuni.dtos.nft.*;
 import bg.softuni.stylemint.external.client.nft.NftServiceClient;
 import bg.softuni.stylemint.external.exceptions.nft.NftServiceException;
+import bg.softuni.stylemint.external.exceptions.nft.NftServiceUnavailableException;
 import bg.softuni.stylemint.game.enums.RewardType;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +21,6 @@ public class NftServiceFacade {
 
     private final NftServiceClient nftServiceClient;
 
-    /**
-     * Mint NFT for user
-     */
     public MintNftResponse mintNft(UUID ownerId, NftType nftType) {
         log.debug("Minting NFT for user: {}, type: {}", ownerId, nftType);
 
@@ -35,9 +33,26 @@ public class NftServiceFacade {
             log.info("✅ Successfully minted NFT for user: {}, tokenId: {}", ownerId, response.getTokenId());
             return response;
 
+        } catch (FeignException.FeignClientException e) {
+            // ✅ 4xx errors (bad request, validation, etc.)
+            log.error("❌ NFT service client error: {}", e.getMessage());
+            throw new NftServiceException("NFT service responded with error: " + e.status());
+
+        } catch (FeignException e) {
+            String msg = e.getMessage();
+
+            if (msg != null && (msg.contains("Connection refused") || msg.contains("Connection reset"))) {
+                log.warn("⚠️ NFT service unavailable (connection refused)");
+                throw new NftServiceUnavailableException("NFT service is currently unavailable");
+            }
+
+            log.error("❌ NFT service unreachable: {}", e.getMessage());
+            throw new NftServiceUnavailableException("NFT service is unreachable");
+
         } catch (Exception e) {
-            log.error("❌ Failed to mint NFT for user: {}, error: {}", ownerId, e.getMessage(), e);
-            throw new NftServiceException("Failed to mint NFT", e);
+            // ✅ Unexpected errors
+            log.error("❌ Unexpected error minting NFT: {}", e.getMessage());
+            throw new NftServiceException("Unexpected error minting NFT");
         }
     }
 
@@ -48,15 +63,22 @@ public class NftServiceFacade {
         log.debug("Retrieving NFTs for user: {}", userId);
 
         try {
-            UserNftsResponse response = nftServiceClient.getUserNfts(userId);
-            log.debug("Retrieved {} NFTs for user: {}", response.getNfts().size(), userId);
-            return response;
+            return nftServiceClient.getUserNfts(userId);
+
+        } catch (FeignException.FeignClientException e) {
+            log.error("❌ NFT service client error: {}", e.getMessage());
+            throw new NftServiceException("NFT service responded with error", e);
+
+        } catch (FeignException e) {
+            log.error("❌ NFT service unreachable (probably down): {}", e.getMessage());
+            throw new NftServiceUnavailableException("NFT service is unavailable", e);
 
         } catch (Exception e) {
-            log.error("Failed to retrieve NFTs for user: {}, error: {}", userId, e.getMessage());
-            throw new NftServiceException("Failed to retrieve user NFTs", e);
+            log.error("❌ Unexpected NFT error: {}", e.getMessage());
+            throw new NftServiceException("Unexpected NFT service error", e);
         }
     }
+
 
     /**
      * Transfer NFT between users

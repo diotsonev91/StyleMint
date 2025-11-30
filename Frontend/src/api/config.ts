@@ -24,91 +24,43 @@ API.interceptors.request.use(
 
 // ==================== Response Interceptor ====================
 
-let isRefreshing = false;
-let failedQueue: Array<{
-    resolve: (value?: any) => void;
-    reject: (reason?: any) => void;
-}> = [];
-
-const processQueue = (error: any = null) => {
-    failedQueue.forEach((prom) => {
-        if (error) {
-            prom.reject(error);
-        } else {
-            prom.resolve();
-        }
-    });
-    failedQueue = [];
-};
 
 API.interceptors.response.use(
-    (response) => {
-        return response;
-    },
-    async (error: AxiosError) => {
-        const originalRequest = error.config as InternalAxiosRequestConfig & {
-            _retry?: boolean;
-        };
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
 
-        // Only handle 401 errors
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401) {
+            const requestUrl = originalRequest?.url || '';
 
-            // Don't retry auth endpoints
-            if (
-                originalRequest.url?.includes("/auth/refresh") ||
-                originalRequest.url?.includes("/auth/login")
-            ) {
-                console.warn("⛔ 401 on auth endpoint");
-
-                // ⭐ Only redirect if NOT already on login/register page
-                const currentPath = window.location.pathname;
-                if (currentPath !== '/login' && currentPath !== '/register') {
-                    console.log("→ Redirecting to login");
-                    window.location.href = "/login";
-                }
-
+            // Ако е /auth/refresh, НЕ опитвай refresh (вече е fail)
+            if (requestUrl.includes('/auth/refresh')) {
+                console.log('⛔ Token refresh failed - clearing auth');
                 return Promise.reject(error);
             }
 
-            // Queue requests if already refreshing
-            if (isRefreshing) {
-                return new Promise((resolve, reject) => {
-                    failedQueue.push({ resolve, reject });
-                })
-                    .then(() => API(originalRequest))
-                    .catch((err) => Promise.reject(err));
-            }
+            // Опитай refresh само веднъж
+            if (!originalRequest._retry) {
+                originalRequest._retry = true;
 
-            originalRequest._retry = true;
-            isRefreshing = true;
+                try {
+                    console.log('🔄 Attempting token refresh...');
+                    // ✅ ПОПРАВКА: използвай API.defaults.baseURL
+                    await axios.post(
+                        `${API.defaults.baseURL}/auth/refresh`,
+                        {},
+                        { withCredentials: true }
+                    );
 
-            try {
-                console.log("🔄 Attempting token refresh...");
-                await API.post("/auth/refresh", {}, { withCredentials: true });
-                console.log("✅ Token refreshed successfully");
-
-                processQueue();
-                return API(originalRequest);
-
-            } catch (refreshError) {
-                console.error("❌ Token refresh failed");
-                processQueue(refreshError);
-
-                // ⭐ Only redirect if NOT already on login/register page
-                const currentPath = window.location.pathname;
-                if (currentPath !== '/login' && currentPath !== '/register') {
-                    console.warn("⛔ Redirecting to login");
-                    window.location.href = "/login";
+                    console.log('✅ Token refreshed, retrying original request');
+                    return API(originalRequest);
+                } catch (refreshError) {
+                    console.log('❌ Token refresh failed');
+                    return Promise.reject(refreshError);
                 }
-
-                return Promise.reject(refreshError);
-
-            } finally {
-                isRefreshing = false;
             }
         }
 
-        // All other errors
         return Promise.reject(error);
     }
 );

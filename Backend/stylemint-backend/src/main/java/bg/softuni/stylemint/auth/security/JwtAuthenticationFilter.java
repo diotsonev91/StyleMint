@@ -29,19 +29,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
 
-    /**
-     * Определя кои endpoints да се skip-нат от JWT authentication
-     */
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = request.getRequestURI();
 
-        // Skip JWT validation за authentication endpoints
-        return path.equals(BASE + "/auth/login") ||
-                path.equals(BASE + "/auth/register") ||
-                path.equals(BASE + "/auth/refresh") ||
-                path.equals(BASE + "/auth/logout");
+        // Auth endpoints
+        if (path.equals(BASE + "/auth/login")
+                || path.equals(BASE + "/auth/register")
+                || path.equals(BASE + "/auth/refresh")
+                || path.equals(BASE + "/auth/logout")) {
+            return true;
+        }
+
+        // ⭐ Public AUDIO endpoints
+        if (path.startsWith(BASE + "/audio/packs/latest")
+                || path.startsWith(BASE + "/audio/packs/top-rated")
+                || path.startsWith(BASE + "/audio/packs/most-downloaded")) {
+            return true;
+        }
+
+        // ⭐ Public DESIGN endpoints
+        if (path.startsWith(BASE + "/designs/top-liked")
+            || path.startsWith(BASE + "/designs/likes-count")) {
+            return true;
+        }
+
+        return false;
     }
+
 
     @Override
     protected void doFilterInternal(

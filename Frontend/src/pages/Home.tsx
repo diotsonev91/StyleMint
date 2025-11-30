@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useAuth } from "../hooks/useAuth";
+import { useOptionalAuth } from "../hooks/useOptionalAuth";
+
 import {clothDesignApi, DesignPublicDTO} from "../api/clothDesign.api";
 
 import "./home.css";
@@ -23,7 +24,7 @@ interface SamplePack {
 }
 
 const Home: React.FC = () => {
-    const { user } = useAuth();
+    const { user, checked } = useOptionalAuth();
     const navigate = useNavigate();
 
     const [latestPacks, setLatestPacks] = useState<SamplePack[]>([]);

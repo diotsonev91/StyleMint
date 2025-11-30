@@ -35,7 +35,17 @@ public interface GameRepository extends JpaRepository<GameSession, UUID> {
     @Query("SELECT COALESCE(AVG(gs.score), 0) FROM GameSession gs WHERE gs.userId = :userId")
     double getAverageScoreByUserId(UUID userId);
 
-    @Query("SELECT g FROM GameSession g WHERE g.rewardClaimed = true AND g.nftMinted = false")
+    @Query("""
+    SELECT g FROM GameSession g 
+    WHERE g.rewardClaimed = true 
+    AND g.nftMinted = false
+    AND g.rewardType IN (
+        bg.softuni.stylemint.game.enums.RewardType.NFT_DISCOUNT_5,
+        bg.softuni.stylemint.game.enums.RewardType.NFT_DISCOUNT_7,
+        bg.softuni.stylemint.game.enums.RewardType.AUTHOR_BADGE_DESIGNER,
+        bg.softuni.stylemint.game.enums.RewardType.AUTHOR_BADGE_PRODUCER
+    )
+""")
     List<GameSession> findClaimedNftRewardsNotMinted();
 
     // ========== GAME STATS METHODS ==========

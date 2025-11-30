@@ -33,12 +33,12 @@ public interface ClothDesignRepository extends JpaRepository<ClothDesign, UUID> 
 
     Page<ClothDesign> findByClothType(ClothType clothType, Pageable pageable);
 
-    @Query("SELECT d FROM ClothDesign d WHERE " +
-            "(:userId IS NULL OR d.userId = :userId) AND " +
-            "(:clothType IS NULL OR d.clothType = :clothType) AND " +
-            "(:customizationType IS NULL OR d.customizationType = :customizationType)")
+    @Query("""
+SELECT d FROM ClothDesign d
+WHERE d.isPublic = true
+""")
+    Page<ClothDesign> findByIsPublicTrue(Pageable pageable);
 
-    Page<ClothDesign> findByIsPublic(boolean isPublic, Pageable pageable);
 
     long countByUserIdAndIsPublic(UUID userId, boolean b);
 

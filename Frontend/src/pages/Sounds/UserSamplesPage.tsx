@@ -106,7 +106,7 @@ const UserSamplesPage: React.FC = () => {
   };
 
   const handleUploadNew = () => {
-    navigate('/upload');
+    navigate('/upload-sample');
   };
 
 

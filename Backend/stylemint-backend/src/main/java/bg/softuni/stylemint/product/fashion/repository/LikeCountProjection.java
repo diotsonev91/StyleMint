@@ -4,5 +4,5 @@ import java.util.UUID;
 
 public interface LikeCountProjection {
     UUID getDesignId();
-    long getCount();
+    Long getCount();
 }

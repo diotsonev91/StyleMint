@@ -7,7 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-@ControllerAdvice(basePackages = "bg.softuni.stylemint.user")
+@ControllerAdvice(basePackages = {
+        "bg.softuni.stylemint.external.facade.order",
+        "bg.softuni.stylemint.external.web"
+})
+
 public class OrderServiceExceptionHandler {
 
     @ExceptionHandler(OrderServiceException.class)

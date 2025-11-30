@@ -1,6 +1,7 @@
 package bg.softuni.stylemint.orderservice.order.controller;
 
 import bg.softuni.dtos.enums.order.OrderStatus;
+import bg.softuni.dtos.enums.order.OrderItemStatus;
 import bg.softuni.dtos.enums.payment.ProductType;
 import bg.softuni.dtos.order.*;
 import bg.softuni.stylemint.orderservice.order.service.OrderService;
@@ -15,12 +16,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -58,23 +58,22 @@ class OrderControllerApiTest {
     @Test
     void createOrder_ShouldReturnCreatedOrder() throws Exception {
         // Arrange
-        CreateOrderRequestDTO request = CreateOrderRequestDTO.builder()
-                .userId(userId)
-                .items(List.of(
-                        OrderItemRequestDTO.builder()
-                                .productId(UUID.randomUUID())
-                                .productType(ProductType.SAMPLE)
-                                .quantity(1)
-                                .unitPrice(BigDecimal.valueOf(29.99))
-                                .build()
-                ))
-                .totalAmount(BigDecimal.valueOf(29.99))
-                .build();
+        CreateOrderRequestDTO request = new CreateOrderRequestDTO();
+        request.setUserId(userId);
+
+        OrderItemRequestDTO itemRequest = new OrderItemRequestDTO();
+        itemRequest.setProductId(UUID.randomUUID());
+        itemRequest.setProductType(ProductType.SAMPLE);
+        itemRequest.setQuantity(1);
+        itemRequest.setPricePerUnit(29.99);
+
+        request.setItems(List.of(itemRequest));
 
         CreateOrderResponseDTO response = CreateOrderResponseDTO.builder()
                 .orderId(orderId)
-                .status(OrderStatus.PENDING)
-                .totalAmount(BigDecimal.valueOf(29.99))
+                .status("PENDING")
+                .totalAmount(29.99)
+                .totalItems(1)
                 .build();
 
         when(orderService.createOrder(any(CreateOrderRequestDTO.class))).thenReturn(response);
@@ -94,13 +93,13 @@ class OrderControllerApiTest {
     @Test
     void createOrder_WithInvalidRequest_ShouldReturnBadRequest() throws Exception {
         // Arrange - empty request
-        CreateOrderRequestDTO request = CreateOrderRequestDTO.builder().build();
+        CreateOrderRequestDTO request = new CreateOrderRequestDTO();
 
         // Act & Assert
         mockMvc.perform(post("/api/orders/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk()); // Note: Since there's no validation, it returns 200 but service might throw exception
+                .andExpect(status().isOk());
     }
 
     /* ==========================================================
@@ -110,20 +109,14 @@ class OrderControllerApiTest {
     @Test
     void getOrderStatus_ShouldReturnOrderStatus() throws Exception {
         // Arrange
-        OrderStatusDTO statusResponse = OrderStatusDTO.builder()
-                .orderId(orderId)
-                .status(OrderStatus.COMPLETED)
-                .lastUpdated("2024-01-15T10:30:00Z")
-                .build();
+        OrderStatusDTO statusResponse = new OrderStatusDTO(OrderStatus.FULFILLED);
 
         when(orderService.getOrderStatus(orderId)).thenReturn(statusResponse);
 
         // Act & Assert
         mockMvc.perform(get("/api/orders/{orderId}/status", orderId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orderId").value(orderId.toString()))
-                .andExpect(jsonPath("$.status").value("COMPLETED"))
-                .andExpect(jsonPath("$.lastUpdated").value("2024-01-15T10:30:00Z"));
+                .andExpect(jsonPath("$.status").value("FULFILLED"));
 
         verify(orderService).getOrderStatus(orderId);
     }
@@ -136,7 +129,7 @@ class OrderControllerApiTest {
 
         // Act & Assert
         mockMvc.perform(get("/api/orders/{orderId}/status", orderId))
-                .andExpect(status().is5xxServerError()); // Service throws exception
+                .andExpect(status().is5xxServerError());
 
         verify(orderService).getOrderStatus(orderId);
     }
@@ -149,11 +142,12 @@ class OrderControllerApiTest {
     void getOrder_ShouldReturnOrderDetails() throws Exception {
         // Arrange
         OrderDTO orderResponse = OrderDTO.builder()
-                .id(orderId)
+                .orderId(orderId)
                 .userId(userId)
-                .status(OrderStatus.COMPLETED)
-                .totalAmount(BigDecimal.valueOf(59.98))
-                .createdAt("2024-01-15T10:00:00Z")
+                .status(OrderStatus.FULFILLED)
+                .totalAmount(59.98)
+                .createdAt(OffsetDateTime.now())
+                .items(List.of())
                 .build();
 
         when(orderService.getOrder(orderId)).thenReturn(orderResponse);
@@ -161,9 +155,9 @@ class OrderControllerApiTest {
         // Act & Assert
         mockMvc.perform(get("/api/orders/{orderId}", orderId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(orderId.toString()))
+                .andExpect(jsonPath("$.orderId").value(orderId.toString()))
                 .andExpect(jsonPath("$.userId").value(userId.toString()))
-                .andExpect(jsonPath("$.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.status").value("FULFILLED"))
                 .andExpect(jsonPath("$.totalAmount").value(59.98));
 
         verify(orderService).getOrder(orderId);
@@ -176,26 +170,25 @@ class OrderControllerApiTest {
     @Test
     void getOrderItems_ShouldReturnOrderItems() throws Exception {
         // Arrange
-        List<OrderItemDTO> items = List.of(
-                OrderItemDTO.builder()
-                        .itemId(itemId)
-                        .productId(UUID.randomUUID())
-                        .productType(ProductType.SAMPLE)
-                        .quantity(1)
-                        .unitPrice(BigDecimal.valueOf(29.99))
-                        .totalPrice(BigDecimal.valueOf(29.99))
-                        .status(OrderItemStatus.DIGITAL_UNLOCKED)
-                        .build(),
-                OrderItemDTO.builder()
-                        .itemId(UUID.randomUUID())
-                        .productId(UUID.randomUUID())
-                        .productType(ProductType.PACK)
-                        .quantity(1)
-                        .unitPrice(BigDecimal.valueOf(49.99))
-                        .totalPrice(BigDecimal.valueOf(49.99))
-                        .status(OrderItemStatus.PENDING)
-                        .build()
-        );
+        OrderItemDTO item1 = OrderItemDTO.builder()
+                .itemId(itemId)
+                .productId(UUID.randomUUID())
+                .productType(ProductType.SAMPLE)
+                .quantity(1)
+                .pricePerUnit(29.99)
+                .itemStatus(OrderItemStatus.DIGITAL_UNLOCKED)
+                .build();
+
+        OrderItemDTO item2 = OrderItemDTO.builder()
+                .itemId(UUID.randomUUID())
+                .productId(UUID.randomUUID())
+                .productType(ProductType.PACK)
+                .quantity(1)
+                .pricePerUnit(49.99)
+                .itemStatus(OrderItemStatus.PENDING)
+                .build();
+
+        List<OrderItemDTO> items = List.of(item1, item2);
 
         when(orderService.getOrderItems(orderId)).thenReturn(items);
 
@@ -204,9 +197,9 @@ class OrderControllerApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].itemId").value(itemId.toString()))
                 .andExpect(jsonPath("$[0].productType").value("SAMPLE"))
-                .andExpect(jsonPath("$[0].status").value("DIGITAL_UNLOCKED"))
+                .andExpect(jsonPath("$[0].itemStatus").value("DIGITAL_UNLOCKED"))
                 .andExpect(jsonPath("$[1].productType").value("PACK"))
-                .andExpect(jsonPath("$[1].status").value("PENDING"));
+                .andExpect(jsonPath("$[1].itemStatus").value("PENDING"));
 
         verify(orderService).getOrderItems(orderId);
     }
@@ -232,12 +225,19 @@ class OrderControllerApiTest {
     @Test
     void getUserSummary_ShouldReturnUserSummary() throws Exception {
         // Arrange
+        OrderPreviewDTO recentOrder = OrderPreviewDTO.builder()
+                .orderId(orderId)
+                .status(OrderStatus.FULFILLED)
+                .totalAmount(59.98)
+                .createdAt(OffsetDateTime.now())
+                .items(List.of())
+                .build();
+
         UserOrderSummaryDTO summary = UserOrderSummaryDTO.builder()
-                .userId(userId)
-                .totalOrders(5)
-                .totalSpent(BigDecimal.valueOf(299.95))
-                .completedOrders(4)
-                .pendingOrders(1)
+                .totalOrders(5L)
+                .totalSpent(299.95)
+                .recentOrders(List.of(recentOrder))
+                .serviceAvailable(true)
                 .build();
 
         when(orderService.getUserOrderSummary(userId)).thenReturn(summary);
@@ -245,11 +245,10 @@ class OrderControllerApiTest {
         // Act & Assert
         mockMvc.perform(get("/api/orders/user/{userId}/summary", userId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(userId.toString()))
                 .andExpect(jsonPath("$.totalOrders").value(5))
                 .andExpect(jsonPath("$.totalSpent").value(299.95))
-                .andExpect(jsonPath("$.completedOrders").value(4))
-                .andExpect(jsonPath("$.pendingOrders").value(1));
+                .andExpect(jsonPath("$.recentOrders").isArray())
+                .andExpect(jsonPath("$.serviceAvailable").value(true));
 
         verify(orderService).getUserOrderSummary(userId);
     }
@@ -297,11 +296,10 @@ class OrderControllerApiTest {
     void getUserSummary_WithNonExistentUser_ShouldReturnEmptySummary() throws Exception {
         // Arrange
         UserOrderSummaryDTO emptySummary = UserOrderSummaryDTO.builder()
-                .userId(userId)
-                .totalOrders(0)
-                .totalSpent(BigDecimal.ZERO)
-                .completedOrders(0)
-                .pendingOrders(0)
+                .totalOrders(0L)
+                .totalSpent(0.0)
+                .recentOrders(List.of())
+                .serviceAvailable(true)
                 .build();
 
         when(orderService.getUserOrderSummary(userId)).thenReturn(emptySummary);
@@ -310,7 +308,7 @@ class OrderControllerApiTest {
         mockMvc.perform(get("/api/orders/user/{userId}/summary", userId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalOrders").value(0))
-                .andExpect(jsonPath("$.totalSpent").value(0));
+                .andExpect(jsonPath("$.totalSpent").value(0.0));
 
         verify(orderService).getUserOrderSummary(userId);
     }
@@ -318,29 +316,28 @@ class OrderControllerApiTest {
     @Test
     void createOrder_WithMultipleItems_ShouldHandleCorrectly() throws Exception {
         // Arrange
-        CreateOrderRequestDTO request = CreateOrderRequestDTO.builder()
-                .userId(userId)
-                .items(List.of(
-                        OrderItemRequestDTO.builder()
-                                .productId(UUID.randomUUID())
-                                .productType(ProductType.SAMPLE)
-                                .quantity(2)
-                                .unitPrice(BigDecimal.valueOf(19.99))
-                                .build(),
-                        OrderItemRequestDTO.builder()
-                                .productId(UUID.randomUUID())
-                                .productType(ProductType.PACK)
-                                .quantity(1)
-                                .unitPrice(BigDecimal.valueOf(49.99))
-                                .build()
-                ))
-                .totalAmount(BigDecimal.valueOf(89.97))
-                .build();
+        CreateOrderRequestDTO request = new CreateOrderRequestDTO();
+        request.setUserId(userId);
+
+        OrderItemRequestDTO item1 = new OrderItemRequestDTO();
+        item1.setProductId(UUID.randomUUID());
+        item1.setProductType(ProductType.SAMPLE);
+        item1.setQuantity(2);
+        item1.setPricePerUnit(19.99);
+
+        OrderItemRequestDTO item2 = new OrderItemRequestDTO();
+        item2.setProductId(UUID.randomUUID());
+        item2.setProductType(ProductType.PACK);
+        item2.setQuantity(1);
+        item2.setPricePerUnit(49.99);
+
+        request.setItems(List.of(item1, item2));
 
         CreateOrderResponseDTO response = CreateOrderResponseDTO.builder()
                 .orderId(orderId)
-                .status(OrderStatus.PENDING)
-                .totalAmount(BigDecimal.valueOf(89.97))
+                .status("PENDING")
+                .totalAmount(89.97)
+                .totalItems(3)
                 .build();
 
         when(orderService.createOrder(any(CreateOrderRequestDTO.class))).thenReturn(response);

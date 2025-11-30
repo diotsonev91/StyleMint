@@ -1,4 +1,5 @@
 import API from "./config";
+import axios from "axios";
 
 // ==================== Interfaces ====================
 
@@ -107,4 +108,21 @@ export async function checkAuth(): Promise<boolean> {
   } catch (error) {
     return false;
   }
+}
+
+export async function getCurrentUserOptional() {
+    try {
+
+        const baseUrl =  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1"
+        // Директен axios call БЕЗ interceptor
+        const response = await axios.get(`${baseUrl}/auth/me`, {
+            withCredentials: true,
+            validateStatus: (status) => status === 200  // Само 200 е OK
+        });
+
+        return response.data;
+    } catch (error) {
+        // Тихо fail - не redirect, не throw
+        return null;
+    }
 }

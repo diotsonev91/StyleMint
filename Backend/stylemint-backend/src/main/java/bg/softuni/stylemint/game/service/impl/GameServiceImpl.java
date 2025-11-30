@@ -176,6 +176,27 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
+    public List<GameSession> getClaimedNftRewardsNotMinted() {
+        log.debug("Retrieving claimed NFT rewards not yet minted");
+        return gameRepository.findClaimedNftRewardsNotMinted();
+    }
+
+    @Override
+    @Transactional
+    public void markNftAsMinted(UUID sessionId, UUID tokenId) {
+        log.debug("Marking NFT as minted for session: {}, tokenId: {}", sessionId, tokenId);
+
+        GameSession session = gameRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Game session not found: " + sessionId));
+
+        session.setNftMinted(true);
+        session.setNftTokenId(tokenId);
+        gameRepository.save(session);
+
+        log.info("✅ NFT marked as minted for session: {}, tokenId: {}", sessionId, tokenId);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public long getUserScore(UUID userId) {
         return gameRepository.getTotalScoreByUserId(userId);

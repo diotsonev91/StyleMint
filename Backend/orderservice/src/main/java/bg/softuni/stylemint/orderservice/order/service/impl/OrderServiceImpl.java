@@ -283,7 +283,7 @@ public class OrderServiceImpl implements OrderService {
     public void markOrderItemShipped(UUID orderId, UUID itemId) {
 
         OrderItem item = orderItemRepository.findById(itemId)
-                .orElseThrow(() -> new RuntimeException("Item not found"));
+                .orElseThrow(() -> new NotFoundException("Item not found"));
 
         // 🛑 Guard check — ако е вече DELIVERED, НИКОГА не връщай обратно!
         if (item.getItemStatus() == OrderItemStatus.DELIVERED) {

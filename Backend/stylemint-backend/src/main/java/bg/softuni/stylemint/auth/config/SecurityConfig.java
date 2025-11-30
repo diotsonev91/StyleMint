@@ -65,7 +65,17 @@ public class SecurityConfig {
                                 BASE + "/auth/login",
                                 BASE + "/auth/refresh",
                                 BASE + "/orders/payment-success",
-                                BASE + "/auth/logout"
+                                BASE + "/auth/logout",
+
+                                // 🎵 PUBLIC SOUND PACK ENDPOINTS
+                                BASE + "/audio/packs/latest",
+                                BASE + "/audio/packs/top-rated",
+                                BASE + "/audio/packs/most-downloaded",
+
+                                // 👕 PUBLIC DESIGN ENDPOINTS
+                                BASE + "/designs/top-liked",
+                                BASE + "/designs/latest",
+                                BASE + "/designs/likes-count"
                         ).permitAll()
 
                         // ✅ Authenticated endpoints

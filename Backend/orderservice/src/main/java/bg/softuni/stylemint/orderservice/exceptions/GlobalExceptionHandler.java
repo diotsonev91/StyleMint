@@ -5,12 +5,15 @@ import bg.softuni.stylemint.orderservice.order.exceptions.InvalidProductTypeExce
 import bg.softuni.stylemint.orderservice.payment.exceptions.StripeServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -61,6 +64,28 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(body);
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleValidationErrors(MethodArgumentNotValidException ex) {
+
+        Map<String, String> errors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .collect(Collectors.toMap(
+                        FieldError::getField,
+                        FieldError::getDefaultMessage,
+                        (msg1, msg2) -> msg1 
+                ));
+
+        Map<String, Object> body = Map.of(
+                "timestamp", OffsetDateTime.now().toString(),
+                "error", "VALIDATION_ERROR",
+                "details", errors
+        );
+
+        return ResponseEntity.badRequest().body(body);
+    }
+
+
     // Catch-all error fallback
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGenericException(Exception ex) {
@@ -71,4 +96,6 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
+
+
 }

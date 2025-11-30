@@ -236,7 +236,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
     @Override
     public Page<DesignPublicDTO> getPublicDesigns(Pageable pageable) {
-        return clothDesignRepository.findByIsPublic(true, pageable)
+        return clothDesignRepository.findByIsPublicTrue( pageable)
                 .map(this::toPublicDTO);
     }
 
@@ -337,10 +337,12 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
     @Override
     public Page<DesignPublicDTO> getAllByClothType(Pageable pageable, ClothType clothType) {
-
         Page<ClothDesign> clothDesignPage = clothDesignRepository.findByClothType(clothType, pageable);
 
-        return clothDesignPage.map(this::toPublicDTO);
+        return clothDesignPage.map(design -> {
+            long likesCount = clothLikeService.getLikesCount(design.getId());
+            return toPublicDTOSafe(design, likesCount);  // ✅ Безопасна версия
+        });
     }
 
 
@@ -468,9 +470,40 @@ public class ClothDesignServiceImpl implements ClothDesignService {
         return designs.stream()
                 .map(design -> {
                     long likes = likeCounts.getOrDefault(design.getId(), 0L);
-                    return toPublicDTO(design, likes);
+                    return toPublicDTOSafe(design, likes);  // ✅ Безопасна версия
                 })
                 .sorted((d1, d2) -> Long.compare(d2.getLikesCount(), d1.getLikesCount()))
                 .collect(Collectors.toList());
     }
+
+    private DesignPublicDTO toPublicDTOSafe(ClothDesign design, long likesCount) {
+        // Parse customizationJson to JsonNode
+        JsonNode customizationData = null;
+        if (design.getCustomizationJson() != null) {
+            try {
+                customizationData = objectMapper.readTree(design.getCustomizationJson());
+            } catch (Exception e) {
+                log.error("Failed to parse customizationJson for design {}: {}", design.getId(), e.getMessage());
+                throw new CustomizationProcessingException("Failed to parse customization data: " + e.getMessage(), e);
+            }
+        }
+
+        return DesignPublicDTO.builder()
+                .id(design.getId())
+                .label(design.getLabel())
+                .clothType(design.getClothType())
+                .customizationType(design.getCustomizationType())
+                .previewImageUrl(generatePreviewImageUrl(design))
+                .isPublic(design.getIsPublic())
+                .price(design.getPrice())
+                .bonusPoints(design.getBonusPoints())
+                .salesCount(design.getSalesCount() != null ? design.getSalesCount() : 0L)
+                .likesCount(likesCount)
+                .createdAt(design.getCreatedAt())
+                .isLikedByUser(false)  // ✅ ВИНАГИ false за public endpoints
+                .customizationData(customizationData)
+                .customDecalUrl(design.getCustomDecalPath())
+                .build();
+    }
+
 }

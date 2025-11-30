@@ -313,7 +313,7 @@ class ClothDesignServiceImplTest {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
         Page<ClothDesign> designPage = new PageImpl<>(Arrays.asList(design));
-        when(clothDesignRepository.findByIsPublic(true, pageable)).thenReturn(designPage);
+        when(clothDesignRepository.findByIsPublicTrue( pageable)).thenReturn(designPage);
         when(clothLikeService.getLikesCount(designId)).thenReturn(5L);
         when(clothLikeService.isLikedByUser(designId)).thenReturn(false);
 
