@@ -1,5 +1,8 @@
 /* UserProfile.css */
-
+.user-public-profile-container-logged {
+    width:60%;
+    margin: auto;
+}
 /* ==================== Notifications ==================== */
 .success-notification,
 .error-notification {
@@ -46,7 +49,8 @@
 
 /* ==================== Profile Container ==================== */
 .user-profile-container {
-    max-width: 1200px;
+    max-width: 1400px;
+    min-width: 1200px;
     margin: 0 auto;
     padding: 20px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -1462,4 +1466,259 @@
     .designs-page-section :global(.designs-grid) {
         padding: 20px !important;
     }
+}
+
+.transfer-nft-btn {
+    /* Base styling */
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    min-width: 140px;
+
+    /* NFT-themed elements */
+    background-image:
+            radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.3) 0%, transparent 50%);
+}
+
+.transfer-nft-btn::before {
+    content: '🎁';
+    font-size: 1.2em;
+    transition: transform 0.3s ease;
+}
+
+.transfer-nft-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+    );
+    transition: left 0.5s ease;
+}
+
+/* Hover effects */
+.transfer-nft-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+}
+
+.transfer-nft-btn:hover::before {
+    transform: rotate(15deg) scale(1.1);
+}
+
+.transfer-nft-btn:hover::after {
+    left: 100%;
+}
+
+/* Active state */
+.transfer-nft-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    transition: transform 0.1s ease;
+}
+
+/* Disabled state */
+.transfer-nft-btn:disabled {
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.7;
+}
+
+.transfer-nft-btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+}
+
+.transfer-nft-btn:disabled::before {
+    transform: none;
+}
+
+.transfer-nft-btn:disabled::after {
+    display: none;
+}
+
+/* Loading state */
+.transfer-nft-btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.transfer-nft-btn.loading::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: nft-btn-spin 1s linear infinite;
+}
+
+@keyframes nft-btn-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success state */
+.transfer-nft-btn.success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.transfer-nft-btn.success::before {
+    content: '✅';
+    animation: success-bounce 0.5s ease;
+}
+
+@keyframes success-bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+/* Error state */
+.transfer-nft-btn.error {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.transfer-nft-btn.error::before {
+    content: '❌';
+    animation: error-shake 0.5s ease;
+}
+
+@keyframes error-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+/* Small variant */
+.transfer-nft-btn.small {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    min-width: 100px;
+    border-radius: 10px;
+}
+
+.transfer-nft-btn.small::before {
+    font-size: 1em;
+}
+
+/* Large variant */
+.transfer-nft-btn.large {
+    padding: 16px 32px;
+    font-size: 1.1rem;
+    min-width: 180px;
+    border-radius: 14px;
+    font-weight: 700;
+}
+
+.transfer-nft-btn.large::before {
+    font-size: 1.4em;
+}
+
+/* Outline variant */
+.transfer-nft-btn.outline {
+    background: transparent;
+    color: #8b5cf6;
+    border: 2px solid #8b5cf6;
+    box-shadow: none;
+}
+
+.transfer-nft-btn.outline:hover {
+    background: rgba(139, 92, 246, 0.1);
+    color: #7c3aed;
+    border-color: #7c3aed;
+}
+
+/* With icon only */
+.transfer-nft-btn.icon-only {
+    min-width: 40px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+}
+
+.transfer-nft-btn.icon-only::before {
+    content: '🎁';
+    font-size: 1.3em;
+    margin: 0;
+}
+
+.transfer-nft-btn.icon-only span {
+    display: none;
+}
+
+/* Full width */
+.transfer-nft-btn.full-width {
+    width: 100%;
+    display: flex;
+}
+
+/* Ripple effect */
+.transfer-nft-btn .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.7);
+    transform: scale(0);
+    animation: ripple-animation 0.6s linear;
+}
+
+@keyframes ripple-animation {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .transfer-nft-btn {
+        padding: 10px 20px;
+        font-size: 0.95rem;
+    }
+
+    .transfer-nft-btn.large {
+        padding: 14px 28px;
+    }
+
+    .transfer-nft-btn.small {
+        padding: 6px 12px;
+    }
+}
+
+/* Dark mode support */
+[data-theme="dark"] .transfer-nft-btn.outline {
+    color: #a78bfa;
+    border-color: #a78bfa;
+}
+
+[data-theme="dark"] .transfer-nft-btn.outline:hover {
+    color: #c4b5fd;
+    border-color: #c4b5fd;
+    background: rgba(167, 139, 250, 0.1);
 }

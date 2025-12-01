@@ -59,15 +59,12 @@ public class PaymentServiceImpl implements PaymentService {
 
         if (order.getPaymentMethod() == PaymentMethod.CASH) {
             return new PaymentResult(
-                    true,   // is cash
+                    true,   
                     hasClothes,
-                    null    // no payment URL
+                    null
             );
         }
 
-        // ⭐⭐⭐ STRIPE - Use dynamic frontendUrl parameter ⭐⭐⭐
-
-        // Build success and cancel URLs with orderId
         String successUrl = frontendUrl + "/checkout/success?orderId=" + order.getId();
         String cancelUrl = frontendUrl + "/checkout/cancel?orderId=" + order.getId();
 
@@ -75,18 +72,17 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("   Success: {}", successUrl);
         log.info("   Cancel: {}", cancelUrl);
 
-        // Create Stripe checkout session with dynamic URLs
         String stripeCheckoutUrl = stripeService.createCheckoutSession(
                 order.getTotalAmount(),
                 order.getId(),
-                successUrl,  // ⭐ Dynamic success URL
-                cancelUrl    // ⭐ Dynamic cancel URL
+                successUrl,
+                cancelUrl
         );
 
         return new PaymentResult(
-                false,      // not cash (Stripe)
-                hasClothes, // should deliver clothes?
-                stripeCheckoutUrl  // Stripe checkout URL
+                false,
+                hasClothes,
+                stripeCheckoutUrl
         );
     }
 }

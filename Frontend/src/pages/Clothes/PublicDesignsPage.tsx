@@ -431,12 +431,6 @@ export function PublicDesignsPage() {
                                             <span className="info-value price">${selectedDesign.price.toFixed(2)}</span>
                                         </div>
                                     )}
-                                    {selectedDesign.bonusPoints && (
-                                        <div className="info-item">
-                                            <span className="info-label">Bonus Points:</span>
-                                            <span className="info-value bonus">+{selectedDesign.bonusPoints}</span>
-                                        </div>
-                                    )}
                                     <div className="info-item">
                                         <span className="info-label">Likes:</span>
                                         <span className="info-value">❤️ {selectedDesign.likesCount || 0}</span>

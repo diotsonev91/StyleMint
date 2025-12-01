@@ -53,12 +53,22 @@ export async function register(
  * No need to manually handle tokens - browser automatically sends cookies
  */
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  const res = await API.post<AuthResponse>(
-    "/auth/login",
-    { email, password },
-    { withCredentials: true } // CRITICAL: This allows cookies to be set
-  );
-  return res.data;
+    // 1. Login
+    const res = await API.post<AuthResponse>(
+        "/auth/login",
+        { email, password },
+        { withCredentials: true }
+    );
+
+    // 2. Initialize CSRF token СЛЕД login
+    try {
+       // await API.get("/auth/csrf", { withCredentials: true });
+       // console.log('✅ CSRF token initialized after login');
+    } catch (error) {
+        console.warn('⚠️ Failed to initialize CSRF token:', error);
+    }
+
+    return res.data;
 }
 
 /**

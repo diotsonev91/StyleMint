@@ -1,4 +1,4 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, { InternalAxiosRequestConfig } from "axios";
 
 // ==================== API Instance Configuration ====================
 
@@ -24,7 +24,6 @@ API.interceptors.request.use(
 
 // ==================== Response Interceptor ====================
 
-
 API.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -33,26 +32,25 @@ API.interceptors.response.use(
         if (error.response?.status === 401) {
             const requestUrl = originalRequest?.url || '';
 
-            // Ако е /auth/refresh, НЕ опитвай refresh (вече е fail)
+            // Don't retry refresh endpoint
             if (requestUrl.includes('/auth/refresh')) {
-                console.log('⛔ Token refresh failed - clearing auth');
+                console.log('⛔ Token refresh failed');
                 return Promise.reject(error);
             }
 
-            // Опитай refresh само веднъж
+            // Retry with token refresh only once
             if (!originalRequest._retry) {
                 originalRequest._retry = true;
 
                 try {
-                    console.log('🔄 Attempting token refresh...');
-                    // ✅ ПОПРАВКА: използвай API.defaults.baseURL
+                    console.log('🔄 Refreshing access token...');
                     await axios.post(
                         `${API.defaults.baseURL}/auth/refresh`,
                         {},
                         { withCredentials: true }
                     );
 
-                    console.log('✅ Token refreshed, retrying original request');
+                    console.log('✅ Token refreshed, retrying request');
                     return API(originalRequest);
                 } catch (refreshError) {
                     console.log('❌ Token refresh failed');

@@ -14,16 +14,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static bg.softuni.stylemint.config.ApiPaths.BASE;
+
+
 
 @RestController
 @RequestMapping(BASE + "/auth")
@@ -168,4 +166,5 @@ public class AuthController {
                 .map(Enum::name)  // UserRole.ADMIN -> "ADMIN"
                 .toList();
     }
+
 }

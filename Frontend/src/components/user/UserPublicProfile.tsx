@@ -97,7 +97,7 @@ const UserPublicProfile: React.FC<UserPublicProfileProps> = ({
     const hasAudioStats = stats.audio && (stats.audio.totalSamples > 0 || stats.audio.totalPacks > 0);
 
     return (
-        <div className="user-public-profile-container">
+        <div className="user-public-profile-container-logged">
             {/* Profile Header */}
             <div className="profile-header">
                 <div className="profile-banner">

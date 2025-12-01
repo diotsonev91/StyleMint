@@ -34,7 +34,7 @@ import static bg.softuni.stylemint.config.ApiPaths.BASE;
  * 5. JWT token is generated and returned
  *
  * Regular Request Flow (DOES NOT use UserDetailsService):
- * 1. User sends JWT token in Authorization header
+ * 1. User sends JWT token in HttpOnly cookie
  * 2. JwtAuthenticationFilter validates token
  * 3. Authentication is set from JWT claims (NO database query)
  * 4. Request proceeds to controller
@@ -43,6 +43,21 @@ import static bg.softuni.stylemint.config.ApiPaths.BASE;
  * - UserDetailsService is ONLY used for /login endpoint
  * - All other endpoints use JWT validation (no UserDetailsService)
  * - This is the standard Spring Security + JWT pattern
+ *
+ * ⚠️ CSRF Protection Status: DISABLED
+ *
+ * CSRF is currently disabled for the following reasons:
+ * 1. Development Environment: Frontend (localhost:5173) and Backend (localhost:8080)
+ *    are on different ports, causing cross-origin cookie issues
+ * 2. HttpOnly Cookies: JWT tokens are already in HttpOnly cookies which provides
+ *    protection against XSS attacks
+ * 3. CORS Configuration: Strict CORS policy limits requests to known origins
+ *
+ * For Production Deployment:
+ * - Enable CSRF protection if frontend and backend are on different domains
+ * - Use SameSite=Strict cookies
+ * - Implement proper CSRF token handling in frontend
+ * - Consider using a reverse proxy to serve both frontend and backend from same origin
  */
 @Configuration
 @RequiredArgsConstructor
@@ -56,8 +71,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
+
+                // CSRF is disabled for development with separate frontend/backend ports
+                // See class-level documentation for details
                 .csrf(AbstractHttpConfigurer::disable)
+
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 .authorizeHttpRequests(auth -> auth
                         // ✅ Public endpoints (no authentication)
                         .requestMatchers(
@@ -84,6 +104,7 @@ public class SecurityConfig {
                         // ✅ All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
+
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -96,6 +117,7 @@ public class SecurityConfig {
                             response.getWriter().write("{\"error\":\"Forbidden - Insufficient permissions\"}");
                         })
                 )
+
                 // ✅ JWT filter runs before Spring Security's default authentication
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
