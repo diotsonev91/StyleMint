@@ -25,6 +25,7 @@ export interface SamplePack {
   id: string;
   title: string;
   artist: string;
+  authorId?: string;
   coverImage: string;
   price: number;
   sampleCount: number;

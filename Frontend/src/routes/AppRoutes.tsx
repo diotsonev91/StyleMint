@@ -29,7 +29,8 @@ import {MyNftsPage} from "../pages/nft/MyNftsPage";
 import MyProfilePage from "../pages/User/MyProfilePage";
 import UserProfilePage from "../pages/User/UserProfilePage";
 import AdminPanel from "../pages/admin/AdminPanel";
-import { useAuth } from "../hooks/useAuth";  // ✅ ИЗПОЛЗВАЙ useAuth
+import { useAuth } from "../hooks/useAuth";
+import NftTransferPage from "../pages/nft/NftTransferPage";  // ✅ ИЗПОЛЗВАЙ useAuth
 
 export const AppRoutes: React.FC = () => {
     // ✅ Вземи user и loading от AuthProvider (НЕ повече getCurrentUser!)
@@ -70,7 +71,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/game/bpmMatcher" element={<GodotGameEmbedBpm />} />
             {/* User Profile Routes */}
             <Route path="/profile" element={<MyProfilePage />} />
-            <Route path="/users/:userId" element={<UserProfilePage />} />
+            <Route path="/user/:userId" element={<UserProfilePage />} />
             <Route path="/my-samples" element={<UserSamplesPage />} />
             <Route path="/my-packs" element={<UserPacksPage />} />
             <Route path="/my-designs" element={<MyClothDesignsPage />} />
@@ -81,6 +82,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/edit-design" element={<EditClothDesignPage />} />
             <Route path="/edit-sample/:sampleId" element={<EditSamplePage />} />
             <Route path="/my-nfts" element={<MyNftsPage />} />
+            <Route path="/nft/transfer/:targetUserId" element={<NftTransferPage />} />
         </Routes>
     );
 };

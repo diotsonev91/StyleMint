@@ -5,7 +5,7 @@ import { cartState } from '../../state/CartItemState';
 import { SamplePack } from '../../types';
 import './PackCard.css';
 import {getCurrentUser} from "../../api/auth";
-
+import {useNavigate} from 'react-router-dom';
 interface PackCardProps {
   pack: SamplePack;
   onViewDetails: (packId: string) => void;
@@ -15,7 +15,7 @@ interface PackCardProps {
 const PackCard: React.FC<PackCardProps> = ({ pack, onViewDetails, onAddToCart }) => {
   const [isLiked, setIsLiked] = useState(false);
   const cartSnap = useSnapshot(cartState); // ✅ Subscribe to cart changes
-
+  const navigate = useNavigate();
 
   // ✅ Check if pack is already in cart (now reactive to cart changes)
   const inCart = cartSnap.items.some(item => item.id === pack.id && item.type === 'pack');
@@ -68,7 +68,9 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onViewDetails, onAddToCart })
 
               View Details
           </button>
-        <p className="pack-card-artist">{pack.artist}</p>
+        <button className="pack-card-artist-btn"
+         onClick={() => navigate(`/user/${pack.authorId}`)}
+        >{pack.artist}</button>
 
         {/* Stats */}
         <div className="pack-card-stats">

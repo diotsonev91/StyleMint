@@ -44,6 +44,12 @@
 			<version>4.2.0</version>
 		</dependency>
 
+		<!-- Caching -->
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+			<version>3.1.8</version>
+		</dependency>
 
 		<!-- JWT -->
 		<dependency>

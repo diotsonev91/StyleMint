@@ -1,11 +1,9 @@
-// NftMintingScheduler.java - FINAL VERSION (no transactionId)
-package bg.softuni.stylemint.game.scheduler;
+package bg.softuni.stylemint.external.scheduler;
 
 import bg.softuni.dtos.enums.nft.NftType;
 import bg.softuni.dtos.nft.MintNftResponse;
-import bg.softuni.stylemint.external.facade.nft.NftServiceFacade;
+import bg.softuni.stylemint.external.service.nft.NftProxyService;
 import bg.softuni.stylemint.game.model.GameSession;
-import bg.softuni.stylemint.game.repository.GameRepository;
 import bg.softuni.stylemint.game.service.GameService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,8 +23,7 @@ import java.util.List;
 public class NftMintingScheduler {
 
     private final GameService gameService;
-    private final NftServiceFacade nftServiceFacade;
-
+    private final NftProxyService nftProxyService;
 
     @Scheduled(fixedDelayString = "${scheduler.nft-minting.delay-ms}")
     @Transactional
@@ -34,7 +31,6 @@ public class NftMintingScheduler {
         log.debug("🔄 Starting NFT minting scheduler...");
 
         try {
-            // Find all claimed sessions with NFT rewards that haven't been minted yet
             List<GameSession> pendingNfts = gameService.getClaimedNftRewardsNotMinted();
 
             if (pendingNfts.isEmpty()) {
@@ -68,20 +64,21 @@ public class NftMintingScheduler {
     /**
      * Mint NFT for a single game session
      */
+    // В NftMintingScheduler.java
     private void mintNftForSession(GameSession session) {
         log.debug("Minting NFT for session: {}, user: {}, reward: {}",
                 session.getId(), session.getUserId(), session.getRewardType());
 
-        // Convert reward type to NftType enum
-        NftType nftType = nftServiceFacade.mapRewardTypeToNftType(session.getRewardType());
+        // ✅ Използваме nftProxyService вместо nftServiceFacade
+        NftType nftType = nftProxyService.mapRewardTypeToNftType(session.getRewardType());
 
         if (nftType == null) {
             log.warn("⚠️ Invalid reward type for NFT minting: {}", session.getRewardType());
             return;
         }
 
-        // Mint the NFT
-        MintNftResponse response = nftServiceFacade.mintNft(session.getUserId(), nftType);
+        // ✅ Mint the NFT чрез NftProxyService
+        MintNftResponse response = nftProxyService.mintNft(session.getUserId(), nftType);
 
         gameService.markNftAsMinted(session.getId(), response.getTokenId());
 

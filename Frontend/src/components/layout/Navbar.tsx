@@ -36,8 +36,7 @@ export default function Navbar() {
             <div className="nav-links">
                 {/* Always visible */}
                 <Link to="/">Home</Link>
-                <Link to="/prices">Prices</Link>
-
+                <Link to="/customize">Customize</Link>
                 {!user ? (
                     <>
                         {/* NOT LOGGED IN */}
@@ -50,6 +49,7 @@ export default function Navbar() {
                         <Link to="/games">Games</Link>
                         <Link to="/catalogue">Catalogue</Link>
                         <Link to="/sounds">Sounds</Link>
+                        <Link to="/customize">Customize</Link>
                         <Link to="/profile">Profile</Link>
                         <Link to="/cart">Cart</Link>
                         <Link to="/my-nfts">My NFTs</Link>

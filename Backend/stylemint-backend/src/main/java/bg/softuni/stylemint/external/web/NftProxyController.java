@@ -1,11 +1,10 @@
-package bg.softuni.stylemint.nft.controller;
+// NftProxyController.java
+package bg.softuni.stylemint.external.web;
 
 import bg.softuni.dtos.nft.*;
 import bg.softuni.stylemint.auth.security.JwtUserDetails;
 import bg.softuni.stylemint.common.dto.ApiResponse;
-import bg.softuni.stylemint.external.facade.nft.NftServiceFacade;
-import bg.softuni.stylemint.user.dto.UserDTO;
-import bg.softuni.stylemint.user.service.UserService;
+import bg.softuni.stylemint.external.service.nft.NftProxyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -23,10 +22,9 @@ import static bg.softuni.stylemint.config.ApiPaths.BASE;
 @RestController
 @RequestMapping(BASE + "/nft")
 @RequiredArgsConstructor
-public class NftController {
+public class NftProxyController {
 
-    private final NftServiceFacade nftServiceFacade;
-    private final UserService userService;
+    private final NftProxyService nftProxyService; // ← ИЗПОЛЗВА ИНТЕРФЕЙС
 
     /**
      * Get user's NFTs
@@ -37,9 +35,9 @@ public class NftController {
             @AuthenticationPrincipal JwtUserDetails userDetails) {
 
         UUID userId = userDetails.getUserId();
-        log.debug("Fetching NFTs for user {}", userId);
+        log.debug("Controller: Fetching NFTs for user {}", userId);
 
-        UserNftsResponse response = nftServiceFacade.getUserNfts(userId);
+        UserNftsResponse response = nftProxyService.getUserNfts(userId);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -54,12 +52,9 @@ public class NftController {
             @AuthenticationPrincipal JwtUserDetails userDetails) {
 
         UUID userId = userDetails.getUserId();
-        UserDTO user = userService.findById(userId);
-        String ownerName = user.getDisplayName();
+        log.info("Controller: User {} requesting certificate for tokenId {}", userId, tokenId);
 
-        log.info("User {} requesting certificate for tokenId {}", ownerName, tokenId);
-
-        byte[] pdf = nftServiceFacade.downloadBadgeCertificate(tokenId, ownerName);
+        byte[] pdf = nftProxyService.downloadBadgeCertificate(tokenId, userId);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
@@ -84,9 +79,9 @@ public class NftController {
             @AuthenticationPrincipal JwtUserDetails userDetails) {
 
         UUID fromUserId = userDetails.getUserId();
-        log.info("Transferring NFT {} from {} to {}", tokenId, fromUserId, toUserId);
+        log.info("Controller: Transferring NFT {} from {} to {}", tokenId, fromUserId, toUserId);
 
-        TransferNftResponse response = nftServiceFacade.transferNft(
+        TransferNftResponse response = nftProxyService.transferNft(
                 tokenId, fromUserId, toUserId
         );
 

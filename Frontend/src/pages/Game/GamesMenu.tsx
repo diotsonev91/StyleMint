@@ -1,9 +1,9 @@
 // src/pages/GamesMenu.tsx
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-
+import { Link, useNavigate } from 'react-router-dom';
+import {useAuth} from "../../hooks/useAuth";
 import './GamesMenu.css';
-import {gameService, GameSessionDTO, GameType, GlobalStats} from "../../services/gameService";
+import { gameService, GameSessionDTO, GameType, GlobalStats, LeaderboardEntryDTO } from "../../services/gameService";
 
 interface UserBestScores {
     colorRush: number;
@@ -11,6 +11,8 @@ interface UserBestScores {
 }
 
 const GamesMenu: React.FC = () => {
+    const {user} = useAuth();
+    const [currentUserId, setCurrentUserId] = useState<string>('');
     const [unclaimedRewards, setUnclaimedRewards] = useState<GameSessionDTO[]>([]);
     const [bestScores, setBestScores] = useState<UserBestScores>({
         colorRush: 0,
@@ -21,16 +23,26 @@ const GamesMenu: React.FC = () => {
         totalGamesPlayed: 0,
         totalHighScores: 0
     });
+    const [leaderboard, setLeaderboard] = useState<LeaderboardEntryDTO[]>([]);
+    const [leaderboardLoading, setLeaderboardLoading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [scoresLoading, setScoresLoading] = useState(true);
     const [statsLoading, setStatsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [claimingIds, setClaimingIds] = useState<Set<string>>(new Set());
 
+    const navigate = useNavigate();
+
     useEffect(() => {
+
+        if(user?.id){
+            setCurrentUserId(user.id)
+        }
+
         loadUnclaimedRewards();
         loadBestScores();
         loadGlobalStats();
+        loadGlobalLeaderboard();
     }, []);
 
     const loadUnclaimedRewards = async () => {
@@ -87,6 +99,21 @@ const GamesMenu: React.FC = () => {
         }
     };
 
+    const loadGlobalLeaderboard = async () => {
+        try {
+            setLeaderboardLoading(true);
+            const result = await gameService.fetchTopScores(); // Използвай fetchTopScores без параметър за глобален
+
+            if (result.success && result.data) {
+                setLeaderboard(result.data);
+            }
+        } catch (err: any) {
+            console.error('Error loading leaderboard:', err);
+        } finally {
+            setLeaderboardLoading(false);
+        }
+    };
+
     const handleClaimReward = async (sessionId: string) => {
         try {
             setClaimingIds(prev => new Set(prev).add(sessionId));
@@ -110,6 +137,11 @@ const GamesMenu: React.FC = () => {
                 return newSet;
             });
         }
+    };
+
+    const handleSendNFT = (userId: string) => {
+        // Навигирай към NFT transfer страница с userId като параметър
+        navigate(`/nft/transfer?receiverId=${userId}`);
     };
 
     const getRewardDisplayName = (rewardType?: string) => {
@@ -136,65 +168,25 @@ const GamesMenu: React.FC = () => {
         return gameMap[gameType] || gameType;
     };
 
+    const renderMedal = (rank: number) => {
+        switch(rank) {
+            case 1: return '🥇';
+            case 2: return '🥈';
+            case 3: return '🥉';
+            default: return `${rank}.`;
+        }
+    };
+
+    const isCurrentUser = (userId: string) => {
+        return currentUserId && userId === currentUserId;
+    };
+
     return (
         <div className="games-menu-container">
             <div className="games-menu-header">
                 <h1>🎮 Choose Your Game</h1>
                 <p>Select a game to start playing</p>
             </div>
-
-            {/* Unclaimed Rewards Section */}
-            {unclaimedRewards.length > 0 && (
-                <div className="rewards-section">
-                    <h2>🎁 Unclaimed Rewards</h2>
-                    <div className="rewards-table">
-                        <div className="table-header">
-                            <span>Game</span>
-                            <span>Score</span>
-                            <span>Reward</span>
-                            <span>Action</span>
-                        </div>
-                        <div className="table-body">
-                            {unclaimedRewards.map((reward) => (
-                                <div key={reward.id} className="table-row">
-                                    <span className="game-name">
-                                        {getGameDisplayName(reward.gameType)}
-                                    </span>
-                                    <span className="score">
-                                        {reward.score} pts
-                                    </span>
-                                    <span className="reward-type">
-                                        {getRewardDisplayName(reward.rewardType)}
-                                    </span>
-                                    <button
-                                        className={`claim-btn ${claimingIds.has(reward.id) ? 'claiming' : ''}`}
-                                        onClick={() => handleClaimReward(reward.id)}
-                                        disabled={claimingIds.has(reward.id)}
-                                    >
-                                        {claimingIds.has(reward.id) ? 'Claiming...' : 'Claim Reward'}
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Error Display */}
-            {error && (
-                <div className="error-message">
-                    {error}
-                    <button onClick={() => setError(null)} className="dismiss-btn">×</button>
-                </div>
-            )}
-
-            {/* Loading State */}
-            {loading && (
-                <div className="loading-state">
-                    <div className="loading-spinner"></div>
-                    <p>Loading rewards...</p>
-                </div>
-            )}
 
             <div className="games-grid">
                 {/* Color Rush Card */}
@@ -272,8 +264,115 @@ const GamesMenu: React.FC = () => {
                 </Link>
             </div>
 
+            <div className="games-menu-container-flex">
+            {/* Global Leaderboard Section */}
+            <div className="leaderboard-section">
+                <h2>🏆 Global Leaderboard</h2>
+                <div className="leaderboard-table">
+                    <div className="table-header">
+                        <span>Rank</span>
+                        <span>Player</span>
+                        <span>Total Score</span>
+                        <span>Action</span>
+                    </div>
+                    <div className="table-body">
+                        {leaderboardLoading ? (
+                            <div className="loading-row">
+                                <span>Loading leaderboard...</span>
+                            </div>
+                        ) : leaderboard.length > 0 ? (
+                            leaderboard.map((entry) => (
+                                <div key={`${entry.userId}-${entry.gameType}`} className="table-row">
+                                    <span className="rank">
+                                        {renderMedal(entry.rank)}
+                                    </span>
+                                    <span className="player-name">
+                                        {entry.displayName || `Player ${entry.userId.substring(0, 8)}...`}
+                                    </span>
+                                    <span className="total-score">
+                                        {entry.totalScore.toLocaleString()} pts
+                                    </span>
+                                    {!isCurrentUser(entry.userId) ? (<button
+                                        className="nft-transfer-btn"
+                                        onClick={() => handleSendNFT(entry.userId)}
+                                        title="Send NFT to this player"
+                                    >
+                                        🎁 Send NFT
+                                    </button> ) :
+                                        (<button
+                                        className="nft-transfer-btn disabled"
+                                        disabled
+                                        title="Cannot send NFT to yourself"
+                                        >
+                                        🎁 Send NFT
+                                        </button>)}
+                                </div>
+                            ))
+                        ) : (
+                            <div className="no-data-row">
+                                <span>No leaderboard data available</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Unclaimed Rewards Section */}
+            {unclaimedRewards.length > 0 && (
+                <div className="rewards-section">
+                    <h2>🎁 Unclaimed Rewards</h2>
+                    <div className="rewards-table">
+                        <div className="table-header">
+                            <span>Game</span>
+                            <span>Score</span>
+                            <span>Reward</span>
+                            <span>Action</span>
+                        </div>
+                        <div className="table-body">
+                            {unclaimedRewards.map((reward) => (
+                                <div key={reward.id} className="table-row">
+                                    <span className="game-name">
+                                        {getGameDisplayName(reward.gameType)}
+                                    </span>
+                                    <span className="score">
+                                        {reward.score} pts
+                                    </span>
+                                    <span className="reward-type">
+                                        {getRewardDisplayName(reward.rewardType)}
+                                    </span>
+                                    <button
+                                        className={`claim-btn ${claimingIds.has(reward.id) ? 'claiming' : ''}`}
+                                        onClick={() => handleClaimReward(reward.id)}
+                                        disabled={claimingIds.has(reward.id)}
+                                    >
+                                        {claimingIds.has(reward.id) ? 'Claiming...' : 'Claim Reward'}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+            </div>
+            {/* Error Display */}
+            {error && (
+                <div className="error-message">
+                    {error}
+                    <button onClick={() => setError(null)} className="dismiss-btn">×</button>
+                </div>
+            )}
+
+            {/* Loading State */}
+            {loading && (
+                <div className="loading-state">
+                    <div className="loading-spinner"></div>
+                    <p>Loading rewards...</p>
+                </div>
+            )}
+
+
+
             {/* Stats Section */}
-            {/* Stats Section - S REALNI DANNI */}
             <div className="stats-section">
                 <div className="stat-item-gm">
                     <div className="stat-icon">👥</div>

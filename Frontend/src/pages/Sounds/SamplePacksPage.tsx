@@ -80,6 +80,7 @@ const SamplePacksPage: React.FC = () => {
                     downloadCount: pack.downloadCount || pack.downloads,
                     createdAt: pack.createdAt,
                     updatedAt: pack.updatedAt,
+                    authorId: pack.authorId,
                     isLoggedUserPack: pack.authorId === currentUser?.id,
                 }));
 

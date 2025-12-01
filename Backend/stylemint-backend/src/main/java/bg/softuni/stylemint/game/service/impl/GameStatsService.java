@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Service
@@ -17,7 +18,7 @@ public class GameStatsService {
      * Get count of unique players who played in the last 30 days
      */
     public long getActivePlayersCount() {
-        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        OffsetDateTime thirtyDaysAgo = OffsetDateTime.now().minusDays(30);
         return gameRepository.countDistinctUsersSince(thirtyDaysAgo);
     }
 

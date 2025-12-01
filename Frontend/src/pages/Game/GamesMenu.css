@@ -597,6 +597,11 @@
     transform: translateY(-5px);
 }
 
+.games-menu-container-flex{
+    display: flex;
+    gap: 55px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .personal-best {

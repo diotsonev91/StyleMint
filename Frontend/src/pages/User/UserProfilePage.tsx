@@ -1,9 +1,8 @@
 // src/pages/User/UserProfilePage.tsx
-// Universal version - handles route params OR direct props
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import UserProfile from '../../components/user/UserProfile';
+import UserPublicProfile from '../../components/user/UserPublicProfile'; // 👈 НОВИЯТ КОМПОНЕНТ
 import { useAuth } from '../../hooks/useAuth';
 import { userProfileService, UserProfileDTO } from '../../services/userProfileService';
 
@@ -17,6 +16,7 @@ function UserProfilePage({ profileUserId: propUserId }: UserProfilePageProps) {
 
     // Use prop if provided, otherwise use route param
     const targetUserId = propUserId || paramUserId;
+    const isOwnProfile = user && targetUserId === user.id;
 
     const [profileData, setProfileData] = useState<UserProfileDTO | null>(null);
     const [loading, setLoading] = useState(true);
@@ -77,12 +77,23 @@ function UserProfilePage({ profileUserId: propUserId }: UserProfilePageProps) {
         return <div className="page-error">Profile Not Found</div>;
     }
 
-    return (
+    // 👇 КЛЮЧОВА ПРОМЯНА ТУК:
+    return isOwnProfile ? (
+        // Собствен профил - пълна версия
         <UserProfile
             userId={targetUserId}
             currentUserId={user?.id}
             displayName={profileData.displayName}
             email={profileData.email}
+            avatarUrl={profileData.avatarUrl}
+            memberSince={profileData.memberSince}
+        />
+    ) : (
+        // Публичен профил - ограничена версия
+        <UserPublicProfile
+            userId={targetUserId}
+            currentUserId={user?.id}
+            displayName={profileData.displayName}
             avatarUrl={profileData.avatarUrl}
             memberSince={profileData.memberSince}
         />

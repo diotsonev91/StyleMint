@@ -8,6 +8,7 @@ import { MdOutlineCallSplit } from "react-icons/md";
 import type {AudioSample} from '../../types';
 import {addSampleToCart} from '../../services/cartService';
 import {useAuth} from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 import './SampleItem.css';
 
@@ -38,7 +39,7 @@ const SampleItem: React.FC<SampleItemProps> = ({
     const audioSnap = useSnapshot(audioPlayerStore);
     const cartSnap = useSnapshot(cartState);
     const {user} = useAuth();
-
+    const navigate = useNavigate();
     // Like state
     const [isLiked, setIsLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(0);
@@ -224,6 +225,17 @@ const SampleItem: React.FC<SampleItemProps> = ({
                             <span className="meta-item">
                 <span className="meta-text">BPM: {sample.bpm}</span>
             </span>
+                        )}
+
+                        {sample.authorId != null && (
+                            <span className="meta-item">
+        <button
+            className="meta-text author-link"
+            onClick={() => navigate(`/user/${sample.authorId}`)}
+        >
+            👤 Author
+        </button>
+    </span>
                         )}
 
                         {/* Key */}

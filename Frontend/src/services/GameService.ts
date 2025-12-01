@@ -8,6 +8,7 @@ import {
     type UserGameSummaryDTO
 } from "../api/game.api";
 
+
 interface SaveScoreParams {
     score: number;
     timestamp: number;
@@ -19,6 +20,7 @@ export interface GlobalStats {
     totalGamesPlayed: number;
     totalHighScores: number;
 }
+
 
 class GameService {
     /** Map game names from client to enum used by backend */
@@ -57,6 +59,7 @@ class GameService {
     async getGlobalStats(): Promise<{ success: boolean; data?: GlobalStats; error?: string }> {
         try {
             const response = await gameApi.getGlobalStats();
+            console.log("RESPONSE FROM STATS" + response);
             return { success: true, data: response.data };
         } catch (error: any) {
             console.error("❌ Error loading global stats:", error);

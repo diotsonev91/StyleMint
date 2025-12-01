@@ -42,44 +42,20 @@ const Footer: React.FC = () => {
           <div className="footer-section">
             <h4 className="footer-heading">Explore</h4>
             <ul className="footer-links">
-              <li><a href="#customizer">3D Customizer</a></li>
-              <li><a href="#samples">Download Samples</a></li>
-              <li><a href="#creator-zone">Creator Zone</a></li>
-              <li><a href="#pseudo-nft">Pseudo-NFTs</a></li>
-              <li><a href="#store">Store</a></li>
+              <li><a href="/customize">3D Customizer</a></li>
+              <li><a href="/samples">Download Samples</a></li>
+              <li><a href="/games">Games</a></li>
+              <li><a href="/my-nft">Pseudo-NFTs</a></li>
+              <li><a href="/catalogue">Store</a></li>
             </ul>
           </div>
 
           {/* Support */}
           <div className="footer-section">
             <h4 className="footer-heading">Support</h4>
-            <ul className="footer-links">
-              <li><a href="#contact">Contact</a></li>
-              <li><a href="#faq">FAQ</a></li>
-              <li><a href="#shipping">Shipping & Returns</a></li>
-              <li><a href="#privacy">Privacy Policy</a></li>
-              <li><a href="#terms">Terms of Service</a></li>
-            </ul>
+            <p> stylemint@gmail.com</p>
           </div>
 
-          {/* Newsletter */}
-          <div className="footer-section newsletter-section">
-            <h4 className="footer-heading">Stay in the Loop</h4>
-            <p className="newsletter-text">
-              Join our creative tribe. Get fresh drops, free samples, and exclusive perks.
-            </p>
-            <form onSubmit={handleNewsletterSubmit} className="newsletter-form">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="newsletter-input"
-                required
-              />
-              <button type="submit" className="newsletter-btn">Join</button>
-            </form>
-          </div>
         </div>
       </div>
 

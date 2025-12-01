@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -109,5 +110,5 @@ public interface GameRepository extends JpaRepository<GameSession, UUID> {
 
     // Ako nqmashe distinct users count method:
     @Query("SELECT COUNT(DISTINCT g.userId) FROM GameSession g WHERE g.playedAt >= :since")
-    long countDistinctUsersSince(@Param("since") LocalDateTime since);
+    long countDistinctUsersSince(@Param("since") OffsetDateTime since);
 }

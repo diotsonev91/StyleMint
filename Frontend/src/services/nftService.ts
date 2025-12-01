@@ -9,8 +9,26 @@ export const nftService = {
      * Get current user's NFTs
      */
     async getMyNfts(): Promise<UserNftsResponse> {
-        const response = await nftApi.getMyNfts();
-        return response.data.data;
+        try {
+            const response = await nftApi.getMyNfts();
+            console.log(response.status)
+            return response.data.data;
+
+
+        } catch (error: any) {
+            console.error('❌ Failed to get NFTs:', error);
+
+            // Ако NFT service е недостъпен, върни празен отговор
+            if (error.response?.status === 503 || error.message?.includes('unavailable')) {
+                console.warn('⚠️ NFT service is offline, returning empty response');
+                if (error.response?.status === 503 || error.message?.includes('unavailable')) {
+                    console.warn('⚠️ NFT service is offline');
+                    throw new Error('NFT service is currently offline. Please try again later.');
+                }
+            }
+
+            throw new Error(error.response?.data?.message || 'Failed to load NFTs');
+        }
     },
 
     /**
@@ -37,6 +55,12 @@ export const nftService = {
             console.log('✅ Certificate downloaded successfully');
         } catch (error: any) {
             console.error('❌ Failed to download certificate:', error);
+
+            if (error.response?.status === 503) {
+                alert('NFT service is currently offline. Please try again later.');
+                return;
+            }
+
             throw new Error(error.response?.data?.message || 'Failed to download certificate');
         }
     },
@@ -57,6 +81,12 @@ export const nftService = {
             console.log('✅ Certificate preview opened');
         } catch (error: any) {
             console.error('❌ Failed to preview certificate:', error);
+
+            if (error.response?.status === 503) {
+                alert('NFT service is currently offline. Please try again later.');
+                return;
+            }
+
             throw new Error(error.response?.data?.message || 'Failed to preview certificate');
         }
     },
@@ -71,6 +101,11 @@ export const nftService = {
             return response.data.data;
         } catch (error: any) {
             console.error('❌ Failed to transfer NFT:', error);
+
+            if (error.response?.status === 503) {
+                throw new Error('NFT service is currently offline. Please try again later.');
+            }
+
             throw new Error(error.response?.data?.message || 'Failed to transfer NFT');
         }
     },
