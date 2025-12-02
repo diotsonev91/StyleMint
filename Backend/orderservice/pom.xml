@@ -93,7 +93,14 @@
 			<artifactId>shared-dtos</artifactId>
 			<version>1.5.1</version>
 		</dependency>
-    </dependencies>
+
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+	</dependencies>
 
 	<build>
 		<plugins>

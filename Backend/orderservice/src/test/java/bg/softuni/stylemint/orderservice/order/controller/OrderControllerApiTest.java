@@ -4,6 +4,7 @@ import bg.softuni.dtos.enums.order.OrderStatus;
 import bg.softuni.dtos.enums.order.OrderItemStatus;
 import bg.softuni.dtos.enums.payment.ProductType;
 import bg.softuni.dtos.order.*;
+import bg.softuni.stylemint.orderservice.exceptions.GlobalExceptionHandler;
 import bg.softuni.stylemint.orderservice.order.service.OrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,13 +44,18 @@ class OrderControllerApiTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(orderController).build();
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(orderController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
         objectMapper = new ObjectMapper();
 
         orderId = UUID.randomUUID();
         userId = UUID.randomUUID();
         itemId = UUID.randomUUID();
     }
+
 
     /* ==========================================================
        CREATE ORDER TESTS

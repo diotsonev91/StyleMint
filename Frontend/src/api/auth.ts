@@ -53,6 +53,10 @@ export async function register(
  * No need to manually handle tokens - browser automatically sends cookies
  */
 export async function login(email: string, password: string): Promise<AuthResponse> {
+
+    await API.get("/auth/csrf");
+
+
     // 1. Login
     const res = await API.post<AuthResponse>(
         "/auth/login",

@@ -3,18 +3,41 @@ import axios, { InternalAxiosRequestConfig } from "axios";
 // ==================== API Instance Configuration ====================
 
 const API = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1",
+    baseURL: "/api/v1", // Vite proxy
     withCredentials: true,
     headers: {
         "Content-Type": "application/json",
     },
 });
 
+// ==================== Helper: Get CSRF Token from Cookie ====================
+
+function getCsrfToken(): string | null {
+    const cookies = document.cookie.split('; ');
+    const csrfCookie = cookies.find(c => c.startsWith('XSRF-TOKEN='));
+    if (csrfCookie) {
+        return csrfCookie.split('=')[1];
+    }
+    return null;
+}
+
 // ==================== Request Interceptor ====================
 
 API.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         config.withCredentials = true;
+
+        // Add CSRF token for state-changing requests
+        if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+            const csrfToken = getCsrfToken();
+            if (csrfToken) {
+                config.headers['X-XSRF-TOKEN'] = csrfToken;
+                console.log('✅ CSRF token added:', csrfToken.substring(0, 10) + '...');
+            } else {
+                console.error('❌ CSRF token NOT found in cookies!');
+            }
+        }
+
         return config;
     },
     (error) => {
@@ -32,13 +55,11 @@ API.interceptors.response.use(
         if (error.response?.status === 401) {
             const requestUrl = originalRequest?.url || '';
 
-            // Don't retry refresh endpoint
             if (requestUrl.includes('/auth/refresh')) {
                 console.log('⛔ Token refresh failed');
                 return Promise.reject(error);
             }
 
-            // Retry with token refresh only once
             if (!originalRequest._retry) {
                 originalRequest._retry = true;
 

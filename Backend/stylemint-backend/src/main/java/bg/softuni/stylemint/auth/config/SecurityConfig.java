@@ -17,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 import static bg.softuni.stylemint.config.ApiPaths.BASE;
@@ -69,42 +70,43 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+        var csrfHandler = new org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler();
+        csrfHandler.setCsrfRequestAttributeName("_csrf");
+
         return http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
-
-                // CSRF is disabled for development with separate frontend/backend ports
-                // See class-level documentation for details
-                .csrf(AbstractHttpConfigurer::disable)
-
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(new CustomCookieCsrfTokenRepository())
+                        .csrfTokenRequestHandler(csrfHandler)
+                        .ignoringRequestMatchers(
+                                BASE + "/auth/register",
+                                BASE + "/auth/login",
+                                BASE + "/auth/refresh",
+                                BASE + "/auth/logout"
+                        )
+                )
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ Public endpoints (no authentication)
                         .requestMatchers(
                                 BASE + "/auth/register",
                                 BASE + "/auth/login",
                                 BASE + "/auth/refresh",
                                 BASE + "/orders/payment-success",
                                 BASE + "/auth/logout",
+                                BASE + "/auth/csrf",
 
-                                // 🎵 PUBLIC SOUND PACK ENDPOINTS
                                 BASE + "/audio/packs/latest",
                                 BASE + "/audio/packs/top-rated",
                                 BASE + "/audio/packs/most-downloaded",
 
-                                // 👕 PUBLIC DESIGN ENDPOINTS
                                 BASE + "/designs/top-liked",
                                 BASE + "/designs/latest",
                                 BASE + "/designs/likes-count"
                         ).permitAll()
-
-                        // ✅ Authenticated endpoints
                         .requestMatchers(BASE + "/auth/me").authenticated()
-
-                        // ✅ All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
-
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -117,24 +119,16 @@ public class SecurityConfig {
                             response.getWriter().write("{\"error\":\"Forbidden - Insufficient permissions\"}");
                         })
                 )
-
-                // ✅ JWT filter runs before Spring Security's default authentication
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
-    /**
-     * Authentication Provider for login with email/password
-     *
-     * This is ONLY used for the /login endpoint to:
-     * 1. Load user from database via UserDetailsService
-     * 2. Validate password with BCryptPasswordEncoder
-     *
-     * After login, JWT tokens are used and this provider is NOT invoked.
-     *
-     * Note: Spring Security automatically uses this provider when AuthenticationManager
-     * is called in AuthServiceImpl.login()
-     */
+
+    @Bean
+    public org.springframework.web.multipart.MultipartResolver multipartResolver() {
+        return new org.springframework.web.multipart.support.StandardServletMultipartResolver();
+    }
+
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();

@@ -51,7 +51,7 @@ public class Order {
 
     private String trackingNumber;
 
-    // 🔥 THIS FIXES HIBERNATE DIRTY CHECKING
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
     private List<OrderItem> items = new ArrayList<>();
+
 }

@@ -134,7 +134,7 @@ export const clothDesignService = {
 
             if (label) formData.append("label", label);
             if (clothType) formData.append("clothType", clothType);
-            if (state.page) formData.append("customizationType", state.page === "advanced" ? "ADVANCED" : "BASIC");
+            if (state.page) formData.append("customizationType", state.page === "advanced" ? "ADVANCED" : "SIMPLE");
 
             // SAFE customDecalInfo access
             const customDecalInfo = state.customDecal?.file ? {

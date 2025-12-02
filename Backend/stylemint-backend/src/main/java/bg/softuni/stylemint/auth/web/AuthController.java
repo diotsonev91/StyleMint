@@ -15,13 +15,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
 import static bg.softuni.stylemint.config.ApiPaths.BASE;
-
-
 
 @RestController
 @RequestMapping(BASE + "/auth")
@@ -39,6 +38,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody UserLoginRequestDTO dto,
+                                                 HttpServletRequest request,
                                                  HttpServletResponse response) {
         String accessToken = authService.login(dto);
         UserDTO user = userService.findByEmail(dto.getEmail());
@@ -92,6 +92,13 @@ public class AuthController {
 
         return ResponseEntity.ok(new AuthResponseDTO("Access token refreshed"));
     }
+
+    @GetMapping("/csrf")
+    public Map<String, String> csrf(CsrfToken token) {
+        return Map.of("csrfToken", token.getToken());
+    }
+
+
 
     @PostMapping("/logout")
     public ResponseEntity<AuthResponseDTO> logout(
@@ -166,5 +173,6 @@ public class AuthController {
                 .map(Enum::name)  // UserRole.ADMIN -> "ADMIN"
                 .toList();
     }
+
 
 }

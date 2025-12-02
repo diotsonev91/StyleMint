@@ -13,12 +13,16 @@ export default defineConfig({
       }
     }
   },
-  server: {
-    //DOING THIS BECAUSE IF MAKE IT CORRECT WAY SHOULD CONFIG IN CLOUD AND COULD HAVE BUGS IN EXAM DONT WANT TO HAPPEN
-    // I KNOW ITS NOT THE CORRECT WAY
-    headers: {
-    'Cross-Origin-Embedder-Policy': 'unsafe-none',
-      'Cross-Origin-Opener-Policy': 'same-origin', 
+    server: {
+        port: 5173,
+        proxy: {
+            // Proxy всички /api заявки към backend-а
+            '/api': {
+                target: 'http://localhost:8080',
+                changeOrigin: true,
+                secure: false,
+                // Не пренаписваме path-а, защото backend очаква /api/v1
+            }
+        }
     }
-  }
 })
