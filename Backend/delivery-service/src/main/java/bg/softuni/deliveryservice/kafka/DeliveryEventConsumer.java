@@ -22,7 +22,6 @@ public class DeliveryEventConsumer {
             deliveryService.startDelivery(event);
         } catch (Exception e) {
             log.error("❌ Failed to process StartDeliveryEvent for order {}", event.getOrderId(), e);
-            // TODO: Dead letter queue or retry logic
         }
     }
 }

@@ -9,7 +9,6 @@ import bg.softuni.stylemint.product.fashion.dto.*;
 import bg.softuni.stylemint.product.fashion.enums.ClothType;
 import bg.softuni.stylemint.product.fashion.enums.CustomizationType;
 import bg.softuni.stylemint.product.fashion.exceptions.ClothDesignNotFoundException;
-import bg.softuni.stylemint.product.fashion.exceptions.ClothDesignProcessingException;
 import bg.softuni.stylemint.product.fashion.exceptions.ClothDesignUploadException;
 import bg.softuni.stylemint.product.fashion.model.ClothDesign;
 import bg.softuni.stylemint.product.fashion.repository.ClothDesignRepository;

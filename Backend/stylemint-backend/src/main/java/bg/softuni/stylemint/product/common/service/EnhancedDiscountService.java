@@ -1,6 +1,7 @@
 package bg.softuni.stylemint.product.common.service;
 
 import bg.softuni.stylemint.game.enums.RewardType;
+import bg.softuni.stylemint.product.common.dto.DiscountInfo;
 import bg.softuni.stylemint.product.common.model.BaseProduct;
 
 import java.util.List;
@@ -25,19 +26,8 @@ public interface EnhancedDiscountService extends DiscountService {
 
     // Universal calculation
     double calculateFinalPrice(BaseProduct product, UUID userId);
-    double calculateFinalPrice(BaseProduct product);
 
     // Info
     DiscountInfo getDiscountInfo(UUID userId, BaseProduct product);
 
-    @lombok.Builder
-    @lombok.Data
-    class DiscountInfo {
-        private double basePrice;
-        private double productSpecificDiscount;
-        private double nftDiscount;
-        private double oneTimeDiscount;
-        private double finalPrice;
-        private double totalDiscountPercentage;
-    }
 }

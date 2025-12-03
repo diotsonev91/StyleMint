@@ -104,30 +104,10 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response) {
 
-        // Create deletion cookies
-        ResponseCookie clearAccess = ResponseCookie.from("SM_ACCESS", "")
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(0)
-                .domain("localhost")
-                .sameSite("Lax")
-                .build();
+        // ⭐ БЕЗ blacklist, просто чистим cookies
+        authService.logout(response);
 
-        ResponseCookie clearRefresh = ResponseCookie.from("SM_REFRESH", "")
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(0)
-                .domain("localhost")
-                .sameSite("Lax")
-                .build();
-
-        // Set headers
-        response.setHeader("Set-Cookie", clearAccess.toString());
-        response.addHeader("Set-Cookie", clearRefresh.toString());
-
-        return ResponseEntity.ok(new AuthResponseDTO("Logged out successfully"));
+        return ResponseEntity.ok(new AuthResponseDTO("Logged out successfully. Tokens cleared from client."));
     }
 
     /**

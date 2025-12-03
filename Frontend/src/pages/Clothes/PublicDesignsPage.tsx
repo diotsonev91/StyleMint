@@ -6,6 +6,8 @@ import { clothDesignService } from "../../services/clothDesignService";
 import { DesignPublicDTO, ClothType } from "../../api/clothDesign.api";
 import {ClothItemPreview} from "../../components/three/previews/ClothItemPreview";
 import "./PublicDesignsPage.css";
+import {state} from "../../state";
+import {addClothToCart} from "../../services/cartService";
 
 
 const CLOTH_TYPE_LABELS: Record<ClothType, string> = {
@@ -117,8 +119,50 @@ export function PublicDesignsPage() {
     };
 
     const handleAddToCart = async (design: DesignPublicDTO) => {
-        // TODO: Implement add to cart functionality
-        alert("Add to cart functionality coming soon!");
+        // Проверка дали потребителят е логнат (по избор)
+        // Можете да проверите със session или да оставите на cartService да се справи
+
+        // Проверка за наличие на customization data
+        if (!design.customizationData) {
+            alert("Cannot add this design to cart - missing customization data");
+            return;
+        }
+
+        try {
+            const customization = design.customizationData;
+            const designName = design.label || CLOTH_TYPE_LABELS[design.clothType];
+
+            // 1. Зареждане на design данните във Valtio state
+            state.selectedColor = customization.selectedColor || "#ffffff";
+            state.selectedDecal = customization.selectedDecal || "none";
+            state.selected_type = design.clothType.toLowerCase();
+            state.decalPosition = customization.decalPosition || [0, 0, 0];
+            state.rotationY = customization.rotationY || 0;
+
+            // Допълнителни свойства
+            state.decals = customization.decals || [];
+            state.colors = customization.colors || [];
+
+            // Custom decal support
+            if (customization.hasCustomDecal && design.customDecalUrl) {
+                state.customDecal = {
+                    file: null,
+                    previewUrl: design.customDecalUrl
+                };
+            } else {
+                state.customDecal = null;
+            }
+
+            // 2. Добавяне в количката чрез cartService
+            await addClothToCart(design);
+
+            // 3. Показване на успешно съобщение
+            alert(`✅ "${designName}" added to cart!`);
+
+        } catch (err) {
+            console.error("Failed to add to cart:", err);
+            alert("Failed to add item to cart. Please try again.");
+        }
     };
 
     const openPreview = (design: DesignPublicDTO) => {
@@ -334,7 +378,10 @@ export function PublicDesignsPage() {
                                             {design.isLikedByUser ? '❤️' : '🤍'} Like
                                         </button>
                                         <button
-                                            onClick={() => handleAddToCart(design)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleAddToCart(design);
+                                            }}
                                             className="btn-action btn-cart"
                                             title="Add to cart"
                                         >

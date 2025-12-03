@@ -33,40 +33,11 @@ public class SecurityUtil {
     }
 
     /**
-     * Get current user email
-     */
-    public static String getCurrentUserEmail() {
-        return getCurrentUserDetails().getEmail();
-    }
-
-    /**
      * Check if current user has specific role
      */
     public static boolean hasRole(UserRole role) {
         return getCurrentUserDetails().getAuthorities().stream()
                 .anyMatch(auth -> auth.getAuthority().equals("ROLE_" + role.name()));
-    }
-
-    /**
-     * Check if current user has any of the specified roles
-     */
-    public static boolean hasAnyRole(UserRole... roles) {
-        for (UserRole role : roles) {
-            if (hasRole(role)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Get current user roles as Set<UserRole>
-     */
-    public static Set<UserRole> getCurrentUserRoles() {
-        return getCurrentUserDetails().getAuthorities().stream()
-                .map(auth -> auth.getAuthority().substring(5)) // Remove "ROLE_"
-                .map(UserRole::valueOf)
-                .collect(Collectors.toSet());
     }
 
     /**

@@ -6,6 +6,11 @@ import {ClothItemPreview} from "../previews/ClothItemPreview";
 import {ClothType, DesignPublicDTO} from "../../../api/clothDesign.api";
 import { clothDesignService } from '../../../services/clothDesignService';
 
+
+
+import {addClothToCart} from "../../../services/cartService";
+import {state} from "../../../state"; // ⭐ Import state
+
 interface DesignCardSmallProps {
     design: DesignPublicDTO;
     isLoggedIn: boolean;
@@ -86,15 +91,53 @@ const DesignCardSmall: React.FC<DesignCardSmallProps> = ({ design, isLoggedIn })
         }
     };
 
-    const handleAddToCart = async () => {
+    const handleAddToCart = async (e?: React.MouseEvent) => {
+        if (e) {
+            e.stopPropagation();
+        }
+
         if (!isLoggedIn) {
             alert("Please login to add items to cart");
             return;
         }
 
-        // TODO: Implement add to cart functionality
-        alert("Add to cart functionality coming soon!");
-        setShowPreview(false);
+        try {
+            // Създаване на cart item от design
+            const customization = localDesign.customizationData;
+
+            // Зареждане на design във Valtio state (задължително преди addClothToCart)
+            state.selectedColor = customization?.selectedColor || "#ffffff";
+            state.selectedDecal = customization?.selectedDecal || "none";
+            state.selected_type = localDesign.clothType.toLowerCase();
+            state.decalPosition = customization?.decalPosition || [0, 0, 0];
+            state.rotationY = customization?.rotationY || 0;
+
+            // Допълнителни свойства
+            state.decals = customization?.decals || [];
+            state.colors = customization?.colors || [];
+
+            // Custom decal support
+            if (customization?.hasCustomDecal && localDesign.customDecalUrl) {
+                state.customDecal = {
+                    file: null,
+                    previewUrl: localDesign.customDecalUrl
+                };
+            } else {
+                state.customDecal = null;
+            }
+
+            // Добавяне в количката
+            await addClothToCart(localDesign);
+
+            alert(`✅ "${localDesign.label || CLOTH_TYPE_LABELS[localDesign.clothType]}" added to cart!`);
+
+            // Затваряне на preview модала след добавяне (по избор)
+            setShowPreview(false);
+
+        } catch (err) {
+            console.error("Failed to add to cart:", err);
+            alert("Failed to add item to cart. Please try again.");
+        }
     };
 
     const handleViewFullPage = () => {
@@ -244,6 +287,7 @@ const DesignCardSmall: React.FC<DesignCardSmallProps> = ({ design, isLoggedIn })
                             </div>
                         </div>
 
+                        // В modal-actions секцията в preview модала:
                         <div className="modal-actions">
                             <button
                                 onClick={handleToggleLike}

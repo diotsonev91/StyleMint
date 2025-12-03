@@ -104,7 +104,7 @@ export function CartPage() {
                     <p className="empty-cart-text">Your cart is empty.</p>
                     <p className="empty-cart-subtext">Add items to see them here.</p>
                     <div className="empty-cart-actions">
-                        <button onClick={() => navigate('/customizer')} className="btn btn-primary">
+                        <button onClick={() => navigate('/customize')} className="btn btn-primary">
                             Customize Clothes
                         </button>
                         <button onClick={() => navigate('/samples')} className="btn btn-secondary">

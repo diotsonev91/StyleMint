@@ -2,7 +2,7 @@ import API from "./config";
 
 const USER_STATS_BASE = "/users/stats";
 const USER_PROFILE_BASE = "/users/profile";
-
+const USER_BASE = "/users"
 export const userProfileApi = {
     /**
      * Get user statistics by user ID
@@ -75,5 +75,24 @@ export const userProfileApi = {
      */
     async getAllRegistrationStats() {
         return API.get(`${USER_STATS_BASE}/count/all`);
-    }
+    },
+
+    /**
+     * Delete user profile
+     * ⚠️ WARNING: This is permanent and cannot be undone!
+     *
+     * Endpoint: DELETE /api/v1/users/{userId}
+     *
+     * @param userId - UUID of the user to delete
+     * @returns Promise that resolves when user is deleted
+     *
+     * Security:
+     * - Only the user themselves can delete their own profile (@PreAuthorize("isAuthenticated()"))
+     * - Backend validates that currentUserId matches the userId being deleted
+     * - If validation fails, returns 403 Forbidden
+     */
+    async deleteUser(userId: string) {
+        return API.delete(`${USER_BASE}/${userId}`);
+    },
+
 };

@@ -1,35 +1,17 @@
-// CheckoutSummary.tsx - CORRECTED with orderService integration
+// CheckoutSummary.tsx - WITH DISCOUNT BREAKDOWN
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSnapshot } from "valtio";
 import { cartState } from "../../state/CartItemState";
 import { ThreeCanvasAdvanced } from "../../components/three/ThreeCanvasAdvanced";
 import { orderService } from "../../services/orderService";
+import { discountService } from "../../services/discountService";  // ← ADD THIS
 import { clearCart, hasPhysicalItems, hasDigitalItems } from "../../services/cartService";
 import { useAuth } from "../../hooks/useAuth";
 import type { OrderDetails } from "./CheckoutDetails";
 import type { ClothesCartItem } from "../../state/CartItemState";
+import type { CartDiscountBreakdown } from "../../types/discountTypes";  // ← ADD THIS
 import "./CheckoutSummary.css";
-
-// Helper function to get item price (client-side estimate)
-const getItemPrice = (item: any): number => {
-    switch (item.type) {
-        case 'clothes':
-            return 29.99; // Base price - real price calculated server-side
-        case 'sample':
-            return item.price;
-        case 'pack':
-            return item.price;
-        default:
-            return 0;
-    }
-};
-
-// Helper function to get item total (price * quantity)
-const getItemTotal = (item: any): number => {
-    const quantity = item.quantity || 1;
-    return getItemPrice(item) * quantity;
-};
 
 export function CheckoutSummary() {
     const navigate = useNavigate();
@@ -39,6 +21,10 @@ export function CheckoutSummary() {
     const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // ← ADD DISCOUNT BREAKDOWN STATE
+    const [discountBreakdown, setDiscountBreakdown] = useState<CartDiscountBreakdown | null>(null);
+    const [loadingDiscounts, setLoadingDiscounts] = useState(false);
 
     useEffect(() => {
         // Check if user is logged in
@@ -58,17 +44,41 @@ export function CheckoutSummary() {
         // If cart is empty, redirect
         if (snap.items.length === 0) {
             navigate("/cart");
+            return;
         }
+
+        // ← LOAD DISCOUNT BREAKDOWN
+        loadDiscountBreakdown();
     }, [navigate, snap.items.length, user]);
 
-    // Calculate client-side totals (estimates)
-    const subtotal = snap.items.reduce((sum, item) => {
-        return sum + getItemTotal(item);
+    // ← ADD THIS FUNCTION
+    const loadDiscountBreakdown = async () => {
+        if (snap.items.length === 0) return;
+
+        try {
+            setLoadingDiscounts(true);
+            const breakdown = await discountService.getCartBreakdown(snap.items);
+            setDiscountBreakdown(breakdown);
+        } catch (err) {
+            console.error("Failed to load discount breakdown:", err);
+            // Non-critical error - continue without breakdown
+        } finally {
+            setLoadingDiscounts(false);
+        }
+    };
+
+    // Calculate totals from discount breakdown (if available) or fallback to estimates
+    const subtotal = discountBreakdown?.cartBasePrice ?? snap.items.reduce((sum, item) => {
+        const quantity = item.quantity || 1;
+        const price = item.price || 0;
+        return sum + (price * quantity);
     }, 0);
 
-    const shipping = hasPhysicalItems() ? 9.99 : 0; // No shipping for digital only
-    const tax = subtotal * 0.08; // 8% tax (example)
-    const total = subtotal + shipping + tax;
+    const finalPrice = discountBreakdown?.cartFinalPrice ?? subtotal;
+    const totalSavings = discountBreakdown?.totalSavings ?? 0;
+
+
+    const total = finalPrice;
 
     const handlePlaceOrder = async () => {
         if (!orderDetails || !user) return;
@@ -79,31 +89,23 @@ export function CheckoutSummary() {
         try {
             console.log("📦 Creating order with orderService...");
 
-            // Determine delivery address
             const deliveryAddress = hasPhysicalItems()
                 ? `${orderDetails.address}, ${orderDetails.city}, ${orderDetails.state} ${orderDetails.zipCode}, ${orderDetails.country}`
                 : undefined;
 
-            // Create order and redirect to Stripe
-            // orderService will automatically redirect to Stripe if paymentUrl exists
             await orderService.createOrderAndPay(
                 [...snap.items],
                 user.id,
                 deliveryAddress,
-                'STRIPE', // Always use Stripe for now
+                'STRIPE',
                 {
                     name: orderDetails.fullName,
                     phone: orderDetails.phone
                 }
             );
 
-            // If we reach here, it means no Stripe redirect (cash payment)
-            // Clear cart and go to success
             clearCart();
             navigate("/checkout/success");
-
-            // Note: If Stripe redirect happens, this code won't execute
-            // because window.location.href changes
 
         } catch (err: any) {
             console.error("❌ Order failed:", err);
@@ -138,7 +140,6 @@ export function CheckoutSummary() {
                     </div>
                 </div>
 
-                {/* Error Message */}
                 {error && (
                     <div className="checkout-error">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -154,13 +155,16 @@ export function CheckoutSummary() {
                     <div className="summary-items">
                         <h2 className="summary-section-title">Order Items</h2>
 
-                        {snap.items.map((item) => {
+                        {snap.items.map((item, index) => {
                             const quantity = item.quantity || 1;
-                            const itemTotal = getItemTotal(item);
+                            const itemPrice = item.price || 0;
+
+                            // Get item-specific discount info if available
+                            const itemBreakdown = discountBreakdown?.items[index];
 
                             return (
                                 <div key={item.id} className="summary-item-card">
-                                    {/* Render different previews based on item type */}
+                                    {/* Preview based on type */}
                                     {item.type === 'clothes' ? (
                                         <div className="summary-item-preview">
                                             <ThreeCanvasAdvanced
@@ -197,7 +201,7 @@ export function CheckoutSummary() {
                                     ) : null}
 
                                     <div className="summary-item-info">
-                                        {/* Render different info based on item type */}
+                                        {/* Item details based on type */}
                                         {item.type === 'clothes' ? (
                                             <>
                                                 <h3 className="summary-item-name">
@@ -234,22 +238,154 @@ export function CheckoutSummary() {
                                             </>
                                         ) : null}
 
+                                        {/* ← ENHANCED PRICING WITH DISCOUNT INFO */}
                                         <div className="summary-item-price">
-                                            €{itemTotal.toFixed(2)}
-                                            <span className="price-note">* Estimate</span>
+                                            {itemBreakdown ? (
+                                                <>
+                                                    {itemBreakdown.basePrice !== itemBreakdown.finalPrice && (
+                                                        <span className="original-price-strike">
+                                                            {discountService.formatPrice(itemBreakdown.basePrice * quantity)}
+                                                        </span>
+                                                    )}
+                                                    <span className="final-price">
+                                                        {discountService.formatPrice(itemBreakdown.finalPrice * quantity)}
+                                                    </span>
+                                                    {itemBreakdown.totalDiscountPercent > 0 && (
+                                                        <span className="discount-badge">
+                                                            {discountService.formatPercent(itemBreakdown.totalDiscountPercent)} OFF
+                                                        </span>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    €{(itemPrice * quantity).toFixed(2)}
+                                                    {loadingDiscounts && <span className="loading-discounts">Loading discounts...</span>}
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                             );
                         })}
 
-                        <div className="price-calculation-note">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span>Final prices with your discounts will be calculated on the next page</span>
+
+                    {/* ========== DISCOUNT BREAKDOWN SECTION ========== */}
+                    {discountBreakdown && discountBreakdown.items.some(item => item.totalDiscountPercent > 0) && (
+                        <div className="discount-breakdown-section">
+                            <h3 className="discount-breakdown-title">
+                                💰 Active Discounts Breakdown
+                            </h3>
+
+                            <div className="discount-breakdown-grid">
+                                {discountBreakdown.items.map((itemBreakdown, index) => {
+                                    // Skip items with no discounts
+                                    if (itemBreakdown.totalDiscountPercent === 0) return null;
+
+                                    const cartItem = snap.items[index];
+
+                                    return (
+                                        <div key={index} className="discount-item-card">
+                                            <div className="discount-item-header">
+                            <span className="discount-item-icon">
+                                {itemBreakdown.productType === 'CLOTHES' && '👕'}
+                                {itemBreakdown.productType === 'SAMPLE' && '🎵'}
+                                {itemBreakdown.productType === 'PACK' && '📦'}
+                            </span>
+                                                <div className="discount-item-title">
+                                                    <h4>
+                                                        {cartItem?.type === 'clothes'
+                                                            ? cartItem.selected_type.replace(/_/g, ' ').toUpperCase()
+                                                            : cartItem?.name
+                                                        }
+                                                    </h4>
+                                                    <span className="discount-item-qty">x{itemBreakdown.quantity}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="discount-stages">
+                                                {/* Product-Specific Discount */}
+                                                {itemBreakdown.productSpecificDiscountPercent > 0 && (
+                                                    <div className="discount-stage">
+                                                        <div className="discount-stage-icon">🎨</div>
+                                                        <div className="discount-stage-info">
+                                                            <span className="discount-stage-label">Bonus Points</span>
+                                                            <span className="discount-stage-value">
+                                            -{discountService.formatPercent(itemBreakdown.productSpecificDiscountPercent)}
+                                        </span>
+                                                        </div>
+                                                        <div className="discount-stage-amount">
+                                                            {discountService.formatPrice(
+                                                                itemBreakdown.basePrice - itemBreakdown.priceAfterProductDiscount
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* NFT Discount */}
+                                                {itemBreakdown.nftDiscountPercent > 0 && (
+                                                    <div className="discount-stage">
+                                                        <div className="discount-stage-icon">🏆</div>
+                                                        <div className="discount-stage-info">
+                                                            <span className="discount-stage-label">NFT Badge</span>
+                                                            <span className="discount-stage-value">
+                                            -{discountService.formatPercent(itemBreakdown.nftDiscountPercent)}
+                                        </span>
+                                                        </div>
+                                                        <div className="discount-stage-amount">
+                                                            {discountService.formatPrice(
+                                                                itemBreakdown.priceAfterProductDiscount - itemBreakdown.priceAfterNftDiscount
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* One-Time Discount */}
+                                                {itemBreakdown.oneTimeDiscountPercent > 0 && (
+                                                    <div className="discount-stage">
+                                                        <div className="discount-stage-icon">🎮</div>
+                                                        <div className="discount-stage-info">
+                                                            <span className="discount-stage-label">Game Reward</span>
+                                                            <span className="discount-stage-value">
+                                            -{discountService.formatPercent(itemBreakdown.oneTimeDiscountPercent)}
+                                        </span>
+                                                        </div>
+                                                        <div className="discount-stage-amount">
+                                                            {discountService.formatPrice(
+                                                                itemBreakdown.priceAfterNftDiscount - itemBreakdown.finalPrice
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Total Savings for This Item */}
+                                            <div className="discount-item-total">
+                                                <span>Total Saved:</span>
+                                                <span className="discount-item-total-amount">
+                                -{discountService.formatPrice(
+                                                    (itemBreakdown.basePrice - itemBreakdown.finalPrice) * itemBreakdown.quantity
+                                                )}
+                            </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Overall Summary */}
+                            <div className="discount-overall-summary">
+                                <div className="discount-summary-row">
+                                    <span>Total Savings Across All Items:</span>
+                                    <span className="discount-summary-total">
+                    -{discountService.formatPrice(totalSavings)}
+                </span>
+                                </div>
+                                <p className="discount-summary-note">
+                                    💡 Your discounts stack! Bonus points + NFT badge + game rewards = maximum savings
+                                </p>
+                            </div>
                         </div>
+                    )}
                     </div>
 
                     {/* Right Column - Details & Payment */}
@@ -264,6 +400,7 @@ export function CheckoutSummary() {
 
                                 {hasPhysicalItems() && (
                                     <>
+
                                         <p className="detail-text">{orderDetails.address}</p>
                                         <p className="detail-text">
                                             {orderDetails.city}, {orderDetails.state} {orderDetails.zipCode}
@@ -300,31 +437,65 @@ export function CheckoutSummary() {
                             </div>
                         )}
 
-                        {/* Price Summary (Estimates) */}
+                        {/* ← ENHANCED PRICE SUMMARY WITH DISCOUNTS */}
                         <div className="summary-card price-summary">
-                            <h3 className="summary-card-title">Price Estimate</h3>
+                            <h3 className="summary-card-title">
+                                {discountBreakdown ? "Final Price" : "Price Estimate"}
+                            </h3>
+
+                            {/* Original Subtotal */}
                             <div className="price-row">
                                 <span>Subtotal:</span>
-                                <span>€{subtotal.toFixed(2)}</span>
+                                <span className={totalSavings > 0 ? "strike-through" : ""}>
+                                    €{subtotal.toFixed(2)}
+                                </span>
                             </div>
-                            {hasPhysicalItems() && (
-                                <div className="price-row">
-                                    <span>Shipping:</span>
-                                    <span>€{shipping.toFixed(2)}</span>
+
+                            {/* Discount Savings */}
+                            {totalSavings > 0 && (
+                                <div className="price-row discount-row">
+                                    <span>💰 Your Savings:</span>
+                                    <span className="savings-amount">
+                                        -€{totalSavings.toFixed(2)}
+                                    </span>
                                 </div>
                             )}
-                            <div className="price-row">
-                                <span>Tax (8%):</span>
-                                <span>€{tax.toFixed(2)}</span>
-                            </div>
+
+                            {/* Price After Discounts */}
+                            {totalSavings > 0 && (
+                                <div className="price-row">
+                                    <span>After Discounts:</span>
+                                    <span className="discounted-price">
+                                        €{finalPrice.toFixed(2)}
+                                    </span>
+                                </div>
+                            )}
+
+
                             <div className="price-divider" />
+
+                            {/* Final Total */}
                             <div className="price-row price-total">
-                                <span>Estimated Total:</span>
+                                <span>Total:</span>
                                 <span>€{total.toFixed(2)}</span>
                             </div>
-                            <p className="price-disclaimer">
-                                * Final price will include your active discounts
-                            </p>
+
+                            {/* Discount Summary */}
+                            {discountBreakdown && totalSavings > 0 && (
+                                <div className="discount-summary-box">
+                                    <p className="discount-summary-title">🎉 You're saving</p>
+                                    <p className="discount-summary-amount">
+                                        €{totalSavings.toFixed(2)}
+                                        ({discountService.formatPercent(discountBreakdown.totalSavingsPercent)})
+                                    </p>
+                                </div>
+                            )}
+
+                            {!discountBreakdown && !loadingDiscounts && (
+                                <p className="price-disclaimer">
+                                    * Discounts will be applied automatically
+                                </p>
+                            )}
                         </div>
 
                         {/* Place Order Button */}
@@ -352,7 +523,9 @@ export function CheckoutSummary() {
                         <div className="what-happens-next">
                             <h4>What happens next?</h4>
                             <ol>
-                                <li>We'll calculate your final price with discounts</li>
+                                {totalSavings > 0 && (
+                                    <li>✅ Your discounts have been applied!</li>
+                                )}
                                 <li>You'll be redirected to Stripe for secure payment</li>
                                 <li>After payment, digital items are instantly available</li>
                                 {hasPhysicalItems() && (

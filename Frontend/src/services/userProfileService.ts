@@ -211,6 +211,43 @@ export const userProfileService = {
     },
 
     /**
+     * Delete user profile
+     * ⚠️ PERMANENT - Cannot be undone
+     */
+    async deleteUser(userId: string): Promise<ApiResponse<void>> {
+        try {
+            await userProfileApi.deleteUser(userId);
+
+            return {
+                success: true,
+                message: 'User profile deleted successfully',
+            };
+        } catch (error: any) {
+            console.error('Error deleting user:', error);
+
+            // Check for specific error messages
+            if (error.response?.status === 403) {
+                return {
+                    success: false,
+                    error: 'You do not have permission to delete this profile',
+                };
+            }
+
+            if (error.response?.status === 404) {
+                return {
+                    success: false,
+                    error: 'User not found',
+                };
+            }
+
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message || 'Failed to delete user profile',
+            };
+        }
+    },
+
+    /**
      * Get count of users by role (Admin only)
      */
     async countUsersByRole(userRole: string): Promise<ApiResponse<{ role: string; count: number }>> {

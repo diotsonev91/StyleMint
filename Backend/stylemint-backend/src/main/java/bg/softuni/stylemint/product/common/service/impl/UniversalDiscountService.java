@@ -4,6 +4,7 @@ import bg.softuni.dtos.enums.nft.NftType;
 import bg.softuni.dtos.nft.UserNftsResponse;
 import bg.softuni.stylemint.external.facade.nft.NftServiceFacade;
 import bg.softuni.stylemint.game.enums.RewardType;
+import bg.softuni.stylemint.product.common.dto.DiscountInfo;
 import bg.softuni.stylemint.product.common.model.BaseProduct;
 import bg.softuni.stylemint.product.common.service.EnhancedDiscountService;
 import bg.softuni.stylemint.product.fashion.config.FashionPriceProperties;
@@ -61,11 +62,6 @@ public class UniversalDiscountService implements EnhancedDiscountService {
         return finalPrice;
     }
 
-    @Override
-    public double calculateFinalPrice(BaseProduct product) {
-        // Called without userId context - return base price
-        return product != null ? product.getPrice() : 0.0;
-    }
 
     @Override
     public DiscountInfo getDiscountInfo(UUID userId, BaseProduct product) {

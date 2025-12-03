@@ -130,12 +130,27 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public void saveDeliveryOutboxEvent(UUID orderId,
                                         List<OrderItem> clothesItems,
-                                        CreateOrderRequestDTO request
-                                        ,OutboxEventType eventType) {
+                                        CreateOrderRequestDTO request,
+                                        OutboxEventType eventType) {
 
+        // ✅ Събираме всички ID-та, които ни трябват
+        List<UUID> orderItemIds = clothesItems.stream()
+                .map(OrderItem::getId)
+                .toList();
+
+        List<UUID> productIds = clothesItems.stream()
+                .map(OrderItem::getProductId)
+                .toList();
+
+        log.info("📦 Preparing delivery for order {}", orderId);
+        log.info("📦 Number of clothing items: {}", clothesItems.size());
+        log.info("📦 OrderItem IDs (for tracking): {}", orderItemIds);
+        log.info("📦 Product IDs (for delivery): {}", productIds);
+
+        // ✅ Създаваме event с ПРАВИЛНИТЕ productIds за доставка
         StartDeliveryEvent event = new StartDeliveryEvent(
                 orderId,
-                clothesItems.stream().map(OrderItem::getId).toList(),
+                productIds,  // ✅ Изпращаме productIds, не orderItemIds!
                 request.getDeliveryAddress(),
                 request.getUserName(),
                 request.getUserPhone()
@@ -144,13 +159,16 @@ public class OrderServiceImpl implements OrderService {
         String json;
         try {
             json = objectMapper.writeValueAsString(event);
+            log.info("📤 Serialized StartDeliveryEvent: {}", json);
         } catch (Exception e) {
             throw new RuntimeException("Failed to serialize StartDeliveryEvent", e);
         }
 
+        // ✅ Съхраняваме и orderItemIds в OutboxEvent
         OutboxEvent outboxEvent = OutboxEvent.builder()
                 .orderId(orderId)
                 .payloadJson(json)
+                .orderItemIds(orderItemIds)  // ✅ Запазваме orderItemIds за по-късна употреба
                 .eventType(eventType)
                 .createdAt(OffsetDateTime.now())
                 .processed(false)
@@ -158,7 +176,8 @@ public class OrderServiceImpl implements OrderService {
 
         outboxEventRepository.save(outboxEvent);
 
-        log.info("📥 Outbox event stored for order {}", orderId);
+        log.info("📥 Outbox event stored for order {} with {} items",
+                orderId, orderItemIds.size());
     }
 
     // ============================================================
@@ -315,27 +334,29 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public void markOrderItemsDelivered(UUID orderId, List<UUID> itemIds) {
-        if (itemIds == null || itemIds.isEmpty()) {
+    public void markOrderItemsDelivered(UUID orderId, List<UUID> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            log.warn("⚠️ markOrderItemsDelivered called with null/empty productIds for order {}", orderId);
             return;
         }
 
-        log.info("📦 Marking {} items as DELIVERED for order {}", itemIds.size(), orderId);
+        log.info("📦 Marking items with productIds {} as DELIVERED for order {}", productIds, orderId);
 
-        // Fetch all items once
+
         List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
 
-        // Update only the delivered items
         items.stream()
-                .filter(item -> itemIds.contains(item.getId()))
+                .filter(item -> productIds.contains(item.getProductId()))
                 .forEach(item -> {
-                    item.setItemStatus(OrderItemStatus.DELIVERED); // Then delivered
+                    log.info("✅ Marking item {} (product {}) as DELIVERED", item.getId(), item.getProductId());
+                    item.setItemStatus(OrderItemStatus.DELIVERED);
                 });
 
         orderItemRepository.saveAll(items);
 
-        // Recalculate order status ONCE after all items are updated
         recalcOrderStatus(orderId);
+
+        log.info("✅ Successfully marked {} items as DELIVERED for order {}", productIds.size(), orderId);
     }
 
     // =============================================================

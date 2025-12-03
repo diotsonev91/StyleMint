@@ -122,7 +122,7 @@ export default function Catalogue() {
                         id: 3,
                         name: "Hoodie Supreme",
                         clothType: "HOODIE",
-                        price: 49.99,
+                        price: 41.99,
                         image: "/images/hoodie_black.png",
                         category: "Hoodies",
                     },

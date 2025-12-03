@@ -1,11 +1,15 @@
 package bg.softuni.stylemint.user.web;
 
 import bg.softuni.stylemint.auth.security.JwtUserDetails;
+import bg.softuni.stylemint.auth.service.AuthService;
 import bg.softuni.stylemint.user.dto.UserDTO;
 import bg.softuni.stylemint.user.model.User;
 import bg.softuni.stylemint.user.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,12 +20,14 @@ import java.util.UUID;
 
 import static bg.softuni.stylemint.config.ApiPaths.BASE;
 
+@Slf4j
 @RestController
 @RequestMapping(BASE + "/users")
 @RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
+    private final AuthService authService;
 
     /**
      * Get user by ID
@@ -71,13 +77,24 @@ public class UserController {
      * Only accessible by the user themselves
      */
     @DeleteMapping("/{userId}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("@userSecurity.canDeleteUser(#userId, authentication.principal)")
     public ResponseEntity<Void> deleteUser(
             @PathVariable UUID userId,
-            @AuthenticationPrincipal JwtUserDetails userDetails) {
+            @AuthenticationPrincipal JwtUserDetails userDetails,
+            HttpServletRequest request,
+            HttpServletResponse response) {
 
         UUID currentUserId = userDetails.getUserId();
+        boolean isSelfDeletion = userId.equals(currentUserId);
+
         userService.deleteUser(userId, currentUserId);
+
+        // ⭐ LOGOUT само ако потребителят изтрива собствения си акаунт
+        if (isSelfDeletion) {
+            authService.logoutUser(userId, response);
+            log.info("✅ User {} deleted account - tokens cleared from client", userId);
+        }
+
         return ResponseEntity.noContent().build();
     }
 }

@@ -46,6 +46,7 @@
   border: 2px solid #ddd;
   border-radius: 6px;
   font-size: 1rem;
+    color: black !important;
 }
 
 .modal-input-group input:focus {

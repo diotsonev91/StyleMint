@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -26,6 +27,12 @@ public class OutboxEvent {
 
     @Column(columnDefinition = "TEXT")
     private String payloadJson;
+
+    @ElementCollection
+    @CollectionTable(name = "outbox_order_items",
+            joinColumns = @JoinColumn(name = "outbox_event_id"))
+    @Column(name = "order_item_id")
+    private List<UUID> orderItemIds;
 
     @Enumerated(EnumType.STRING)
     private OutboxEventType eventType; // e.g. START_DELIVERY

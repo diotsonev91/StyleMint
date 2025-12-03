@@ -4,6 +4,7 @@ import { userProfileService, UserStatsDTO } from '../../services/userProfileServ
 import './UserProfile.css';
 import {GameType, RewardType} from "../../api/game.api";
 import {MyClothDesignsPage} from "../../pages/Clothes/MyClothDesignsPage";
+import { useNavigate } from 'react-router-dom';
 
 interface UserProfileProps {
     userId: string;
@@ -24,6 +25,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                                                      memberSince,
                                                      onProfileUpdate
                                                  }) => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState<UserStatsDTO | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -40,6 +42,13 @@ const UserProfile: React.FC<UserProfileProps> = ({
     const [updateError, setUpdateError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [showDesignsPage, setShowDesignsPage] = useState(false);
+
+    // Delete profile states
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState('');
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+
     const isOwnProfile = currentUserId && userId === currentUserId;
 
     useEffect(() => {
@@ -111,7 +120,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
         }
     };
 
-// За сега връща dummy данни - ще трябва да extend-неш DTO-то за детайлни статистики
     const getGameTypeStats = (gameType: GameType) => {
         return {
             gamesPlayed: 'N/A',
@@ -119,6 +127,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
             averageScore: 'N/A'
         };
     };
+
     const fetchUserStats = async () => {
         try {
             setLoading(true);
@@ -136,7 +145,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
             setError('Failed to load user statistics');
         } finally {
             setLoading(false);
-
         }
     };
 
@@ -208,6 +216,31 @@ const UserProfile: React.FC<UserProfileProps> = ({
         }
     };
 
+    const handleDeleteProfile = async () => {
+        // Validation
+        if (deleteConfirmText !== 'DELETE') {
+            setDeleteError('Please type DELETE to confirm');
+            return;
+        }
+
+        setDeleteLoading(true);
+        setDeleteError(null);
+
+        const response = await userProfileService.deleteUser(userId);
+
+        setDeleteLoading(false);
+
+        if (response.success) {
+            // Successfully deleted - logout and redirect
+            localStorage.removeItem('SM_ACCESS');
+            localStorage.removeItem('SM_REFRESH');
+            navigate('/');
+            window.location.reload(); // Force reload to clear all state
+        } else {
+            setDeleteError(response.error || 'Failed to delete profile');
+        }
+    };
+
     const startEditingDisplayName = () => {
         setNewDisplayName(displayName);
         setIsEditingDisplayName(true);
@@ -230,6 +263,12 @@ const UserProfile: React.FC<UserProfileProps> = ({
         setIsEditingAvatar(false);
         setNewAvatarUrl('');
         setUpdateError(null);
+    };
+
+    const closeDeleteModal = () => {
+        setShowDeleteModal(false);
+        setDeleteConfirmText('');
+        setDeleteError(null);
     };
 
     if (loading) {
@@ -276,6 +315,91 @@ const UserProfile: React.FC<UserProfileProps> = ({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span>{updateError}</span>
+                </div>
+            )}
+
+            {/* Delete Profile Modal */}
+            {showDeleteModal && (
+                <div className="modal-overlay-du" onClick={closeDeleteModal}>
+                    <div className="modal-content-du" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header-du">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="warning-icon-du">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <h2>Delete Profile</h2>
+                        </div>
+
+                        <div className="modal-body-du">
+                            <p className="warning-text-du">
+                                ⚠️ This action is <strong>permanent</strong> and <strong>cannot be undone</strong>!
+                            </p>
+
+                            <div className="consequences-list-du">
+                                <h3>The following will be permanently deleted:</h3>
+                                <ul>
+                                    <li>✕ Your account and profile</li>
+                                    <li>✕ All your designs ({stats.design.totalDesigns})</li>
+                                    <li>✕ All your audio content ({stats.audio.totalSamples + stats.audio.totalPacks} items)</li>
+                                    <li>✕ Your game progress and rewards</li>
+                                    <li>✕ Your order history</li>
+                                    <li>✕ All associated data</li>
+                                </ul>
+                            </div>
+
+                            <div className="confirmation-section-du">
+                                <p className="confirm-prompt-du">
+                                    Type <span className="delete-keyword-du">DELETE</span> to confirm:
+                                </p>
+                                <input
+                                    type="text"
+                                    className="confirm-input-du"
+                                    value={deleteConfirmText}
+                                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                    placeholder="Type DELETE here"
+                                    disabled={deleteLoading}
+                                    autoFocus
+                                />
+                            </div>
+
+                            {deleteError && (
+                                <div className="error-message-du">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>{deleteError}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="modal-footer-du">
+                            <button
+                                className="btn-cancel-du"
+                                onClick={closeDeleteModal}
+                                disabled={deleteLoading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="btn-delete-du"
+                                onClick={handleDeleteProfile}
+                                disabled={deleteLoading || deleteConfirmText !== 'DELETE'}
+                            >
+                                {deleteLoading ? (
+                                    <>
+                                        <div className="btn-spinner-du"></div>
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Delete My Profile
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -1093,6 +1217,20 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     </div>
                 )}
             </div>
+            <h2>CAREFUL HERE, think again....</h2>
+            {/* Delete Profile Button - Only for own profile */}
+            {isOwnProfile && (
+                <button
+                    className="delete-profile-btn-du"
+                    onClick={() => setShowDeleteModal(true)}
+                    title="Delete Profile"
+                >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete Profile
+                </button>
+            )}
         </div>
     );
 };

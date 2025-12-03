@@ -51,21 +51,38 @@ public class DeliveryEventConsumer {
     /**
      * Handles delivery completion from Delivery Service.
      * This is the event that triggers marking items as DELIVERED.
+     *
+     * IMPORTANT: event.getItemIds() contains PRODUCT IDs, not OrderItem IDs!
      */
     @KafkaListener(topics = "delivery.completed", groupId = "order-service-group")
     public void handleDeliveryCompleted(DeliveryCompletedEvent event) {
 
         try {
+            log.info("📥 Received DeliveryCompletedEvent for order {} with {} product IDs",
+                    event.getOrderId(),
+                    event.getItemIds() != null ? event.getItemIds().size() : "NULL");
+
+            if (event.getItemIds() == null || event.getItemIds().isEmpty()) {
+                log.error("❌ CRITICAL: DeliveryCompletedEvent has null/empty itemIds for order {}!",
+                        event.getOrderId());
+                return; // Don't process if no items
+            }
+
             processDeliveryCompleted(event);  // retry-enabled
         } catch (Exception e) {
             log.error("❌ Delivery completion FAILED after retries for order {}",
                     event.getOrderId(), e);
 
-            // OPTIONAL: dead-letter queue, outbox inbox, save error to db, etc.
+            // OPTIONAL: dead-letter queue, outbox pattern, save error to db, etc.
             // deadLetterService.storeFailedDelivery(event);
         }
     }
 
+    /**
+     * Processes delivery completion with retry logic.
+     *
+     * @param event Contains orderId and productIds (NOT orderItem IDs!)
+     */
     @Retryable(
             value = Exception.class,
             maxAttempts = 3,               // колко опита
@@ -76,14 +93,12 @@ public class DeliveryEventConsumer {
     )
     public void processDeliveryCompleted(DeliveryCompletedEvent event) {
 
-        log.info("🔁 Processing delivery completion for order {} (retry-enabled)", event.getOrderId());
+        log.info("🔄 Processing delivery completion for order {} (retry-enabled)", event.getOrderId());
+        log.info("📦 Product IDs to mark as DELIVERED: {}", event.getItemIds());
 
+        // ✅ Pass productIds to service (NOT orderItem IDs!)
         orderService.markOrderItemsDelivered(event.getOrderId(), event.getItemIds());
-
-
 
         log.info("✅ Successfully processed delivery completion for order {}", event.getOrderId());
     }
-
-
 }
