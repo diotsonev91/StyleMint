@@ -1,4 +1,3 @@
-// ClothDesignServiceImpl.java
 package bg.softuni.stylemint.product.fashion.service.impl;
 
 import bg.softuni.stylemint.auth.security.SecurityUtil;
@@ -13,7 +12,7 @@ import bg.softuni.stylemint.product.fashion.model.ClothDesign;
 import bg.softuni.stylemint.product.fashion.repository.ClothDesignRepository;
 import bg.softuni.stylemint.product.fashion.repository.LikeCountProjection;
 import bg.softuni.stylemint.product.fashion.service.ClothDesignService;
-import bg.softuni.stylemint.product.common.service.PriceCalculatorService;
+import bg.softuni.stylemint.product.common.service.EnhancedDiscountService;
 import bg.softuni.stylemint.product.fashion.service.ClothLikeService;
 import bg.softuni.stylemint.user.enums.UserRole;
 import bg.softuni.stylemint.user.service.util.UserRolesService;
@@ -21,7 +20,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,7 +29,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -41,7 +38,7 @@ import java.util.stream.Collectors;
 public class ClothDesignServiceImpl implements ClothDesignService {
 
     private final ClothDesignRepository clothDesignRepository;
-    private final PriceCalculatorService<ClothDesign> clothPriceCalculator;
+    private final EnhancedDiscountService discountService;  // ← CHANGED from PriceCalculatorService
     private final ClothLikeService clothLikeService;
     private final CloudinaryService cloudinaryService;
     private final ObjectMapper objectMapper;
@@ -50,13 +47,14 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
     @Autowired
     public ClothDesignServiceImpl(ClothDesignRepository clothDesignRepository,
-                                  @Qualifier("fashionPriceCalculatorService") PriceCalculatorService<ClothDesign> clothPriceCalculator,
+                                  EnhancedDiscountService discountService,  // ← REMOVED @Qualifier
                                   ClothLikeService clothLikeService,
                                   CloudinaryService cloudinaryService,
                                   ObjectMapper objectMapper,
-                                  UserRolesService userRolesService, FashionPriceProperties priceProperties) {
+                                  UserRolesService userRolesService,
+                                  FashionPriceProperties priceProperties) {
         this.clothDesignRepository = clothDesignRepository;
-        this.clothPriceCalculator = clothPriceCalculator;
+        this.discountService = discountService;  // ← CHANGED
         this.clothLikeService = clothLikeService;
         this.cloudinaryService = cloudinaryService;
         this.objectMapper = objectMapper;
@@ -153,7 +151,8 @@ public class ClothDesignServiceImpl implements ClothDesignService {
             }
 
             if (needsPriceRecalculation) {
-                double newPrice = clothPriceCalculator.calculatePrice(design);
+                // ← CHANGED: Use discountService instead of clothPriceCalculator
+                double newPrice = discountService.calculateFinalPrice(design, currentUserId);
                 design.setPrice(newPrice);
             }
 
@@ -291,7 +290,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
                 .createdAt(design.getCreatedAt())
                 .isLikedByUser(likedByUser)
                 .customizationData(customizationData)
-                .customDecalUrl(design.getCustomDecalPath()) // ← Вече е Cloudinary URL
+                .customDecalUrl(design.getCustomDecalPath())
                 .build();
     }
 
@@ -331,7 +330,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
                 .likesCount(likesCount)
                 .createdAt(design.getCreatedAt())
                 .customizationData(customizationData)
-                .customDecalUrl(design.getCustomDecalPath()) // ← Вече е Cloudinary URL
+                .customDecalUrl(design.getCustomDecalPath())
                 .build();
     }
 
@@ -341,7 +340,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
 
         return clothDesignPage.map(design -> {
             long likesCount = clothLikeService.getLikesCount(design.getId());
-            return toPublicDTOSafe(design, likesCount);  // ✅ Безопасна версия
+            return toPublicDTOSafe(design, likesCount);
         });
     }
 
@@ -470,7 +469,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
         return designs.stream()
                 .map(design -> {
                     long likes = likeCounts.getOrDefault(design.getId(), 0L);
-                    return toPublicDTOSafe(design, likes);  // ✅ Безопасна версия
+                    return toPublicDTOSafe(design, likes);
                 })
                 .sorted((d1, d2) -> Long.compare(d2.getLikesCount(), d1.getLikesCount()))
                 .collect(Collectors.toList());
@@ -500,7 +499,7 @@ public class ClothDesignServiceImpl implements ClothDesignService {
                 .salesCount(design.getSalesCount() != null ? design.getSalesCount() : 0L)
                 .likesCount(likesCount)
                 .createdAt(design.getCreatedAt())
-                .isLikedByUser(false)  // ✅ ВИНАГИ false за public endpoints
+                .isLikedByUser(false)
                 .customizationData(customizationData)
                 .customDecalUrl(design.getCustomDecalPath())
                 .build();

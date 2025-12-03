@@ -123,4 +123,8 @@ export const nftService = {
         return typeMap[nftType] || nftType;
     },
 
+    hasCertificate(nftType: string): boolean {
+        return nftType.startsWith('AUTHOR_BADGE');
+    },
+
 };

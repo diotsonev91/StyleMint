@@ -2,15 +2,19 @@ package bg.softuni.stylemint.auth.service;
 
 import bg.softuni.stylemint.auth.dto.*;
 import bg.softuni.stylemint.auth.exception.InvalidTokenException;
+import bg.softuni.stylemint.auth.exception.MissingTokenException;
 import bg.softuni.stylemint.auth.util.JwtTokenProvider;
 import bg.softuni.stylemint.user.dto.UserDTO;
 import bg.softuni.stylemint.user.enums.UserRole;
 import bg.softuni.stylemint.user.service.UserService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,18 +37,14 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String login(UserLoginRequestDTO req) {
-        // Authenticate the user
         authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword())
         );
 
-        // Fetch the user to get their ID and roles
         UserDTO user = userService.findByEmail(req.getEmail());
 
-        // ✅ Extract roles from user (adjust according to your UserDTO structure)
         List<String> roles = extractUserRoles(user);
 
-        // Generate token with user ID, email, and roles
         return jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail(), roles);
     }
 
@@ -54,27 +54,36 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidTokenException("Invalid refresh token");
         }
 
-        // Extract user ID, email, and roles from the refresh token
         UUID userId = jwtTokenProvider.extractUserId(refreshToken);
         String email = jwtTokenProvider.extractEmail(refreshToken);
         List<String> roles = jwtTokenProvider.extractRoles(refreshToken);
 
-        // Generate new access token with the same roles
         return jwtTokenProvider.generateAccessToken(userId, email, roles);
     }
 
-    /**
-     * Извлича roles от UserDTO
-     */
-    private List<String> extractUserRoles(UserDTO user) {
+    @Override
+    public List<String> extractUserRoles(UserDTO user) {
         if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            // Fallback to default role if no roles assigned
             return List.of(UserRole.CUSTOMER.toString());
         }
 
-        // Convert UserRole enum to String list
         return user.getRoles().stream()
-                .map(Enum::name)  // UserRole.ADMIN -> "ADMIN"
+                .map(Enum::name)
                 .toList();
     }
+
+    @Override
+    public String extractRefreshToken(HttpServletRequest request) {
+
+        if (request.getCookies() == null) {
+            throw new MissingTokenException("Refresh token not found");
+        }
+
+        return Arrays.stream(request.getCookies())
+                .filter(c -> "SM_REFRESH".equals(c.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElseThrow(() -> new MissingTokenException("Refresh token not found"));
+    }
+
 }

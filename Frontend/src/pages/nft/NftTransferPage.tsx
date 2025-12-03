@@ -95,7 +95,7 @@ const NftTransferPage = () => {
 
             // Reload NFTs after successful transfer
             setTimeout(() => {
-                navigate('/nft/my-nfts');
+                navigate('/my-nfts');
             }, 2000);
         } catch (error: any) {
             setMessage(`❌ Error: ${error.message || 'Failed to transfer NFT'}`);

@@ -408,9 +408,10 @@
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  color: #ffffff;
+    color: #00afaa;
   font-size: 1rem;
   transition: all 0.3s ease;
+    background: rgba(169, 169, 169, 0.11);
 }
 
 .form-group input:focus,

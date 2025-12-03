@@ -3,6 +3,7 @@ package bg.softuni.stylemint.nft.service;
 import bg.softuni.dtos.nft.*;
 import bg.softuni.stylemint.blockchain.model.Transaction;
 import bg.softuni.stylemint.blockchain.service.TransactionService;
+import bg.softuni.stylemint.nft.exception.*;
 import bg.softuni.stylemint.nft.model.*;
 import bg.softuni.stylemint.nft.repository.PseudoTokenRepository;
 import lombok.RequiredArgsConstructor;
@@ -59,25 +60,21 @@ public class NftService {
     }
 
     public TransferNftResponse transferNft(TransferNftRequest request) {
-        // Find the token
+
         PseudoToken token = tokenRepository.findByTokenId(request.getTokenId())
-                .orElseThrow(() -> new RuntimeException("Token not found"));
+                .orElseThrow(() -> new TokenNotFoundException("Token not found"));
 
-        // Verify ownership
         if (!token.getOwnerId().equals(request.getFromUserId())) {
-            throw new RuntimeException("User does not own this token");
+            throw new InvalidOwnershipException("User does not own this token");
         }
 
-        // Check if token is transferable
         if (!token.isTransferable()) {
-            throw new RuntimeException("This NFT is not transferable");
+            throw new NonTransferableTokenException("This NFT is not transferable");
         }
 
-        // Update ownership
         token.setOwnerId(request.getToUserId());
         tokenRepository.save(token);
 
-        // Create transfer transaction
         Transaction transaction = new Transaction();
         transaction.setFromUserId(request.getFromUserId());
         transaction.setToUserId(request.getToUserId());
@@ -96,10 +93,11 @@ public class NftService {
 
     public byte[] generateBadgeCertificatePdf(UUID tokenId, String ownerName) {
         PseudoToken token = tokenRepository.findByTokenId(tokenId)
-                .orElseThrow(() -> new RuntimeException("Token not found"));
+                .orElseThrow(() -> new TokenNotFoundException("Token not found"));
 
         if (!token.getNftType().isAuthorBadge()) {
-            throw new RuntimeException("Certificate can only be generated for author badges");
+            throw new CertificateGenerationException("Certificate can only be generated for author badges") {
+            };
         }
 
         return pdfService.generateCertificatePdf(token, ownerName);

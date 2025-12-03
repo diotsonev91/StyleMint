@@ -22,15 +22,14 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // Load user from database by email
+
         User user = userRepository.findByEmailAndDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        // Convert to Spring Security UserDetails
         return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())  // Email е username
-                .password(user.getPassword())  // Hashed password
-                .authorities(getAuthorities(user))  // Roles as authorities
+                .username(user.getEmail())
+                .password(user.getPassword())
+                .authorities(getAuthorities(user))
                 .accountExpired(false)
                 .accountLocked(false)
                 .credentialsExpired(false)
@@ -43,7 +42,7 @@ public class CustomUserDetailsService implements UserDetailsService {
      */
     private Collection<? extends GrantedAuthority> getAuthorities(User user) {
         if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            // Default role if no roles assigned
+
             return java.util.List.of(new SimpleGrantedAuthority("ROLE_USER"));
         }
 

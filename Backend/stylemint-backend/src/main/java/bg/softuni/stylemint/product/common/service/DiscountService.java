@@ -1,6 +1,5 @@
 package bg.softuni.stylemint.product.common.service;
 
-
 import bg.softuni.stylemint.game.enums.RewardType;
 
 import java.util.List;
@@ -66,21 +65,7 @@ public interface DiscountService {
      * @param userId User ID
      * @return true if user has unused discounts
      */
-    boolean hasAvailableDiscounts(UUID userId);
-
-    /**
-     * Delete specific discount for user
-     *
-     * @param userId User ID
-     * @param rewardType Discount type to delete
-     */
-    void deleteDiscount(UUID userId, RewardType rewardType);
-
-    /**
-     * Count available discounts for user
-     *
-     * @param userId User ID
-     * @return Number of unused discounts
-     */
-    int countAvailableDiscounts(UUID userId);
+    default boolean hasAvailableDiscounts(UUID userId) {
+        return !getAvailableDiscounts(userId).isEmpty();
+    }
 }

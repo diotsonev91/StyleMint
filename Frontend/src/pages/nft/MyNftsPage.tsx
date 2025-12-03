@@ -27,9 +27,9 @@ export function MyNftsPage() {
         }
     };
 
-    const handleDownload = async (tokenId: string) => {
-        const nft = nfts.find(n => n.tokenId === tokenId);
-        if (nft?.hasCertificate) {
+    const handleDownload = async (tokenId: string, nftType: string) => {
+        // Check if this NFT type has a certificate
+        if (nftService.hasCertificate(nftType)) {
             try {
                 await nftService.downloadCertificate(tokenId);
                 alert('✅ Certificate downloaded successfully!');
@@ -41,9 +41,9 @@ export function MyNftsPage() {
         }
     };
 
-    const handlePreview = async (tokenId: string) => {
-        const nft = nfts.find(n => n.tokenId === tokenId);
-        if (nft?.hasCertificate) {
+    const handlePreview = async (tokenId: string, nftType: string) => {
+        // Check if this NFT type has a certificate
+        if (nftService.hasCertificate(nftType)) {
             try {
                 await nftService.previewCertificate(tokenId);
             } catch (err) {
@@ -125,25 +125,25 @@ export function MyNftsPage() {
                             </div>
 
                             <div className="nft-actions-nft">
-                                {nft.hasCertificate && (
+                                {/* Check if NFT type has certificate using service helper */}
+                                {nftService.hasCertificate(nft.nftType) ? (
                                     <>
                                         <button
                                             className="btn-primary-nft"
-                                            onClick={() => handlePreview(nft.tokenId)}
+                                            onClick={() => handlePreview(nft.tokenId, nft.nftType)}
                                             title="Preview certificate in new tab"
                                         >
                                             👁️ Preview
                                         </button>
                                         <button
                                             className="btn-secondary-nft"
-                                            onClick={() => handleDownload(nft.tokenId)}
+                                            onClick={() => handleDownload(nft.tokenId, nft.nftType)}
                                             title="Download certificate PDF"
                                         >
                                             📥 Download
                                         </button>
                                     </>
-                                )}
-                                {!nft.hasCertificate && (
+                                ) : (
                                     <p className="no-certificate-message-nft">
                                         No certificate available
                                     </p>

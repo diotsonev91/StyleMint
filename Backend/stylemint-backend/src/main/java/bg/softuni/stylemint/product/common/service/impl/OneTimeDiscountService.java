@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class DiscountServiceImpl implements DiscountService {
+public class OneTimeDiscountService implements DiscountService {
 
     private final UserDiscountRepository discountRepository;
 
@@ -86,22 +86,6 @@ public class DiscountServiceImpl implements DiscountService {
                 .orElse(null);
     }
 
-    @Override
-    public boolean hasAvailableDiscounts(UUID userId) {
-        return discountRepository.existsByUserId(userId);
-    }
-
-    @Override
-    @Transactional
-    public void deleteDiscount(UUID userId, RewardType rewardType) {
-        discountRepository.deleteByUserIdAndRewardType(userId, rewardType);
-        log.info("Deleted {} discount for user {}", rewardType, userId);
-    }
-
-    @Override
-    public int countAvailableDiscounts(UUID userId) {
-        return (int) discountRepository.countByUserId(userId);
-    }
 
     /**
      * Check if reward type is a valid discount (DISCOUNT_20 or DISCOUNT_40)

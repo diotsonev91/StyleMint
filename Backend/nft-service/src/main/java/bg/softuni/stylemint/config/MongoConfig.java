@@ -8,5 +8,5 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 @Configuration
 @EnableMongoAuditing
 @EnableMongoRepositories(basePackages = "bg.softuni.stylemint")
-public class MongoConfig {
+public class  MongoConfig {
 }

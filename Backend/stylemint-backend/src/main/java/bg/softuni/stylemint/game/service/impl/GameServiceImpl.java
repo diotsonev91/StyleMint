@@ -367,8 +367,12 @@ public class GameServiceImpl implements GameService {
         long gamesPlayed = gameRepository.countByUserId(userId);
         UserDTO user = userService.findById(userId);
 
-        boolean isAuthor = user.getRoles().contains("AUTHOR");
-        boolean isDesigner = user.getRoles().contains("DESIGNER");
+        boolean isAuthor = user.getRoles().stream()
+                .anyMatch(role -> role.name().equals("AUTHOR"));
+
+        boolean isDesigner = user.getRoles().stream()
+                .anyMatch(role -> role.name().equals("DESIGNER"));
+
 
         // First game
         if (gamesPlayed == 0) {

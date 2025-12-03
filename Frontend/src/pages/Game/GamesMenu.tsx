@@ -140,8 +140,9 @@ const GamesMenu: React.FC = () => {
     };
 
     const handleSendNFT = (userId: string) => {
-        // Навигирай към NFT transfer страница с userId като параметър
-        navigate(`/nft/transfer?receiverId=${userId}`);
+
+        navigate(`/nft/transfer/${userId}`);
+
     };
 
     const getRewardDisplayName = (rewardType?: string) => {

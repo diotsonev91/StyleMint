@@ -3,8 +3,12 @@ package bg.softuni.stylemint.blockchain.service;
 
 import bg.softuni.stylemint.blockchain.model.Transaction;
 import bg.softuni.stylemint.blockchain.repository.TransactionRepository;
+import bg.softuni.stylemint.nft.exception.TransactionProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
@@ -14,14 +18,16 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final BlockchainService blockchainService;
 
+    @Transactional
     public void processTransaction(Transaction transaction) {
-        // Save pending transaction
-        transactionRepository.save(transaction);
+        try {
+            transactionRepository.save(transaction);
 
-        // In a real scenario, you might batch transactions
-        // For simplicity, we'll create a block for each transaction
-        List<Transaction> transactions = List.of(transaction);
-        blockchainService.createNewBlock(transactions);
+            List<Transaction> transactions = List.of(transaction);
+            blockchainService.createNewBlock(transactions);
+        }catch (Exception e){
+            throw new TransactionProcessingException("Transaction processing failed");
+        }
     }
 
     public List<Transaction> getPendingTransactions() {

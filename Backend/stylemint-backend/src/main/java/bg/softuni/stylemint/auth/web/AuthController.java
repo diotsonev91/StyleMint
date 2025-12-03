@@ -43,8 +43,7 @@ public class AuthController {
         String accessToken = authService.login(dto);
         UserDTO user = userService.findByEmail(dto.getEmail());
 
-        // ✅ Extract roles from user
-        List<String> roles = extractUserRoles(user);
+        List<String> roles = authService.extractUserRoles(user);
 
         // Generate refresh token with roles
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail(), roles);
@@ -74,14 +73,16 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponseDTO> refresh(HttpServletRequest request, HttpServletResponse response) {
-        String refreshToken = extractRefreshToken(request);
+    public ResponseEntity<AuthResponseDTO> refresh(
+            HttpServletRequest request,
+            HttpServletResponse response) {
 
+        String refreshToken = authService.extractRefreshToken(request);
         String newAccessToken = authService.refresh(refreshToken);
 
         ResponseCookie newAccess = ResponseCookie.from("SM_ACCESS", newAccessToken)
                 .httpOnly(true)
-                .secure(false) // TODO: Set to true in production
+                .secure(false)
                 .path("/")
                 .maxAge(jwtTokenProvider.getAccessExpirationMs() / 1000)
                 .domain("localhost")
@@ -97,8 +98,6 @@ public class AuthController {
     public Map<String, String> csrf(CsrfToken token) {
         return Map.of("csrfToken", token.getToken());
     }
-
-
 
     @PostMapping("/logout")
     public ResponseEntity<AuthResponseDTO> logout(
@@ -143,36 +142,4 @@ public class AuthController {
 
         return ResponseEntity.ok(user);
     }
-
-    /**
-     * Extracts refresh token from cookies
-     */
-    private String extractRefreshToken(HttpServletRequest request) {
-        if (request.getCookies() == null) {
-            throw new MissingTokenException("Refresh token not found");
-        }
-
-        return Arrays.stream(request.getCookies())
-                .filter(c -> "SM_REFRESH".equals(c.getName()))
-                .map(Cookie::getValue)
-                .findFirst()
-                .orElseThrow(() -> new MissingTokenException("Refresh token not found"));
-    }
-
-    /**
-     * Извлича roles от UserDTO
-     */
-    private List<String> extractUserRoles(UserDTO user) {
-        if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            // Fallback to default role if no roles assigned
-            return List.of("USER");
-        }
-
-        // Convert UserRole enum to String list
-        return user.getRoles().stream()
-                .map(Enum::name)  // UserRole.ADMIN -> "ADMIN"
-                .toList();
-    }
-
-
 }
