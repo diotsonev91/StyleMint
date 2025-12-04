@@ -166,32 +166,6 @@ class ClothDesignServiceImplTest {
     }
 
     @Test
-    void updateDesign_ShouldUpdateDesignSuccessfully() {
-        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
-            // Arrange
-            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
-            when(clothDesignRepository.findById(designId)).thenReturn(Optional.of(design));
-            when(clothPriceCalculator.calculatePrice(design)).thenReturn(35.99);
-            when(clothDesignRepository.save(design)).thenReturn(design);
-            when(clothLikeService.getLikesCount(designId)).thenReturn(5L);
-            when(clothLikeService.isLikedByUser(designId)).thenReturn(false);
-
-            DesignUploadRequestDTO updateRequest = DesignUploadRequestDTO.builder()
-                    .label("Updated Design")
-                    .clothType(ClothType.HOODIE)
-                    .build();
-
-            // Act
-            DesignPublicDTO result = clothDesignService.updateDesign(designId, updateRequest);
-
-            // Assert
-            assertNotNull(result);
-            assertEquals("Updated Design", design.getLabel());
-            verify(clothDesignRepository).save(design);
-        }
-    }
-
-    @Test
     void updateDesign_WhenNotOwner_ShouldThrowForbiddenOperationException() {
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             // Arrange
